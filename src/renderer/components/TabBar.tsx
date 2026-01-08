@@ -1,9 +1,10 @@
 import React from 'react';
-import { Tabs, Tab, Box, IconButton, Tooltip, styled } from '@mui/material';
+import { Tabs, Tab, Box, IconButton, Tooltip, styled, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
 import CodeIcon from '@mui/icons-material/Code';
 import DescriptionIcon from '@mui/icons-material/Description';
+import EditIcon from '@mui/icons-material/Edit';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
 import type { IFile } from '../types';
@@ -103,6 +104,10 @@ export function TabBar() {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
+    const [contextMenu, setContextMenu] = React.useState<{ mouseX: number; mouseY: number; fileId: string } | null>(null);
+    const [renameDialog, setRenameDialog] = React.useState<{ open: boolean; fileId: string; currentName: string }>({ open: false, fileId: '', currentName: '' });
+    const [newFileName, setNewFileName] = React.useState('');
+    const { renameFile } = useFileOperations();
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
         dispatch({ type: 'SELECT_TAB', payload: { id: newValue } });
@@ -130,6 +135,38 @@ export function TabBar() {
         setDraggedIndex(null);
     };
 
+    const handleContextMenu = (e: React.MouseEvent, fileId: string) => {
+        e.preventDefault();
+        setContextMenu(contextMenu === null ? { mouseX: e.clientX - 2, mouseY: e.clientY - 4, fileId } : null);
+    };
+
+    const handleContextMenuClose = () => {
+        setContextMenu(null);
+    };
+
+    const handleRenameClick = () => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file) {
+                setNewFileName(file.name);
+                setRenameDialog({ open: true, fileId: file.id, currentName: file.name });
+            }
+        }
+        handleContextMenuClose();
+    };
+
+    const handleRenameDialogClose = () => {
+        setRenameDialog({ open: false, fileId: '', currentName: '' });
+        setNewFileName('');
+    };
+
+    const handleRenameConfirm = async () => {
+        if (renameDialog.fileId && newFileName && newFileName !== renameDialog.currentName) {
+            await renameFile(renameDialog.fileId, newFileName);
+        }
+        handleRenameDialogClose();
+    };
+
     if (state.openFiles.length === 0) {
         return null;
     }
@@ -152,6 +189,7 @@ export function TabBar() {
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragOver={(e) => handleDragOver(e, index)}
                         onDragEnd={handleDragEnd}
+                        onContextMenu={(e) => handleContextMenu(e, file.id)}
                         sx={{
                             cursor: 'grab',
                             '&:active': {
@@ -162,6 +200,47 @@ export function TabBar() {
                     />
                 ))}
             </Tabs>
+            <Menu
+                open={contextMenu !== null}
+                onClose={handleContextMenuClose}
+                anchorReference="anchorPosition"
+                anchorPosition={
+                    contextMenu !== null
+                        ? { top: contextMenu.mouseY, left: contextMenu.mouseX }
+                        : undefined
+                }
+            >
+                <MenuItem onClick={handleRenameClick}>
+                    <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+                    Rename
+                </MenuItem>
+            </Menu>
+            <Dialog open={renameDialog.open} onClose={handleRenameDialogClose}>
+                <DialogTitle>Rename File</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        label="File Name"
+                        type="text"
+                        fullWidth
+                        variant="outlined"
+                        value={newFileName}
+                        onChange={(e) => setNewFileName(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                handleRenameConfirm();
+                            }
+                        }}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleRenameDialogClose}>Cancel</Button>
+                    <Button onClick={handleRenameConfirm} variant="contained" disabled={!newFileName || newFileName === renameDialog.currentName}>
+                        Rename
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </TabContainer>
     );
 }

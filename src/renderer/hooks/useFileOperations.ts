@@ -341,6 +341,71 @@ export function useFileOperations() {
         }
     }, [dispatch, state.config, state.openFiles, saveConfigAndUpdateEditor]);
 
+    const renameFile = useCallback(async (fileId: string, newName: string) => {
+        const file = state.openFiles.find(f => f.id === fileId);
+        if (!file || !file.path) {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: { message: 'Cannot rename unsaved file', severity: 'warning' },
+            });
+            return false;
+        }
+
+        // Ensure the new name has the same extension
+        const oldExt = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : '';
+        const newNameWithExt = newName.includes('.') ? newName : newName + oldExt;
+
+        // Construct new path
+        const directory = file.path.substring(0, file.path.lastIndexOf('\\') !== -1 ? file.path.lastIndexOf('\\') : file.path.lastIndexOf('/'));
+        const separator = file.path.includes('\\') ? '\\' : '/';
+        const newPath = directory + separator + newNameWithExt;
+
+        try {
+            // Save file first if dirty
+            if (file.isDirty) {
+                const saved = await saveFile(fileId);
+                if (!saved) {
+                    return false;
+                }
+            }
+
+            // Rename the file using the electron API
+            await window.electronAPI.renameFile(file.path, newPath);
+
+            // Update the file in state
+            dispatch({
+                type: 'UPDATE_FILE_PATH',
+                payload: { id: fileId, path: newPath, name: newNameWithExt },
+            });
+
+            // Update config
+            const openFilePaths = state.openFiles
+                .map(f => f.id === fileId ? newPath : f.path)
+                .filter((p): p is string => p !== null && !p.endsWith('config.json'));
+
+            const newConfig: IConfig = {
+                ...state.config,
+                openFiles: openFilePaths,
+                recentFiles: state.config.recentFiles.map(p => p === file.path ? newPath : p),
+            };
+
+            await saveConfigAndUpdateEditor(newConfig);
+
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: { message: `Renamed to "${newNameWithExt}"`, severity: 'success' },
+            });
+
+            return true;
+        } catch (error) {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: { message: `Failed to rename file`, severity: 'error' },
+            });
+            return false;
+        }
+    }, [state.openFiles, state.config, dispatch, saveFile, saveConfigAndUpdateEditor]);
+
     const hasDirtyFiles = state.openFiles.some(f => f.isDirty);
 
     return {
@@ -355,6 +420,7 @@ export function useFileOperations() {
         closeAllFiles,
         showInFolder,
         openConfigFile,
+        renameFile,
         hasDirtyFiles,
     };
 }

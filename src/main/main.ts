@@ -173,6 +173,17 @@ function registerIpcHandlers() {
         }
     });
 
+    // File: Rename
+    ipcMain.handle('file:rename', async (_event, oldPath: string, newPath: string) => {
+        try {
+            await fs.rename(oldPath, newPath);
+            return { success: true };
+        } catch (error) {
+            console.error('Failed to rename file:', error);
+            throw error;
+        }
+    });
+
     // Config: Load
     ipcMain.handle('config:load', async () => {
         return await loadConfig();

@@ -38,6 +38,7 @@ export interface ElectronAPI {
   readFile: (filePath: string) => Promise<FileOpenResult | null>;
   saveFile: (filePath: string, content: string) => Promise<FileSaveResult>;
   saveFileAs: (content: string, defaultName?: string) => Promise<FileSaveResult | null>;
+  renameFile: (oldPath: string, newPath: string) => Promise<{ success: boolean }>;
   
   // Config operations
   loadConfig: () => Promise<IConfig>;
