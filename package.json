@@ -64,10 +64,23 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "portable"
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
       ],
-      "icon": "assets/MarkdownPlus.png"
+      "icon": "assets/MarkdownPlus.png",
+      "artifactName": "${productName}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "${productName}-Setup.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable.${ext}"
     },
     "mac": {
       "target": [

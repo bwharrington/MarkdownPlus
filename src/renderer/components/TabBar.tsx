@@ -102,9 +102,32 @@ function FileTab({ file, isActive }: FileTabProps) {
 export function TabBar() {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
+    const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
         dispatch({ type: 'SELECT_TAB', payload: { id: newValue } });
+    };
+
+    const handleDragStart = (e: React.DragEvent, index: number) => {
+        setDraggedIndex(index);
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e: React.DragEvent, index: number) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        
+        if (draggedIndex !== null && draggedIndex !== index) {
+            dispatch({ 
+                type: 'REORDER_TABS', 
+                payload: { fromIndex: draggedIndex, toIndex: index } 
+            });
+            setDraggedIndex(index);
+        }
+    };
+
+    const handleDragEnd = () => {
+        setDraggedIndex(null);
     };
 
     if (state.openFiles.length === 0) {
@@ -120,11 +143,22 @@ export function TabBar() {
                 scrollButtons="auto"
                 sx={{ minHeight: 40 }}
             >
-                {state.openFiles.map((file) => (
+                {state.openFiles.map((file, index) => (
                     <StyledTab
                         key={file.id}
                         value={file.id}
                         label={<FileTab file={file} isActive={file.id === state.activeFileId} />}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        sx={{
+                            cursor: 'grab',
+                            '&:active': {
+                                cursor: 'grabbing',
+                            },
+                            opacity: draggedIndex === index ? 0.5 : 1,
+                        }}
                     />
                 ))}
             </Tabs>

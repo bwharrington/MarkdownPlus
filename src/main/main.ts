@@ -194,6 +194,7 @@ function registerIpcHandlers() {
         const newConfig = {
             ...config,
             recentFiles: openFiles,
+            openFiles: openFiles,
         };
         await saveConfig(newConfig);
     });
@@ -238,6 +239,25 @@ function registerIpcHandlers() {
         return mainWindow?.getBounds();
     });
 
+    // Window: Minimize
+    ipcMain.handle('window:minimize', async () => {
+        mainWindow?.minimize();
+    });
+
+    // Window: Maximize/Unmaximize
+    ipcMain.handle('window:maximize', async () => {
+        if (mainWindow?.isMaximized()) {
+            mainWindow.unmaximize();
+        } else {
+            mainWindow?.maximize();
+        }
+    });
+
+    // Window: Close
+    ipcMain.handle('window:close', async () => {
+        mainWindow?.close();
+    });
+
     // Shell: Show in folder
     ipcMain.handle('shell:show-in-folder', async (_event, filePath: string) => {
         shell.showItemInFolder(filePath);
@@ -251,6 +271,7 @@ function createWindow() {
         height: 800,
         minWidth: 600,
         minHeight: 400,
+        frame: false,
         icon: path.join(__dirname, 'assets', 'MarkdownPlus.png'),
         webPreferences: {
             nodeIntegration: false,

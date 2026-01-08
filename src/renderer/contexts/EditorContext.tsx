@@ -33,7 +33,8 @@ type EditorAction =
     | { type: 'UPDATE_FILE_PATH'; payload: { id: string; path: string; name: string } }
     | { type: 'SHOW_NOTIFICATION'; payload: Omit<Notification, 'id'> }
     | { type: 'DISMISS_NOTIFICATION'; payload: { id: string } }
-    | { type: 'RELOAD_FILE'; payload: { id: string; content: string } };
+    | { type: 'RELOAD_FILE'; payload: { id: string; content: string } }
+    | { type: 'REORDER_TABS'; payload: { fromIndex: number; toIndex: number } };
 
 // Reducer
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -190,6 +191,17 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                         ? { ...f, content: action.payload.content, originalContent: action.payload.content, isDirty: false }
                         : f
                 ),
+            };
+        }
+
+        case 'REORDER_TABS': {
+            const { fromIndex, toIndex } = action.payload;
+            const newOpenFiles = [...state.openFiles];
+            const [movedFile] = newOpenFiles.splice(fromIndex, 1);
+            newOpenFiles.splice(toIndex, 0, movedFile);
+            return {
+                ...state,
+                openFiles: newOpenFiles,
             };
         }
 

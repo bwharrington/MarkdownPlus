@@ -22,6 +22,9 @@ const electronAPI = {
   // Window operations
   setWindowTitle: (title: string) => ipcRenderer.invoke('window:set-title', title),
   getWindowBounds: () => ipcRenderer.invoke('window:get-bounds'),
+  minimizeWindow: () => ipcRenderer.invoke('window:minimize'),
+  maximizeWindow: () => ipcRenderer.invoke('window:maximize'),
+  closeWindow: () => ipcRenderer.invoke('window:close'),
   
   // Shell operations
   showInFolder: (filePath: string) => ipcRenderer.invoke('shell:show-in-folder', filePath),

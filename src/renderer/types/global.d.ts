@@ -52,7 +52,9 @@ export interface ElectronAPI {
   // Window operations
   setWindowTitle: (title: string) => Promise<void>;
   getWindowBounds: () => Promise<{ width: number; height: number; x: number; y: number }>;
-  
+  minimizeWindow: () => Promise<void>;
+  maximizeWindow: () => Promise<void>;
+  closeWindow: () => Promise<void>;  
   // Shell operations
   showInFolder: (filePath: string) => Promise<void>;
   

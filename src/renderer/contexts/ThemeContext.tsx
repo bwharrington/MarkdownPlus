@@ -18,8 +18,8 @@ const createAppTheme = (mode: ThemeMode): Theme => {
                 main: mode === 'dark' ? '#61dafb' : '#1976d2',
             },
             background: {
-                default: mode === 'dark' ? '#1e1e1e' : '#fafafa',
-                paper: mode === 'dark' ? '#252526' : '#ffffff',
+                default: mode === 'dark' ? '#1e1e1e' : '#f5f7fa',
+                paper: mode === 'dark' ? '#252526' : '#fcfdfe',
             },
         },
         typography: {
