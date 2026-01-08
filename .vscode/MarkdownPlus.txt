@@ -1,0 +1,31 @@
+Lets create a plan to build out this project. This project is going to be a Markdown editor.
+
+We need to support opening markdown and editing markdown files. 
+
+The Markdown editor will allow for multiple files to be open at once. Each file will show up as a tab along a tab tool bar similar to NotePad++ with the name. 
+
+The application needs to maintain a save state for each open file.
+
+The user can have one tab selected and it will show the file name.
+Tabs behavior,
+Each file tab will have will have a subtle indicator whether or not is has been saved. We can use a floppy icon for this.
+Each file tab will also have an editor mode icon, you can determine the icon. Clicking the icon will toggle the markdown editor to show the file in Mark Down or Plain Text.
+
+
+We will want to have a local configuration for our project. Lets use a json file for this configuration. 
+
+Configuration will be as follows,
+The first entry in the configuration is recently opened files. This will be an array of local files names and paths.
+The second entry in the configuration of currently opened files. The will also be an array of local file names and paths.
+
+File Menu will be as follows,
+The File menu needs to support Open, Open in Containing folder, Close, Close All.
+The File menu will have a seperate section for a list of the most recently open files from the configuration.
+The File menu needs a 'Exit' which will close the application.
+
+Tool bar,
+We will want a tool bar with icons for New, Open, Close Close All, Save and Save All.
+
+File Operations,
+Opening a file will open a file picker that allows the user to open a file.
+Closing a file will prompt the user if they want to close it.
