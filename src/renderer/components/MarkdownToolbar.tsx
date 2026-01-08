@@ -13,6 +13,9 @@ import LinkIcon from '@mui/icons-material/Link';
 import ImageIcon from '@mui/icons-material/Image';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
+import { useActiveFile } from '../contexts';
 
 const ToolbarContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -31,11 +34,35 @@ const ToolbarDivider = styled(Divider)({
 
 interface MarkdownToolbarProps {
     onInsert: (before: string, after: string, placeholder?: string) => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
 }
 
-export function MarkdownToolbar({ onInsert }: MarkdownToolbarProps) {
+export function MarkdownToolbar({ onInsert, onUndo, onRedo }: MarkdownToolbarProps) {
+    const activeFile = useActiveFile();
+    const canUndo = activeFile ? activeFile.undoStackPointer > 0 : false;
+    const canRedo = activeFile ? activeFile.redoStack.length > 0 : false;
+
     return (
         <ToolbarContainer>
+            <Tooltip title="Undo (Ctrl+Z)">
+                <span>
+                    <IconButton size="small" onClick={onUndo} disabled={!canUndo}>
+                        <UndoIcon fontSize="small" />
+                    </IconButton>
+                </span>
+            </Tooltip>
+            
+            <Tooltip title="Redo (Ctrl+Y)">
+                <span>
+                    <IconButton size="small" onClick={onRedo} disabled={!canRedo}>
+                        <RedoIcon fontSize="small" />
+                    </IconButton>
+                </span>
+            </Tooltip>
+
+            <ToolbarDivider orientation="vertical" flexItem />
+
             <Tooltip title="Bold (Ctrl+B)">
                 <IconButton size="small" onClick={() => onInsert('**', '**', 'bold text')}>
                     <FormatBoldIcon fontSize="small" />

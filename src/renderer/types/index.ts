@@ -11,6 +11,9 @@ export interface IFile {
   isDirty: boolean;
   viewMode: 'edit' | 'preview';
   lineEnding: 'CRLF' | 'LF';
+  undoStack: string[];
+  redoStack: string[];
+  undoStackPointer: number;
 }
 
 // Editor state interface

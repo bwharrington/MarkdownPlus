@@ -34,7 +34,10 @@ type EditorAction =
     | { type: 'SHOW_NOTIFICATION'; payload: Omit<Notification, 'id'> }
     | { type: 'DISMISS_NOTIFICATION'; payload: { id: string } }
     | { type: 'RELOAD_FILE'; payload: { id: string; content: string } }
-    | { type: 'REORDER_TABS'; payload: { fromIndex: number; toIndex: number } };
+    | { type: 'REORDER_TABS'; payload: { fromIndex: number; toIndex: number } }
+    | { type: 'UNDO'; payload: { id: string } }
+    | { type: 'REDO'; payload: { id: string } }
+    | { type: 'PUSH_UNDO'; payload: { id: string; content: string } };
 
 // Reducer
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -49,6 +52,9 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 isDirty: true,
                 viewMode: 'edit',
                 lineEnding: state.config.defaultLineEnding,
+                undoStack: [],
+                redoStack: [],
+                undoStackPointer: 0,
             };
             return {
                 ...state,
@@ -77,6 +83,9 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 isDirty: false,
                 viewMode: 'edit',
                 lineEnding: action.payload.lineEnding,
+                undoStack: [action.payload.content],
+                redoStack: [],
+                undoStackPointer: 0,
             };
             return {
                 ...state,
@@ -202,6 +211,67 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             return {
                 ...state,
                 openFiles: newOpenFiles,
+            };
+        }
+
+        case 'PUSH_UNDO': {
+            const MAX_HISTORY = 100;
+            return {
+                ...state,
+                openFiles: state.openFiles.map(f => {
+                    if (f.id === action.payload.id) {
+                        const newStack = [...f.undoStack.slice(Math.max(0, f.undoStack.length - MAX_HISTORY + 1)), action.payload.content];
+                        return {
+                            ...f,
+                            undoStack: newStack,
+                            undoStackPointer: newStack.length - 1,
+                            redoStack: [], // Clear redo stack on new edit
+                        };
+                    }
+                    return f;
+                }),
+            };
+        }
+
+        case 'UNDO': {
+            return {
+                ...state,
+                openFiles: state.openFiles.map(f => {
+                    if (f.id === action.payload.id && f.undoStackPointer > 0) {
+                        const newPointer = f.undoStackPointer - 1;
+                        const previousContent = f.undoStack[newPointer];
+                        return {
+                            ...f,
+                            content: previousContent,
+                            undoStackPointer: newPointer,
+                            redoStack: [...f.redoStack, f.content],
+                            isDirty: previousContent !== f.originalContent,
+                        };
+                    }
+                    return f;
+                }),
+            };
+        }
+
+        case 'REDO': {
+            return {
+                ...state,
+                openFiles: state.openFiles.map(f => {
+                    if (f.id === action.payload.id && f.redoStack.length > 0) {
+                        const newRedoStack = [...f.redoStack];
+                        const nextContent = newRedoStack.pop()!;
+                        const newStack = [...f.undoStack, nextContent];
+                        return {
+                            ...f,
+                            content: nextContent,
+                            undoStack: newStack,
+                            undoStackPointer: newStack.length - 1,
+                            redoStack: newRedoStack,
+                            isDirty: nextContent !== f.originalContent,
+                        };
+                    }
+                    return f;
+                }),
             };
         }
 
