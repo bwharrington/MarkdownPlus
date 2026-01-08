@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
-import { EditorProvider, useEditorState, ThemeProvider } from './contexts';
+import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar } from './components';
 import { useWindowTitle, useFileOperations } from './hooks';
 
@@ -20,6 +20,7 @@ const MainContent = styled(Box)({
 // Inner app component that uses context
 function AppContent() {
     const state = useEditorState();
+    const dispatch = useEditorDispatch();
     const { saveFile, saveFileAs, saveAllFiles, openFile, closeFile, closeAllFiles, showInFolder, createNewFile } = useFileOperations();
     
     // Set up window title management
@@ -62,6 +63,25 @@ function AppContent() {
                 closeFile();
                 return;
             }
+
+            // Ctrl+E - Toggle Edit/Preview Mode
+            if (e.ctrlKey && e.key === 'e' && state.activeFileId) {
+                e.preventDefault();
+                const activeFile = state.openFiles.find(f => f.id === state.activeFileId);
+                if (activeFile) {
+                    // Get current scroll position before toggling
+                    const element = activeFile.viewMode === 'edit' 
+                        ? document.querySelector('textarea') as HTMLTextAreaElement
+                        : document.querySelector('[class*="MarkdownPreview"]') as HTMLDivElement;
+                    const scrollPosition = element?.scrollTop || 0;
+                    
+                    dispatch({ 
+                        type: 'TOGGLE_VIEW_MODE', 
+                        payload: { id: state.activeFileId, scrollPosition } 
+                    });
+                }
+                return;
+            }
         };
 
         window.addEventListener('keydown', handleKeyDown);
@@ -69,7 +89,7 @@ function AppContent() {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile]);
+    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile, state.activeFileId, state.openFiles, dispatch]);
 
     // Set up menu event listeners
     useEffect(() => {

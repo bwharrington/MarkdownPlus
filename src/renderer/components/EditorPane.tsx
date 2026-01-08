@@ -118,6 +118,7 @@ export function EditorPane() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const previewRef = useRef<HTMLDivElement>(null);
     const lastContentRef = useRef<string>('');
     const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -322,6 +323,18 @@ export function EditorPane() {
 
     const markdownPlugins = useMemo(() => [remarkGfm], []);
 
+    // Restore scroll position when switching modes or changing files
+    React.useEffect(() => {
+        if (!activeFile) return;
+        
+        const element = activeFile.viewMode === 'edit' ? textareaRef.current : previewRef.current;
+        if (element && activeFile.scrollPosition > 0) {
+            requestAnimationFrame(() => {
+                element.scrollTop = activeFile.scrollPosition;
+            });
+        }
+    }, [activeFile?.id, activeFile?.viewMode]);
+
     if (!activeFile) {
         return null;
     }
@@ -342,6 +355,15 @@ export function EditorPane() {
                     onKeyDown={handleKeyDown}
                     placeholder="Start typing markdown..."
                     spellCheck={false}
+                    onScroll={(e) => {
+                        if (activeFile) {
+                            const target = e.target as HTMLTextAreaElement;
+                            dispatch({
+                                type: 'UPDATE_SCROLL_POSITION',
+                                payload: { id: activeFile.id, scrollPosition: target.scrollTop }
+                            });
+                        }
+                    }}
                 />
             </EditorContainer>
         );
@@ -350,7 +372,18 @@ export function EditorPane() {
     // Preview mode - show rendered markdown
     return (
         <EditorContainer>
-            <MarkdownPreview>
+            <MarkdownPreview 
+                ref={previewRef}
+                onScroll={(e) => {
+                    if (activeFile) {
+                        const target = e.target as HTMLDivElement;
+                        dispatch({
+                            type: 'UPDATE_SCROLL_POSITION',
+                            payload: { id: activeFile.id, scrollPosition: target.scrollTop }
+                        });
+                    }
+                }}
+            >
                 <ReactMarkdown remarkPlugins={markdownPlugins}>
                     {activeFile.content || '*No content*'}
                 </ReactMarkdown>

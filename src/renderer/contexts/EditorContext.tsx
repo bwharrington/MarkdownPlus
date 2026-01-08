@@ -27,7 +27,8 @@ type EditorAction =
     | { type: 'CLOSE_FILE'; payload: { id: string } }
     | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
     | { type: 'SET_DIRTY'; payload: { id: string; isDirty: boolean } }
-    | { type: 'TOGGLE_VIEW_MODE'; payload: { id: string } }
+    | { type: 'TOGGLE_VIEW_MODE'; payload: { id: string; scrollPosition?: number } }
+    | { type: 'UPDATE_SCROLL_POSITION'; payload: { id: string; scrollPosition: number } }
     | { type: 'SELECT_TAB'; payload: { id: string } }
     | { type: 'SET_CONFIG'; payload: IConfig }
     | { type: 'UPDATE_FILE_PATH'; payload: { id: string; path: string; name: string } }
@@ -55,6 +56,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 undoStack: [],
                 redoStack: [],
                 undoStackPointer: 0,
+                scrollPosition: 0,
             };
             return {
                 ...state,
@@ -86,6 +88,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 undoStack: [action.payload.content],
                 redoStack: [],
                 undoStackPointer: 0,
+                scrollPosition: 0,
             };
             return {
                 ...state,
@@ -143,7 +146,22 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 ...state,
                 openFiles: state.openFiles.map(f =>
                     f.id === action.payload.id
-                        ? { ...f, viewMode: f.viewMode === 'edit' ? 'preview' : 'edit' }
+                        ? { 
+                            ...f, 
+                            viewMode: f.viewMode === 'edit' ? 'preview' : 'edit',
+                            scrollPosition: action.payload.scrollPosition ?? f.scrollPosition
+                        }
+                        : f
+                ),
+            };
+        }
+
+        case 'UPDATE_SCROLL_POSITION': {
+            return {
+                ...state,
+                openFiles: state.openFiles.map(f =>
+                    f.id === action.payload.id
+                        ? { ...f, scrollPosition: action.payload.scrollPosition }
                         : f
                 ),
             };

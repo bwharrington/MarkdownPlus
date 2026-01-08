@@ -14,6 +14,7 @@ export interface IFile {
   undoStack: string[];
   redoStack: string[];
   undoStackPointer: number;
+  scrollPosition: number; // Track scroll position when switching modes
 }
 
 // Editor state interface

@@ -72,7 +72,7 @@ function FileTab({ file, isActive }: FileTabProps) {
             <Tooltip title={file.path || 'Unsaved file'}>
                 <FileName>{file.name}</FileName>
             </Tooltip>
-            <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview' : 'Switch to edit'}>
+            <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview (Ctrl+E)' : 'Switch to edit (Ctrl+E)'}>
                 <IconButton
                     component="span"
                     size="small"
