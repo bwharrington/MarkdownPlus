@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 
 let mainWindow: BrowserWindow | null;
+let pendingFilesToOpen: string[] = [];
 
 // Config file path - next to the app executable
 const getConfigPath = () => {
@@ -199,6 +200,13 @@ function registerIpcHandlers() {
         return await openConfigFile();
     });
 
+    // Get initial files to open (from command line)
+    ipcMain.handle('get-initial-files', () => {
+        const files = pendingFilesToOpen;
+        pendingFilesToOpen = []; // Clear after retrieving
+        return files;
+    });
+
     // Config: Sync recent files with open files
     ipcMain.handle('config:sync-recent-files', async (_event, openFiles: string[]) => {
         const config = await loadConfig();
@@ -308,22 +316,54 @@ function createWindow() {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
+    // Handle command line arguments (file associations) - MUST be done before creating window
+    const args = process.argv.slice(1); // Skip the first argument (electron executable)
+    console.log('Command line args:', args);
+    
+    // Filter for markdown files (case-insensitive) and exclude flags
+    pendingFilesToOpen = args.filter(arg => {
+        const lowerArg = arg.toLowerCase();
+        const isMarkdown = lowerArg.endsWith('.md') || lowerArg.endsWith('.markdown');
+        const isNotFlag = !arg.startsWith('--') && !arg.startsWith('-');
+        return isMarkdown && isNotFlag;
+    });
+    
+    console.log('Pending files to open:', pendingFilesToOpen);
+
     registerIpcHandlers();
     // Remove the native menu bar
     Menu.setApplicationMenu(null);
     createWindow();
 });
 
-// Quit when all windows are closed, except on macOS
-app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
+// Handle second instance (when user tries to open another file while app is running)
+app.on('second-instance', (_event, commandLine) => {
+    console.log('Second instance command line:', commandLine);
+    
+    // Focus the existing window
+    if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
+    }
+
+    // Handle command line arguments from second instance
+    const args = commandLine.slice(1); // Skip the first argument
+    const filesToOpen = args.filter(arg => {
+        const lowerArg = arg.toLowerCase();
+        const isMarkdown = lowerArg.endsWith('.md') || lowerArg.endsWith('.markdown');
+        const isNotFlag = !arg.startsWith('--') && !arg.startsWith('-');
+        return isMarkdown && isNotFlag;
+    });
+    
+    console.log('Second instance files to open:', filesToOpen);
+
+    if (filesToOpen.length > 0 && mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('open-files-from-args', filesToOpen);
     }
 });
 
-app.on('activate', () => {
-    // On macOS it's common to re-create a window when the dock icon is clicked
-    if (mainWindow === null) {
-        createWindow();
-    }
-});
+// Prevent multiple instances
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    app.quit();
+}

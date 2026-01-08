@@ -46,6 +46,9 @@ export interface ElectronAPI {
   openConfig: () => Promise<FileOpenResult | null>;
   syncRecentFiles: (openFiles: string[]) => Promise<void>;
   
+  // Get initial files from command line
+  getInitialFiles: () => Promise<string[]>;
+  
   // Dialog operations
   confirmClose: (fileName: string) => Promise<ConfirmCloseResult>;
   showExternalChangeDialog: (fileName: string) => Promise<'reload' | 'keep'>;
@@ -70,6 +73,7 @@ export interface ElectronAPI {
   onMenuShowInFolder: (callback: () => void) => () => void;
   onMenuOpenRecent: (callback: (filePath: string) => void) => () => void;
   onExternalFileChange: (callback: (filePath: string) => void) => () => void;
+  onOpenFilesFromArgs: (callback: (filePaths: string[]) => void) => () => void;
 }
 
 declare global {

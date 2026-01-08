@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import * as path from 'path';
 import { CssBaseline, Box, styled } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar } from './components';
@@ -123,6 +124,101 @@ function AppContent() {
             cleanups.forEach(cleanup => cleanup());
         };
     }, [saveFile, saveFileAs, saveAllFiles, closeFile, closeAllFiles, showInFolder]);
+
+    // Set up file opening from command line arguments (file associations)
+    useEffect(() => {
+        // Request initial files when component mounts
+        const loadInitialFiles = async () => {
+            console.log('App: Requesting initial files...');
+            const filePaths = await window.electronAPI.getInitialFiles();
+            console.log('App: Initial files received:', filePaths);
+            
+            // If there are files from command line, open them
+            if (filePaths && filePaths.length > 0) {
+                console.log('App: Opening files from command line...');
+                for (const filePath of filePaths) {
+                    try {
+                        console.log('App: Reading file:', filePath);
+                        const fileData = await window.electronAPI.readFile(filePath);
+                        console.log('App: File data:', fileData);
+                        if (fileData) {
+                            dispatch({
+                                type: 'OPEN_FILE',
+                                payload: {
+                                    id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+                                    path: fileData.filePath,
+                                    name: path.basename(fileData.filePath),
+                                    content: fileData.content,
+                                    lineEnding: fileData.lineEnding,
+                                },
+                            });
+                            console.log('App: File opened successfully');
+                        }
+                    } catch (error) {
+                        console.error('Failed to open file from args:', error);
+                    }
+                }
+            } else {
+                console.log('App: No command line files, restoring recent files...');
+                // No command line files, restore recent files from config
+                try {
+                    const config = await window.electronAPI.loadConfig();
+                    for (const filePath of config.openFiles) {
+                        // Skip config.json - it should only be opened manually via Settings
+                        if (filePath.endsWith('config.json')) {
+                            continue;
+                        }
+                        try {
+                            const result = await window.electronAPI.readFile(filePath);
+                            if (result) {
+                                dispatch({
+                                    type: 'OPEN_FILE',
+                                    payload: {
+                                        id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+                                        path: result.filePath,
+                                        name: path.basename(result.filePath),
+                                        content: result.content,
+                                        lineEnding: result.lineEnding,
+                                    },
+                                });
+                            }
+                        } catch {
+                            // Silently skip files that can't be opened
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load recent files:', error);
+                }
+            }
+        };
+        
+        loadInitialFiles();
+
+        // Also listen for additional files from second instance
+        const cleanup = window.electronAPI.onOpenFilesFromArgs(async (filePaths: string[]) => {
+            for (const filePath of filePaths) {
+                try {
+                    const fileData = await window.electronAPI.readFile(filePath);
+                    if (fileData) {
+                        dispatch({
+                            type: 'OPEN_FILE',
+                            payload: {
+                                id: `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+                                path: fileData.filePath,
+                                name: path.basename(fileData.filePath),
+                                content: fileData.content,
+                                lineEnding: fileData.lineEnding,
+                            },
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to open file from args:', error);
+                }
+            }
+        });
+
+        return cleanup;
+    }, [dispatch]);
 
     const hasOpenFiles = state.openFiles.length > 0;
 

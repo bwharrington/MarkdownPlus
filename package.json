@@ -62,6 +62,15 @@
       "buildResources": "assets",
       "output": "release"
     },
+    "fileAssociations": [
+      {
+        "ext": "md",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      }
+    ],
     "win": {
       "target": [
         {
@@ -73,7 +82,7 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "assets/MarkdownPlus.png",
+      "icon": "assets/MarkdownPlus-padded.png",
       "artifactName": "${productName}.${ext}"
     },
     "nsis": {
@@ -86,14 +95,14 @@
       "target": [
         "dmg"
       ],
-      "icon": "assets/MarkdownPlus.png"
+      "icon": "assets/MarkdownPlus-padded.png"
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "icon": "assets/MarkdownPlus.png"
+      "icon": "assets/MarkdownPlus-padded.png"
     }
   }
 }

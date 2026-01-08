@@ -16,6 +16,9 @@ const electronAPI = {
   openConfig: () => ipcRenderer.invoke('config:open'),
   syncRecentFiles: (openFiles: string[]) => ipcRenderer.invoke('config:sync-recent-files', openFiles),
   
+  // Get initial files from command line
+  getInitialFiles: () => ipcRenderer.invoke('get-initial-files'),
+  
   // Dialog operations
   confirmClose: (fileName: string) => ipcRenderer.invoke('dialog:confirm-close', fileName),
   showExternalChangeDialog: (fileName: string) => ipcRenderer.invoke('dialog:external-change', fileName),
@@ -70,6 +73,10 @@ const electronAPI = {
   onExternalFileChange: (callback: (filePath: string) => void) => {
     ipcRenderer.on('file:external-change', (_event, filePath: string) => callback(filePath));
     return () => ipcRenderer.removeAllListeners('file:external-change');
+  },
+  onOpenFilesFromArgs: (callback: (filePaths: string[]) => void) => {
+    ipcRenderer.on('open-files-from-args', (_event, filePaths: string[]) => callback(filePaths));
+    return () => ipcRenderer.removeAllListeners('open-files-from-args');
   },
 };
 
