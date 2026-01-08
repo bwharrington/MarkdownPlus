@@ -6,6 +6,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile } from '../contexts';
 import AppIcon from '../../../assets/MarkdownPlus.svg';
@@ -39,6 +40,7 @@ export function Toolbar() {
         saveAllFiles,
         closeFile,
         closeAllFiles,
+        openConfigFile,
         hasDirtyFiles,
     } = useFileOperations();
 
@@ -116,6 +118,14 @@ export function Toolbar() {
                             <ClearAllIcon />
                         </IconButton>
                     </span>
+                </Tooltip>
+
+                <Box sx={{ flexGrow: 1 }} />
+
+                <Tooltip title="Settings">
+                    <IconButton onClick={openConfigFile} color="inherit">
+                        <SettingsIcon />
+                    </IconButton>
                 </Tooltip>
             </MuiToolbar>
         </StyledAppBar>

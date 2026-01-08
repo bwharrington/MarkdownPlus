@@ -115,10 +115,10 @@ export function useFileOperations() {
                 payload: { message: `Saved "${newName}"`, severity: 'success' },
             });
 
-            // Update config with new open files
+            // Update config with new open files (exclude config.json)
             const openFilePaths = state.openFiles
                 .map(f => f.id === file.id ? result.filePath : f.path)
-                .filter((p): p is string => p !== null);
+                .filter((p): p is string => p !== null && !p.endsWith('config.json'));
             
             const newConfig: IConfig = {
                 ...state.config,
@@ -177,9 +177,9 @@ export function useFileOperations() {
 
         dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
 
-        // Update config
+        // Update config (exclude config.json from openFiles)
         const openFilePaths = state.openFiles
-            .filter(f => f.id !== file.id && f.path !== null)
+            .filter(f => f.id !== file.id && f.path !== null && !f.path.endsWith('config.json'))
             .map(f => f.path as string);
         
         const newConfig: IConfig = {
@@ -231,18 +231,59 @@ export function useFileOperations() {
         }
     }, [activeFile]);
 
+    const openConfigFile = useCallback(async () => {
+        const result = await window.electronAPI.openConfig();
+        if (result) {
+            dispatch({
+                type: 'OPEN_FILE',
+                payload: {
+                    id: generateId(),
+                    path: result.filePath,
+                    name: result.filePath.split(/[\\/]/).pop() || 'config.json',
+                    content: result.content,
+                    lineEnding: result.lineEnding,
+                },
+            });
+        }
+    }, [dispatch]);
+
+    const openAllRecentFiles = useCallback(async () => {
+        const recentFiles = state.config.recentFiles.filter(f => !f.endsWith('config.json'));
+        for (const filePath of recentFiles) {
+            // Skip if file is already open
+            if (state.openFiles.some(f => f.path === filePath)) {
+                continue;
+            }
+            const result = await window.electronAPI.readFile(filePath);
+            if (result) {
+                dispatch({
+                    type: 'OPEN_FILE',
+                    payload: {
+                        id: generateId(),
+                        path: result.filePath,
+                        name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
+                        content: result.content,
+                        lineEnding: result.lineEnding,
+                    },
+                });
+            }
+        }
+    }, [dispatch, state.config.recentFiles, state.openFiles]);
+
     const hasDirtyFiles = state.openFiles.some(f => f.isDirty);
 
     return {
         createNewFile,
         openFile,
         openRecentFile,
+        openAllRecentFiles,
         saveFile,
         saveFileAs,
         saveAllFiles,
         closeFile,
         closeAllFiles,
         showInFolder,
+        openConfigFile,
         hasDirtyFiles,
     };
 }

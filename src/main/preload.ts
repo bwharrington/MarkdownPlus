@@ -12,6 +12,7 @@ const electronAPI = {
   // Config operations
   loadConfig: () => ipcRenderer.invoke('config:load'),
   saveConfig: (config: unknown) => ipcRenderer.invoke('config:save', config),
+  openConfig: () => ipcRenderer.invoke('config:open'),
   
   // Dialog operations
   confirmClose: (fileName: string) => ipcRenderer.invoke('dialog:confirm-close', fileName),

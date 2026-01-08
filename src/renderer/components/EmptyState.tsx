@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Typography, Button, List, ListItem, ListItemButton, ListItemText, styled } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import HistoryIcon from '@mui/icons-material/History';
 import { useFileOperations } from '../hooks';
 import { useEditorState } from '../contexts';
 
@@ -40,7 +41,7 @@ const RecentFilesSection = styled(Box)(({ theme }) => ({
 
 export function EmptyState() {
     const state = useEditorState();
-    const { createNewFile, openFile, openRecentFile } = useFileOperations();
+    const { createNewFile, openFile, openRecentFile, openAllRecentFiles } = useFileOperations();
 
     const recentFiles = state.config.recentFiles.slice(0, 5);
 
@@ -71,6 +72,16 @@ export function EmptyState() {
                     >
                         Open File
                     </Button>
+                    {recentFiles.length > 0 && (
+                        <Button
+                            variant="outlined"
+                            startIcon={<HistoryIcon />}
+                            onClick={openAllRecentFiles}
+                            size="large"
+                        >
+                            Open All Recent
+                        </Button>
+                    )}
                 </ButtonGroup>
 
                 {recentFiles.length > 0 && (

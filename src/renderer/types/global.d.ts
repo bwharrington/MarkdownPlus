@@ -42,6 +42,7 @@ export interface ElectronAPI {
   // Config operations
   loadConfig: () => Promise<IConfig>;
   saveConfig: (config: IConfig) => Promise<void>;
+  openConfig: () => Promise<FileOpenResult | null>;
   
   // Dialog operations
   confirmClose: (fileName: string) => Promise<ConfirmCloseResult>;

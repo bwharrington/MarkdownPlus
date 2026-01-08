@@ -4,8 +4,14 @@ import * as fs from 'fs/promises';
 
 let mainWindow: BrowserWindow | null;
 
-// Config file path
-const getConfigPath = () => path.join(app.getPath('userData'), 'config.json');
+// Config file path - next to the app executable
+const getConfigPath = () => {
+    // In development, use the project root; in production, use the app's directory
+    const appPath = app.isPackaged 
+        ? path.dirname(app.getPath('exe'))
+        : app.getAppPath();
+    return path.join(appPath, 'config.json');
+};
 
 // Default config
 const defaultConfig = {
@@ -51,6 +57,27 @@ async function saveConfig(config: typeof defaultConfig) {
         await fs.writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
     } catch (error) {
         console.error('Failed to save config:', error);
+    }
+}
+
+// Open config file for editing - creates if doesn't exist
+async function openConfigFile(): Promise<{ filePath: string; content: string; lineEnding: 'CRLF' | 'LF' } | null> {
+    const configPath = getConfigPath();
+    try {
+        // Check if file exists, if not create it with defaults
+        try {
+            await fs.access(configPath);
+        } catch {
+            // File doesn't exist, create it
+            await fs.writeFile(configPath, JSON.stringify(defaultConfig, null, 2), 'utf-8');
+        }
+        
+        const content = await fs.readFile(configPath, 'utf-8');
+        const lineEnding = detectLineEnding(content);
+        return { filePath: configPath, content, lineEnding };
+    } catch (error) {
+        console.error('Failed to open config file:', error);
+        return null;
     }
 }
 
@@ -150,6 +177,11 @@ function registerIpcHandlers() {
     // Config: Save
     ipcMain.handle('config:save', async (_event, config) => {
         await saveConfig(config);
+    });
+
+    // Config: Open for editing
+    ipcMain.handle('config:open', async () => {
+        return await openConfigFile();
     });
 
     // Dialog: Confirm close

@@ -221,8 +221,12 @@ export function EditorProvider({ children }: EditorProviderProps) {
                 const config = await window.electronAPI.loadConfig();
                 dispatch({ type: 'SET_CONFIG', payload: config });
 
-                // Restore open files from last session
+                // Restore open files from last session (exclude config.json)
                 for (const filePath of config.openFiles) {
+                    // Skip config.json - it should only be opened manually via Settings
+                    if (filePath.endsWith('config.json')) {
+                        continue;
+                    }
                     try {
                         const result = await window.electronAPI.readFile(filePath);
                         if (result) {
