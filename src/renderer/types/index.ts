@@ -9,7 +9,7 @@ export interface IFile {
   content: string;
   originalContent: string; // Track original content for dirty detection
   isDirty: boolean;
-  viewMode: 'markdown' | 'plaintext';
+  viewMode: 'edit' | 'preview';
   lineEnding: 'CRLF' | 'LF';
 }
 

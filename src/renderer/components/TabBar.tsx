@@ -71,17 +71,17 @@ function FileTab({ file, isActive }: FileTabProps) {
             <Tooltip title={file.path || 'Unsaved file'}>
                 <FileName>{file.name}</FileName>
             </Tooltip>
-            <Tooltip title={file.viewMode === 'markdown' ? 'Markdown mode' : 'Plain text mode'}>
+            <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview' : 'Switch to edit'}>
                 <IconButton
                     component="span"
                     size="small"
                     onClick={handleToggleViewMode}
                     sx={{ padding: 0.5 }}
                 >
-                    {file.viewMode === 'markdown' ? (
-                        <DescriptionIcon sx={{ fontSize: 16 }} />
-                    ) : (
+                    {file.viewMode === 'edit' ? (
                         <CodeIcon sx={{ fontSize: 16 }} />
+                    ) : (
+                        <DescriptionIcon sx={{ fontSize: 16 }} />
                     )}
                 </IconButton>
             </Tooltip>

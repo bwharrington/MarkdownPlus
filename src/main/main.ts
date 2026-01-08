@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, Menu, ipcMain, shell, MenuItemConstructorOptions } from 'electron';
+import { app, BrowserWindow, dialog, Menu, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
@@ -52,72 +52,6 @@ async function saveConfig(config: typeof defaultConfig) {
     } catch (error) {
         console.error('Failed to save config:', error);
     }
-}
-
-// Build application menu
-function buildMenu(recentFiles: string[] = []) {
-    const recentFilesMenuItems: MenuItemConstructorOptions[] = recentFiles.length > 0
-        ? recentFiles.map((filePath) => ({
-            label: path.basename(filePath),
-            sublabel: filePath,
-            click: () => {
-                mainWindow?.webContents.send('menu:open-recent', filePath);
-            },
-        }))
-        : [{ label: 'No Recent Files', enabled: false }];
-
-    const template: MenuItemConstructorOptions[] = [
-        ...(process.platform === 'darwin' ? [{ role: 'appMenu' as const }] : []),
-        {
-            label: 'File',
-            submenu: [
-                { label: 'New', accelerator: 'CmdOrCtrl+N', click: () => mainWindow?.webContents.send('menu:new') },
-                { label: 'Open', accelerator: 'CmdOrCtrl+O', click: () => mainWindow?.webContents.send('menu:open') },
-                { type: 'separator' },
-                { label: 'Save', accelerator: 'CmdOrCtrl+S', click: () => mainWindow?.webContents.send('menu:save') },
-                { label: 'Save As', accelerator: 'CmdOrCtrl+Shift+S', click: () => mainWindow?.webContents.send('menu:save-as') },
-                { label: 'Save All', click: () => mainWindow?.webContents.send('menu:save-all') },
-                { type: 'separator' },
-                { label: 'Close', accelerator: 'CmdOrCtrl+W', click: () => mainWindow?.webContents.send('menu:close') },
-                { label: 'Close All', click: () => mainWindow?.webContents.send('menu:close-all') },
-                { type: 'separator' },
-                { label: 'Open in Containing Folder', click: () => mainWindow?.webContents.send('menu:show-in-folder') },
-                { type: 'separator' },
-                { label: 'Recent Files', submenu: recentFilesMenuItems },
-                { type: 'separator' },
-                { label: 'Exit', accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4', role: 'quit' },
-            ],
-        },
-        {
-            label: 'Edit',
-            submenu: [
-                { role: 'undo' },
-                { role: 'redo' },
-                { type: 'separator' },
-                { role: 'cut' },
-                { role: 'copy' },
-                { role: 'paste' },
-                { role: 'selectAll' },
-            ],
-        },
-        {
-            label: 'View',
-            submenu: [
-                { role: 'reload' },
-                { role: 'forceReload' },
-                { role: 'toggleDevTools' },
-                { type: 'separator' },
-                { role: 'resetZoom' },
-                { role: 'zoomIn' },
-                { role: 'zoomOut' },
-                { type: 'separator' },
-                { role: 'togglefullscreen' },
-            ],
-        },
-    ];
-
-    const menu = Menu.buildFromTemplate(template);
-    Menu.setApplicationMenu(menu);
 }
 
 // Register IPC handlers
@@ -296,8 +230,8 @@ function createWindow() {
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
     registerIpcHandlers();
-    const config = await loadConfig();
-    buildMenu(config.recentFiles);
+    // Remove the native menu bar
+    Menu.setApplicationMenu(null);
     createWindow();
 });
 

@@ -1,7 +1,7 @@
 // Type definitions for the Electron API exposed via preload script
 
 export type LineEnding = 'CRLF' | 'LF';
-export type ViewMode = 'markdown' | 'plaintext';
+export type ViewMode = 'edit' | 'preview';
 
 export interface FileOpenResult {
   filePath: string;

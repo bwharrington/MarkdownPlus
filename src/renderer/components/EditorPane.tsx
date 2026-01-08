@@ -157,38 +157,29 @@ export function EditorPane() {
         return null;
     }
 
-    // Plain text mode - just show textarea
-    if (activeFile.viewMode === 'plaintext') {
+    // Edit mode - show textarea editor
+    if (activeFile.viewMode === 'edit') {
         return (
             <EditorContainer>
                 <TextArea
                     value={activeFile.content}
                     onChange={handleContentChange}
                     onKeyDown={handleKeyDown}
-                    placeholder="Start typing..."
+                    placeholder="Start typing markdown..."
                     spellCheck={false}
                 />
             </EditorContainer>
         );
     }
 
-    // Markdown mode - show split view with editor and preview
+    // Preview mode - show rendered markdown
     return (
-        <SplitContainer>
-            <TextArea
-                value={activeFile.content}
-                onChange={handleContentChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Start typing markdown..."
-                spellCheck={false}
-                sx={{ borderRight: 1, borderColor: 'divider' }}
-            />
-            <SplitDivider />
+        <EditorContainer>
             <MarkdownPreview>
                 <ReactMarkdown remarkPlugins={markdownPlugins}>
                     {activeFile.content || '*No content*'}
                 </ReactMarkdown>
             </MarkdownPreview>
-        </SplitContainer>
+        </EditorContainer>
     );
 }

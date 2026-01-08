@@ -46,7 +46,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 content: '',
                 originalContent: '',
                 isDirty: true,
-                viewMode: 'markdown',
+                viewMode: 'edit',
                 lineEnding: state.config.defaultLineEnding,
             };
             return {
@@ -74,7 +74,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 content: action.payload.content,
                 originalContent: action.payload.content,
                 isDirty: false,
-                viewMode: 'markdown',
+                viewMode: 'edit',
                 lineEnding: action.payload.lineEnding,
             };
             return {
@@ -133,7 +133,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 ...state,
                 openFiles: state.openFiles.map(f =>
                     f.id === action.payload.id
-                        ? { ...f, viewMode: f.viewMode === 'markdown' ? 'plaintext' : 'markdown' }
+                        ? { ...f, viewMode: f.viewMode === 'edit' ? 'preview' : 'edit' }
                         : f
                 ),
             };
