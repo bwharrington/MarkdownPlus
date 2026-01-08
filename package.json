@@ -25,6 +25,7 @@
     "@types/react": "^19.1.4",
     "@types/react-dom": "^19.1.5",
     "concurrently": "^9.1.2",
+    "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
     "electron": "^36.2.0",
     "electron-builder": "^26.0.12",
@@ -66,20 +67,20 @@
         "nsis",
         "portable"
       ],
-      "icon": "assets/icon.png"
+      "icon": "assets/MarkdownPlus.png"
     },
     "mac": {
       "target": [
         "dmg"
       ],
-      "icon": "assets/icon.png"
+      "icon": "assets/MarkdownPlus.png"
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "icon": "assets/icon.png"
+      "icon": "assets/MarkdownPlus.png"
     }
   }
 }

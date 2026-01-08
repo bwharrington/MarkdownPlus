@@ -1,4 +1,5 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const path = require('path');
 
 module.exports = [
@@ -17,7 +18,14 @@ module.exports = [
     output: {
       path: path.join(__dirname, 'dist'),
       filename: 'main.js'
-    }
+    },
+    plugins: [
+      new CopyWebpackPlugin({
+        patterns: [
+          { from: 'assets', to: 'assets' }
+        ]
+      })
+    ]
   },
   // Preload script
   {
@@ -52,6 +60,10 @@ module.exports = [
         {
           test: /\.css$/,
           use: ['style-loader', 'css-loader']
+        },
+        {
+          test: /\.(png|svg|jpg|jpeg|gif)$/i,
+          type: 'asset/resource'
         }
       ]
     },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { AppBar, Toolbar as MuiToolbar, IconButton, Tooltip, Divider, styled } from '@mui/material';
+import { AppBar, Toolbar as MuiToolbar, IconButton, Tooltip, Divider, Box, Typography, styled } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SaveIcon from '@mui/icons-material/Save';
@@ -8,6 +8,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile } from '../contexts';
+import AppIcon from '../../../assets/MarkdownPlus.svg';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
@@ -15,6 +16,13 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
     boxShadow: 'none',
     borderBottom: `1px solid ${theme.palette.divider}`,
 }));
+
+const AppLogo = styled(Box)({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    marginRight: 16,
+});
 
 const ToolbarDivider = styled(Divider)({
     margin: '0 8px',
@@ -40,6 +48,15 @@ export function Toolbar() {
     return (
         <StyledAppBar position="static">
             <MuiToolbar variant="dense">
+                <AppLogo>
+                    <img src={AppIcon} alt="MarkdownPlus" width={24} height={24} />
+                    <Typography variant="subtitle1" fontWeight={600}>
+                        MarkdownPlus
+                    </Typography>
+                </AppLogo>
+
+                <ToolbarDivider orientation="vertical" flexItem />
+
                 <Tooltip title="New (Ctrl+N)">
                     <IconButton onClick={createNewFile} color="inherit">
                         <NoteAddIcon />

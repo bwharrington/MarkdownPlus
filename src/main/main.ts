@@ -205,6 +205,7 @@ function createWindow() {
         height: 800,
         minWidth: 600,
         minHeight: 400,
+        icon: path.join(__dirname, 'assets', 'MarkdownPlus.png'),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
