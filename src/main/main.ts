@@ -91,22 +91,26 @@ function registerIpcHandlers() {
                 { name: 'Text Files', extensions: ['txt'] },
                 { name: 'All Files', extensions: ['*'] },
             ],
-            properties: ['openFile'],
+            properties: ['openFile', 'multiSelections'],
         });
 
         if (result.canceled || result.filePaths.length === 0) {
             return null;
         }
 
-        const filePath = result.filePaths[0];
-        try {
-            const content = await fs.readFile(filePath, 'utf-8');
-            const lineEnding = detectLineEnding(content);
-            return { filePath, content, lineEnding };
-        } catch (error) {
-            console.error('Failed to read file:', error);
-            return null;
+        // Read all selected files
+        const files = [];
+        for (const filePath of result.filePaths) {
+            try {
+                const content = await fs.readFile(filePath, 'utf-8');
+                const lineEnding = detectLineEnding(content);
+                files.push({ filePath, content, lineEnding });
+            } catch (error) {
+                console.error(`Failed to read file ${filePath}:`, error);
+            }
         }
+        
+        return files.length > 0 ? files : null;
     });
 
     // File: Read specific file
@@ -182,6 +186,16 @@ function registerIpcHandlers() {
     // Config: Open for editing
     ipcMain.handle('config:open', async () => {
         return await openConfigFile();
+    });
+
+    // Config: Sync recent files with open files
+    ipcMain.handle('config:sync-recent-files', async (_event, openFiles: string[]) => {
+        const config = await loadConfig();
+        const newConfig = {
+            ...config,
+            recentFiles: openFiles,
+        };
+        await saveConfig(newConfig);
     });
 
     // Dialog: Confirm close

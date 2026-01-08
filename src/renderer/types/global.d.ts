@@ -34,7 +34,7 @@ export interface ConfirmCloseResult {
 export interface ElectronAPI {
   // File operations
   newFile: () => Promise<void>;
-  openFile: () => Promise<FileOpenResult | null>;
+  openFile: () => Promise<FileOpenResult[] | null>;
   readFile: (filePath: string) => Promise<FileOpenResult | null>;
   saveFile: (filePath: string, content: string) => Promise<FileSaveResult>;
   saveFileAs: (content: string, defaultName?: string) => Promise<FileSaveResult | null>;
@@ -43,6 +43,7 @@ export interface ElectronAPI {
   loadConfig: () => Promise<IConfig>;
   saveConfig: (config: IConfig) => Promise<void>;
   openConfig: () => Promise<FileOpenResult | null>;
+  syncRecentFiles: (openFiles: string[]) => Promise<void>;
   
   // Dialog operations
   confirmClose: (fileName: string) => Promise<ConfirmCloseResult>;

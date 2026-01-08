@@ -13,6 +13,7 @@ const electronAPI = {
   loadConfig: () => ipcRenderer.invoke('config:load'),
   saveConfig: (config: unknown) => ipcRenderer.invoke('config:save', config),
   openConfig: () => ipcRenderer.invoke('config:open'),
+  syncRecentFiles: (openFiles: string[]) => ipcRenderer.invoke('config:sync-recent-files', openFiles),
   
   // Dialog operations
   confirmClose: (fileName: string) => ipcRenderer.invoke('dialog:confirm-close', fileName),

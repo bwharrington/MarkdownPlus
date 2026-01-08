@@ -270,18 +270,20 @@ export function EditorProvider({ children }: EditorProviderProps) {
 
         // Menu: Open
         cleanups.push(window.electronAPI.onMenuOpen(async () => {
-            const result = await window.electronAPI.openFile();
-            if (result) {
-                dispatch({
-                    type: 'OPEN_FILE',
-                    payload: {
-                        id: generateId(),
-                        path: result.filePath,
-                        name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
-                        content: result.content,
-                        lineEnding: result.lineEnding,
-                    },
-                });
+            const results = await window.electronAPI.openFile();
+            if (results && results.length > 0) {
+                for (const result of results) {
+                    dispatch({
+                        type: 'OPEN_FILE',
+                        payload: {
+                            id: generateId(),
+                            path: result.filePath,
+                            name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
+                            content: result.content,
+                            lineEnding: result.lineEnding,
+                        },
+                    });
+                }
             }
         }));
 
@@ -289,6 +291,25 @@ export function EditorProvider({ children }: EditorProviderProps) {
             cleanups.forEach(cleanup => cleanup());
         };
     }, []);
+
+    // Sync recent files with open files before closing
+    useEffect(() => {
+        const handleBeforeUnload = async () => {
+            const openFilePaths = state.openFiles
+                .map(f => f.path)
+                .filter((p): p is string => p !== null && !p.endsWith('config.json'));
+            
+            if (openFilePaths.length > 0) {
+                await window.electronAPI.syncRecentFiles(openFilePaths);
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [state.openFiles]);
 
     return (
         <EditorContext.Provider value={{ state, dispatch }}>
