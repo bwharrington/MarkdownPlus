@@ -1,11 +1,11 @@
 import React from 'react';
-import { AppBar, Toolbar as MuiToolbar, IconButton, Tooltip, Divider, Box, Typography, styled } from '@mui/material';
+import { AppBar, Toolbar as MuiToolbar, IconButton, Tooltip, Divider, Box, Typography, styled, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import SaveIcon from '@mui/icons-material/Save';
-import SaveAltIcon from '@mui/icons-material/SaveAlt';
+import SaveAsIcon from '@mui/icons-material/SaveAs';
 import CloseIcon from '@mui/icons-material/Close';
-import ClearAllIcon from '@mui/icons-material/ClearAll';
+import TabUnselectedIcon from '@mui/icons-material/TabUnselected';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -31,7 +31,7 @@ const AppLogo = styled(Box)({
     alignItems: 'center',
     gap: 8,
     marginRight: 16,
-    WebkitAppRegion: 'no-drag',
+    WebkitAppRegion: 'drag',
 });
 
 const ToolbarDivider = styled(Divider)({
@@ -49,6 +49,7 @@ export function Toolbar() {
     const state = useEditorState();
     const activeFile = useActiveFile();
     const { mode, toggleTheme } = useTheme();
+    const [closeAllDialogOpen, setCloseAllDialogOpen] = React.useState(false);
     const {
         createNewFile,
         openFile,
@@ -73,6 +74,19 @@ export function Toolbar() {
 
     const handleClose = () => {
         window.electronAPI.closeWindow();
+    };
+
+    const handleCloseAllClick = () => {
+        setCloseAllDialogOpen(true);
+    };
+
+    const handleCloseAllConfirm = () => {
+        setCloseAllDialogOpen(false);
+        closeAllFiles();
+    };
+
+    const handleCloseAllCancel = () => {
+        setCloseAllDialogOpen(false);
     };
 
     return (
@@ -120,7 +134,7 @@ export function Toolbar() {
                             disabled={!hasDirtyFiles}
                             sx={{ WebkitAppRegion: 'no-drag' }}
                         >
-                            <SaveAltIcon />
+                            <SaveAsIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
@@ -142,12 +156,12 @@ export function Toolbar() {
                 <Tooltip title="Close All">
                     <span>
                         <IconButton 
-                            onClick={closeAllFiles} 
+                            onClick={handleCloseAllClick} 
                             color="inherit"
                             disabled={!hasOpenFiles}
                             sx={{ WebkitAppRegion: 'no-drag' }}
                         >
-                            <ClearAllIcon />
+                            <TabUnselectedIcon />
                         </IconButton>
                     </span>
                 </Tooltip>
@@ -186,6 +200,24 @@ export function Toolbar() {
                     </IconButton>
                 </Tooltip>
             </StyledToolbar>
+            <Dialog
+                open={closeAllDialogOpen}
+                onClose={handleCloseAllCancel}
+            >
+                <DialogTitle>Close All Files?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to close all {state.openFiles.length} open file{state.openFiles.length !== 1 ? 's' : ''}?
+                        {hasDirtyFiles && ' Unsaved changes will be lost.'}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseAllCancel}>Cancel</Button>
+                    <Button onClick={handleCloseAllConfirm} variant="contained" color="error">
+                        Close All
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </StyledAppBar>
     );
 }

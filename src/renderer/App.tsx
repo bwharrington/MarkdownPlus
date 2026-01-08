@@ -25,6 +25,52 @@ function AppContent() {
     // Set up window title management
     useWindowTitle();
 
+    // Set up keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Ctrl+N - New File
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                createNewFile();
+                return;
+            }
+
+            // Ctrl+O - Open File
+            if (e.ctrlKey && e.key === 'o') {
+                e.preventDefault();
+                openFile();
+                return;
+            }
+
+            // Ctrl+S - Save File
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                saveFile();
+                return;
+            }
+
+            // Ctrl+Shift+S - Save All Files
+            if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                saveAllFiles();
+                return;
+            }
+
+            // Ctrl+W - Close File
+            if (e.ctrlKey && e.key === 'w') {
+                e.preventDefault();
+                closeFile();
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile]);
+
     // Set up menu event listeners
     useEffect(() => {
         const cleanups: (() => void)[] = [];

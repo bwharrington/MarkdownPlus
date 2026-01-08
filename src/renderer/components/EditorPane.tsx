@@ -1,11 +1,13 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Box, styled } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActiveFile, useEditorDispatch } from '../contexts';
+import { MarkdownToolbar } from './MarkdownToolbar';
 
 const EditorContainer = styled(Box)({
     display: 'flex',
+    flexDirection: 'column',
     flex: 1,
     overflow: 'hidden',
 });
@@ -115,6 +117,7 @@ const SplitDivider = styled(Box)(({ theme }) => ({
 export function EditorPane() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const handleContentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
         if (activeFile) {
@@ -125,7 +128,49 @@ export function EditorPane() {
         }
     }, [activeFile, dispatch]);
 
+    const handleMarkdownInsert = useCallback((before: string, after: string, placeholder?: string) => {
+        if (!activeFile || !textareaRef.current) return;
+
+        const textarea = textareaRef.current;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = textarea.value.substring(start, end);
+        const textToInsert = selectedText || placeholder || '';
+        
+        const newText = before + textToInsert + after;
+        const newValue = 
+            textarea.value.substring(0, start) + 
+            newText + 
+            textarea.value.substring(end);
+
+        dispatch({
+            type: 'UPDATE_CONTENT',
+            payload: { id: activeFile.id, content: newValue },
+        });
+
+        // Set cursor position
+        requestAnimationFrame(() => {
+            const newCursorPos = start + before.length + textToInsert.length;
+            textarea.focus();
+            textarea.setSelectionRange(newCursorPos, newCursorPos);
+        });
+    }, [activeFile, dispatch]);
+
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        // Handle Ctrl+B for Bold
+        if (e.ctrlKey && e.key === 'b') {
+            e.preventDefault();
+            handleMarkdownInsert('**', '**', 'bold text');
+            return;
+        }
+
+        // Handle Ctrl+I for Italic
+        if (e.ctrlKey && e.key === 'i') {
+            e.preventDefault();
+            handleMarkdownInsert('*', '*', 'italic text');
+            return;
+        }
+
         // Handle Tab key for indentation
         if (e.key === 'Tab') {
             e.preventDefault();
@@ -149,7 +194,7 @@ export function EditorPane() {
                 });
             }
         }
-    }, [activeFile, dispatch]);
+    }, [activeFile, dispatch, handleMarkdownInsert]);
 
     const markdownPlugins = useMemo(() => [remarkGfm], []);
 
@@ -161,7 +206,9 @@ export function EditorPane() {
     if (activeFile.viewMode === 'edit') {
         return (
             <EditorContainer>
+                <MarkdownToolbar onInsert={handleMarkdownInsert} />
                 <TextArea
+                    ref={textareaRef}
                     value={activeFile.content}
                     onChange={handleContentChange}
                     onKeyDown={handleKeyDown}
