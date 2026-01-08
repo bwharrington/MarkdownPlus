@@ -7,8 +7,10 @@ import SaveAltIcon from '@mui/icons-material/SaveAlt';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import SettingsIcon from '@mui/icons-material/Settings';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { useFileOperations } from '../hooks';
-import { useEditorState, useActiveFile } from '../contexts';
+import { useEditorState, useActiveFile, useTheme } from '../contexts';
 import AppIcon from '../../../assets/MarkdownPlus.svg';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -33,6 +35,7 @@ const ToolbarDivider = styled(Divider)({
 export function Toolbar() {
     const state = useEditorState();
     const activeFile = useActiveFile();
+    const { mode, toggleTheme } = useTheme();
     const {
         createNewFile,
         openFile,
@@ -121,6 +124,12 @@ export function Toolbar() {
                 </Tooltip>
 
                 <Box sx={{ flexGrow: 1 }} />
+
+                <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+                    <IconButton onClick={toggleTheme} color="inherit">
+                        {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+                    </IconButton>
+                </Tooltip>
 
                 <Tooltip title="Settings">
                     <IconButton onClick={openConfigFile} color="inherit">

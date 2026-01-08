@@ -1,25 +1,8 @@
 import React, { useEffect } from 'react';
-import { ThemeProvider, createTheme, CssBaseline, Box, styled } from '@mui/material';
-import { EditorProvider, useEditorState } from './contexts';
+import { CssBaseline, Box, styled } from '@mui/material';
+import { EditorProvider, useEditorState, ThemeProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar } from './components';
 import { useWindowTitle, useFileOperations } from './hooks';
-
-// Create dark theme
-const darkTheme = createTheme({
-    palette: {
-        mode: 'dark',
-        primary: {
-            main: '#61dafb',
-        },
-        background: {
-            default: '#1e1e1e',
-            paper: '#252526',
-        },
-    },
-    typography: {
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
-    },
-});
 
 const AppContainer = styled(Box)({
     display: 'flex',
@@ -91,7 +74,7 @@ function AppContent() {
 
 const App: React.FC = () => {
     return (
-        <ThemeProvider theme={darkTheme}>
+        <ThemeProvider>
             <CssBaseline />
             <EditorProvider>
                 <AppContent />
