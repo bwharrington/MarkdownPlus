@@ -1,5 +1,5 @@
 {
-  "name": "electron-react-ts",
+  "name": "markdownplus",
   "version": "1.0.0",
   "main": "dist/main.js",
   "scripts": {
@@ -19,7 +19,7 @@
   ],
   "author": "",
   "license": "ISC",
-  "description": "Simple Electron app with React and TypeScript",
+  "description": "A multi-tab Markdown editor with live preview",
   "devDependencies": {
     "@types/node": "^22.15.18",
     "@types/react": "^19.1.4",
@@ -45,11 +45,13 @@
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "build": {
-    "appId": "com.electron-react-ts.app",
-    "productName": "Electron React TypeScript App",
+    "appId": "com.markdownplus.app",
+    "productName": "MarkdownPlus",
     "files": [
       "dist/**/*",
       "node_modules/**/*",

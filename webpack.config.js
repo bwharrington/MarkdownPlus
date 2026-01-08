@@ -2,6 +2,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const path = require('path');
 
 module.exports = [
+  // Main process
   {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: './src/main/main.ts',
@@ -17,10 +18,29 @@ module.exports = [
       path: path.join(__dirname, 'dist'),
       filename: 'main.js'
     }
-  },  {
+  },
+  // Preload script
+  {
+    mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+    entry: './src/main/preload.ts',
+    target: 'electron-preload',
+    module: {
+      rules: [{
+        test: /\.ts$/,
+        include: /src/,
+        use: [{ loader: 'ts-loader' }]
+      }]
+    },
+    output: {
+      path: path.join(__dirname, 'dist'),
+      filename: 'preload.js'
+    }
+  },
+  // Renderer process
+  {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: './src/renderer/index.tsx',
-    target: 'electron-renderer',
+    target: 'web',
     devtool: 'source-map',
     module: {
       rules: [
@@ -36,7 +56,19 @@ module.exports = [
       ]
     },
     resolve: {
-      extensions: ['.js', '.ts', '.tsx']
+      extensions: ['.js', '.ts', '.tsx'],
+      alias: {
+        '@components': path.resolve(__dirname, 'src/renderer/components'),
+        '@hooks': path.resolve(__dirname, 'src/renderer/hooks'),
+        '@contexts': path.resolve(__dirname, 'src/renderer/contexts'),
+        '@utils': path.resolve(__dirname, 'src/renderer/utils'),
+      },
+      fallback: {
+        path: false,
+        fs: false,
+        url: false,
+        process: false
+      }
     },
     output: {
       path: path.join(__dirname, 'dist'),

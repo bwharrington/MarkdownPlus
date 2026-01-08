@@ -1,0 +1,76 @@
+// Type definitions for the Electron API exposed via preload script
+
+export type LineEnding = 'CRLF' | 'LF';
+export type ViewMode = 'markdown' | 'plaintext';
+
+export interface FileOpenResult {
+  filePath: string;
+  content: string;
+  lineEnding: LineEnding;
+}
+
+export interface FileSaveResult {
+  success: boolean;
+  filePath: string;
+  error?: string;
+}
+
+export interface IConfig {
+  recentFiles: string[];
+  openFiles: string[];
+  windowBounds?: {
+    width: number;
+    height: number;
+    x: number;
+    y: number;
+  };
+  defaultLineEnding: LineEnding;
+}
+
+export interface ConfirmCloseResult {
+  action: 'save' | 'discard' | 'cancel';
+}
+
+export interface ElectronAPI {
+  // File operations
+  newFile: () => Promise<void>;
+  openFile: () => Promise<FileOpenResult | null>;
+  readFile: (filePath: string) => Promise<FileOpenResult | null>;
+  saveFile: (filePath: string, content: string) => Promise<FileSaveResult>;
+  saveFileAs: (content: string, defaultName?: string) => Promise<FileSaveResult | null>;
+  
+  // Config operations
+  loadConfig: () => Promise<IConfig>;
+  saveConfig: (config: IConfig) => Promise<void>;
+  
+  // Dialog operations
+  confirmClose: (fileName: string) => Promise<ConfirmCloseResult>;
+  showExternalChangeDialog: (fileName: string) => Promise<'reload' | 'keep'>;
+  
+  // Window operations
+  setWindowTitle: (title: string) => Promise<void>;
+  getWindowBounds: () => Promise<{ width: number; height: number; x: number; y: number }>;
+  
+  // Shell operations
+  showInFolder: (filePath: string) => Promise<void>;
+  
+  // Menu event listeners (return cleanup functions)
+  onMenuNew: (callback: () => void) => () => void;
+  onMenuOpen: (callback: () => void) => () => void;
+  onMenuSave: (callback: () => void) => () => void;
+  onMenuSaveAs: (callback: () => void) => () => void;
+  onMenuSaveAll: (callback: () => void) => () => void;
+  onMenuClose: (callback: () => void) => () => void;
+  onMenuCloseAll: (callback: () => void) => () => void;
+  onMenuShowInFolder: (callback: () => void) => () => void;
+  onMenuOpenRecent: (callback: (filePath: string) => void) => () => void;
+  onExternalFileChange: (callback: (filePath: string) => void) => () => void;
+}
+
+declare global {
+  interface Window {
+    electronAPI: ElectronAPI;
+  }
+}
+
+export {};
