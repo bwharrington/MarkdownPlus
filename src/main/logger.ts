@@ -78,3 +78,8 @@ export function logError(message: string, error: any) {
 export async function flushLogsSync() {
     await flushLogs();
 }
+
+// Get log file path
+export function getLogFilePath(): string {
+    return logFilePath;
+}

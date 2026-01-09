@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, Menu, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { initLogger, log, logError, flushLogsSync } from './logger';
+import { initLogger, log, logError, flushLogsSync, getLogFilePath } from './logger';
 
 let mainWindow: BrowserWindow | null;
 let pendingFilesToOpen: string[] = [];
@@ -20,6 +20,7 @@ const defaultConfig = {
     recentFiles: [],
     openFiles: [],
     defaultLineEnding: 'CRLF' as const,
+    devToolsOpen: false,
 };
 
 // Detect line ending in content
@@ -255,6 +256,43 @@ function registerIpcHandlers() {
         return { action: actions[result.response] };
     });
 
+    // DevTools: Toggle
+    ipcMain.handle('devtools:toggle', async () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            if (mainWindow.webContents.isDevToolsOpened()) {
+                mainWindow.webContents.closeDevTools();
+                // Config will be saved by devtools-closed event listener
+                return false;
+            } else {
+                mainWindow.webContents.openDevTools();
+                // Config will be saved by devtools-opened event listener
+                return true;
+            }
+        }
+        return false;
+    });
+
+    // DevTools: Get state
+    ipcMain.handle('devtools:get-state', async () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            return mainWindow.webContents.isDevToolsOpened();
+        }
+        return false;
+    });
+
+    // Log: Get path
+    ipcMain.handle('log:get-path', () => {
+        return getLogFilePath();
+    });
+
+    // Console: Log message (from renderer)
+    ipcMain.on('console:log', (_event, level: string, ...args: any[]) => {
+        const message = args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+        ).join(' ');
+        log(`[RENDERER ${level.toUpperCase()}] ${message}`);
+    });
+
     // Dialog: External change
     ipcMain.handle('dialog:external-change', async (_event, fileName: string) => {
         const result = await dialog.showMessageBox(mainWindow!, {
@@ -323,11 +361,32 @@ function createWindow() {
     // Load the index.html file
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
-    // Open the DevTools in development mode OR when opening files from command line
-    if (process.env.NODE_ENV === 'development' || pendingFilesToOpen.length > 0) {
-        log('Opening DevTools', { isDev: process.env.NODE_ENV === 'development', hasPendingFiles: pendingFilesToOpen.length > 0 });
+    // Open the DevTools in development mode or if saved in config
+    if (process.env.NODE_ENV === 'development') {
+        log('Opening DevTools', { isDev: true });
         mainWindow.webContents.openDevTools();
+    } else {
+        // Check config for DevTools state
+        loadConfig().then(config => {
+            if (config.devToolsOpen && mainWindow && !mainWindow.isDestroyed()) {
+                log('Opening DevTools from config', { devToolsOpen: config.devToolsOpen });
+                mainWindow.webContents.openDevTools();
+            }
+        });
     }
+
+    // Listen for DevTools open/close events (for native UI interactions)
+    mainWindow.webContents.on('devtools-opened', async () => {
+        log('DevTools opened via native UI');
+        const config = await loadConfig();
+        await saveConfig({ ...config, devToolsOpen: true });
+    });
+
+    mainWindow.webContents.on('devtools-closed', async () => {
+        log('DevTools closed via native UI');
+        const config = await loadConfig();
+        await saveConfig({ ...config, devToolsOpen: false });
+    });
 
     // Emitted when the window is closed
     mainWindow.on('closed', () => {

@@ -36,6 +36,16 @@ const electronAPI = {
   // Shell operations
   showInFolder: (filePath: string) => ipcRenderer.invoke('shell:show-in-folder', filePath),
   
+  // DevTools operations
+  toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),
+  getDevToolsState: () => ipcRenderer.invoke('devtools:get-state'),
+  
+  // Log operations
+  getLogPath: () => ipcRenderer.invoke('log:get-path'),
+  
+  // Console logging
+  sendConsoleLog: (level: string, ...args: any[]) => ipcRenderer.send('console:log', level, ...args),
+  
   // Menu event listeners
   onMenuNew: (callback: () => void) => {
     ipcRenderer.on('menu:new', callback);

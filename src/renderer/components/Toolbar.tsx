@@ -11,8 +11,10 @@ import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
+import BugReportIcon from '@mui/icons-material/BugReport';
+import DescriptionIcon from '@mui/icons-material/Description';
 import { useFileOperations } from '../hooks';
-import { useEditorState, useActiveFile, useTheme } from '../contexts';
+import { useEditorState, useActiveFile, useTheme, useEditorDispatch } from '../contexts';
 import AppIcon from '../../../assets/MarkdownPlus.svg';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -48,8 +50,10 @@ const DraggableSpacer = styled(Box)({
 export function Toolbar() {
     const state = useEditorState();
     const activeFile = useActiveFile();
+    const dispatch = useEditorDispatch();
     const { mode, toggleTheme } = useTheme();
     const [closeAllDialogOpen, setCloseAllDialogOpen] = React.useState(false);
+    const [devToolsOpen, setDevToolsOpen] = React.useState(false);
     const {
         createNewFile,
         openFile,
@@ -63,6 +67,35 @@ export function Toolbar() {
 
     const hasOpenFiles = state.openFiles.length > 0;
     const canSave = activeFile?.isDirty || activeFile?.path === null;
+
+    // Check DevTools state on mount
+    React.useEffect(() => {
+        window.electronAPI.getDevToolsState().then(setDevToolsOpen);
+    }, []);
+
+    const handleToggleDevTools = async () => {
+        const isOpen = await window.electronAPI.toggleDevTools();
+        setDevToolsOpen(isOpen);
+    };
+
+    const handleOpenLog = async () => {
+        const logPath = await window.electronAPI.getLogPath();
+        const fileData = await window.electronAPI.readFile(logPath);
+        if (fileData) {
+            const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+            const getFilename = (filePath: string) => filePath.split(/[\\/]/).pop() || filePath;
+            dispatch({
+                type: 'OPEN_FILE',
+                payload: {
+                    id: fileId,
+                    path: fileData.filePath,
+                    name: getFilename(fileData.filePath),
+                    content: fileData.content,
+                    lineEnding: fileData.lineEnding,
+                },
+            });
+        }
+    };
 
     const handleMinimize = () => {
         window.electronAPI.minimizeWindow();
@@ -167,6 +200,18 @@ export function Toolbar() {
                 </Tooltip>
 
                 <DraggableSpacer />
+
+                <Tooltip title="Dev Tools">
+                    <IconButton onClick={handleToggleDevTools} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                        <BugReportIcon />
+                    </IconButton>
+                </Tooltip>
+
+                <Tooltip title="View Log File">
+                    <IconButton onClick={handleOpenLog} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                        <DescriptionIcon />
+                    </IconButton>
+                </Tooltip>
 
                 <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
                     <IconButton onClick={toggleTheme} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>

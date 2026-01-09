@@ -4,6 +4,34 @@ import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar } from './components';
 import { useWindowTitle, useFileOperations } from './hooks';
 
+// Intercept console methods and send to main process
+const originalConsole = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+    info: console.info,
+};
+
+console.log = (...args: any[]) => {
+    originalConsole.log(...args);
+    window.electronAPI.sendConsoleLog('log', ...args);
+};
+
+console.warn = (...args: any[]) => {
+    originalConsole.warn(...args);
+    window.electronAPI.sendConsoleLog('warn', ...args);
+};
+
+console.error = (...args: any[]) => {
+    originalConsole.error(...args);
+    window.electronAPI.sendConsoleLog('error', ...args);
+};
+
+console.info = (...args: any[]) => {
+    originalConsole.info(...args);
+    window.electronAPI.sendConsoleLog('info', ...args);
+};
+
 const AppContainer = styled(Box)({
     display: 'flex',
     flexDirection: 'column',

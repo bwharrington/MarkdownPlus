@@ -65,6 +65,16 @@ export interface ElectronAPI {
   // Shell operations
   showInFolder: (filePath: string) => Promise<void>;
   
+  // DevTools operations
+  toggleDevTools: () => Promise<boolean>;
+  getDevToolsState: () => Promise<boolean>;
+  
+  // Log operations
+  getLogPath: () => Promise<string>;
+  
+  // Console logging
+  sendConsoleLog: (level: string, ...args: any[]) => void;
+  
   // Menu event listeners (return cleanup functions)
   onMenuNew: (callback: () => void) => () => void;
   onMenuOpen: (callback: () => void) => () => void;
