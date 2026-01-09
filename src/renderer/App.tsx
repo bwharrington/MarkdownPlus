@@ -209,15 +209,32 @@ function AppContent() {
             return filePath.split(/[\\/]/).pop() || filePath;
         };
         
+        // Supported file extensions for checking unsupported formats
+        const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
+        const TEXT_EXTENSIONS = ['.txt'];
+        
+        const isUnsupportedFormat = (filePath: string): boolean => {
+            const lowerPath = filePath.toLowerCase();
+            const isMarkdown = MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
+            const isText = TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
+            return !isMarkdown && !isText;
+        };
+        
         // Helper to open files
         const openFilesFromPaths = async (filePaths: string[]) => {
             console.log('[App] Opening files from paths:', filePaths);
+            const unsupportedFiles: string[] = [];
+            
             for (const filePath of filePaths) {
                 try {
                     console.log('[App] Reading file:', filePath);
                     const fileData = await window.electronAPI.readFile(filePath);
                     console.log('[App] File data received:', { path: fileData?.filePath, contentLength: fileData?.content?.length });
                     if (fileData) {
+                        // Track unsupported files
+                        if (isUnsupportedFormat(fileData.filePath)) {
+                            unsupportedFiles.push(getFilename(fileData.filePath));
+                        }
                         const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
                         const fileName = getFilename(fileData.filePath);
                         console.log('[App] Dispatching OPEN_FILE action', { fileId, path: fileData.filePath, name: fileName });
@@ -238,6 +255,19 @@ function AppContent() {
                 } catch (error) {
                     console.error('[App] Failed to open file from args:', error);
                 }
+            }
+            
+            // Show notification for unsupported files
+            if (unsupportedFiles.length > 0) {
+                dispatch({
+                    type: 'SHOW_NOTIFICATION',
+                    payload: {
+                        message: unsupportedFiles.length === 1 
+                            ? `"${unsupportedFiles[0]}" may not fully support Markdown preview.`
+                            : `${unsupportedFiles.length} files may not fully support Markdown preview.`,
+                        severity: 'warning',
+                    },
+                });
             }
         };
 

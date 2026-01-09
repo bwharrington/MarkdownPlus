@@ -5,6 +5,20 @@ import type { IConfig } from '../types';
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
+// Supported file extensions
+const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
+const TEXT_EXTENSIONS = ['.txt'];
+const BEST_EFFORT_EXTENSIONS = ['.rst', '.adoc', '.asciidoc', '.org', '.textile'];
+
+// Check file type
+function getFileType(filePath: string): 'markdown' | 'text' | 'best-effort' | 'unknown' {
+    const lowerPath = filePath.toLowerCase();
+    if (MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'markdown';
+    if (TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
+    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'best-effort';
+    return 'unknown';
+}
+
 export function useFileOperations() {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
@@ -40,6 +54,7 @@ export function useFileOperations() {
         const results = await window.electronAPI.openFile();
         if (results && results.length > 0) {
             const openedFilePaths: string[] = [];
+            const unsupportedFiles: string[] = [];
             
             // Open each file
             for (const result of results) {
@@ -47,6 +62,13 @@ export function useFileOperations() {
                 if (state.openFiles.some(f => f.path === result.filePath)) {
                     openedFilePaths.push(result.filePath);
                     continue;
+                }
+                
+                // Check file type and track unsupported formats
+                const fileType = getFileType(result.filePath);
+                if (fileType === 'best-effort' || fileType === 'unknown') {
+                    const fileName = result.filePath.split(/[\\/]/).pop() || 'Unknown';
+                    unsupportedFiles.push(fileName);
                 }
                 
                 dispatch({
@@ -60,6 +82,19 @@ export function useFileOperations() {
                     },
                 });
                 openedFilePaths.push(result.filePath);
+            }
+
+            // Show notification for unsupported files
+            if (unsupportedFiles.length > 0) {
+                dispatch({
+                    type: 'SHOW_NOTIFICATION',
+                    payload: {
+                        message: unsupportedFiles.length === 1 
+                            ? `"${unsupportedFiles[0]}" may not fully support Markdown preview.`
+                            : `${unsupportedFiles.length} files may not fully support Markdown preview.`,
+                        severity: 'warning',
+                    },
+                });
             }
 
             // Update recent files and open files in config
@@ -86,6 +121,19 @@ export function useFileOperations() {
     const openRecentFile = useCallback(async (filePath: string) => {
         const result = await window.electronAPI.readFile(filePath);
         if (result) {
+            // Check file type and show notification for unsupported formats
+            const fileType = getFileType(result.filePath);
+            if (fileType === 'best-effort' || fileType === 'unknown') {
+                const fileName = result.filePath.split(/[\\/]/).pop() || 'Unknown';
+                dispatch({
+                    type: 'SHOW_NOTIFICATION',
+                    payload: {
+                        message: `"${fileName}" may not fully support Markdown preview.`,
+                        severity: 'warning',
+                    },
+                });
+            }
+            
             dispatch({
                 type: 'OPEN_FILE',
                 payload: {

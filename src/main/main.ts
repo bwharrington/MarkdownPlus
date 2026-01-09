@@ -8,6 +8,15 @@ let mainWindow: BrowserWindow | null;
 let pendingFilesToOpen: string[] = [];
 let fileWatchers: Map<string, fsSync.FSWatcher> = new Map();
 
+// Supported markdown file extensions (for Windows file associations)
+const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
+
+// Check if a file path is a markdown file
+function isMarkdownFile(filePath: string): boolean {
+    const lowerPath = filePath.toLowerCase();
+    return MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
+}
+
 // Config file path - next to the app executable
 const getConfigPath = () => {
     // In development, use the project root; in production, use the app's directory
@@ -127,8 +136,9 @@ function registerIpcHandlers() {
     ipcMain.handle('file:open', async () => {
         const result = await dialog.showOpenDialog(mainWindow!, {
             filters: [
-                { name: 'Markdown', extensions: ['md', 'markdown'] },
+                { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdx', 'mdwn'] },
                 { name: 'Text Files', extensions: ['txt'] },
+                { name: 'Other Markup', extensions: ['rst', 'adoc', 'asciidoc', 'org', 'textile'] },
                 { name: 'All Files', extensions: ['*'] },
             ],
             properties: ['openFile', 'multiSelections'],
@@ -454,11 +464,10 @@ app.whenReady().then(async () => {
     
     // Filter for markdown files (case-insensitive) and exclude flags
     pendingFilesToOpen = args.filter(arg => {
-        const lowerArg = arg.toLowerCase();
-        const isMarkdown = lowerArg.endsWith('.md') || lowerArg.endsWith('.markdown');
+        const isMarkdown = isMarkdownFile(arg);
         const isNotFlag = !arg.startsWith('--') && !arg.startsWith('-');
         const result = isMarkdown && isNotFlag;
-        log('Filtering argument', { arg, lowerArg, isMarkdown, isNotFlag, included: result });
+        log('Filtering argument', { arg, isMarkdown, isNotFlag, included: result });
         return result;
     });
     
@@ -488,8 +497,7 @@ app.on('second-instance', (_event, commandLine) => {
     log('Second instance args', { args });
     
     const filesToOpen = args.filter(arg => {
-        const lowerArg = arg.toLowerCase();
-        const isMarkdown = lowerArg.endsWith('.md') || lowerArg.endsWith('.markdown');
+        const isMarkdown = isMarkdownFile(arg);
         const isNotFlag = !arg.startsWith('--') && !arg.startsWith('-');
         return isMarkdown && isNotFlag;
     });

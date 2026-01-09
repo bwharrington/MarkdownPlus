@@ -69,6 +69,48 @@
         "description": "Markdown document",
         "icon": "assets/MarkdownPlus-padded.png",
         "role": "Editor"
+      },
+      {
+        "ext": "markdown",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      },
+      {
+        "ext": "mdown",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      },
+      {
+        "ext": "mkd",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      },
+      {
+        "ext": "mkdn",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      },
+      {
+        "ext": "mdx",
+        "name": "MDX",
+        "description": "MDX document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      },
+      {
+        "ext": "mdwn",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
       }
     ],
     "win": {
