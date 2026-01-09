@@ -419,22 +419,31 @@ export function EditorProvider({ children }: EditorProviderProps) {
     }, [state.openFiles]);
 
     // Watch/unwatch files when they're opened/closed
+    // Use a ref to track which files we've already requested to watch
+    const watchedFilesRef = React.useRef<Set<string>>(new Set());
+    
     useEffect(() => {
-        // Watch all currently open files
-        state.openFiles.forEach(file => {
-            if (file.path) {
-                window.electronAPI.watchFile(file.path);
+        const currentPaths = new Set(
+            state.openFiles
+                .map(f => f.path)
+                .filter((p): p is string => p !== null && !p.endsWith('markdownplus-debug.log'))
+        );
+        
+        // Watch newly opened files
+        currentPaths.forEach(path => {
+            if (!watchedFilesRef.current.has(path)) {
+                window.electronAPI.watchFile(path);
+                watchedFilesRef.current.add(path);
             }
         });
-
-        // Cleanup function to unwatch files that are no longer open
-        return () => {
-            state.openFiles.forEach(file => {
-                if (file.path) {
-                    window.electronAPI.unwatchFile(file.path);
-                }
-            });
-        };
+        
+        // Unwatch closed files
+        watchedFilesRef.current.forEach(path => {
+            if (!currentPaths.has(path)) {
+                window.electronAPI.unwatchFile(path);
+                watchedFilesRef.current.delete(path);
+            }
+        });
     }, [state.openFiles]);
 
     return (
