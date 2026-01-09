@@ -9,6 +9,8 @@ const electronAPI = {
   saveFile: (filePath: string, content: string) => ipcRenderer.invoke('file:save', filePath, content),
   saveFileAs: (content: string, defaultName?: string) => ipcRenderer.invoke('file:save-as', content, defaultName),
   renameFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('file:rename', oldPath, newPath),
+  watchFile: (filePath: string) => ipcRenderer.invoke('file:watch', filePath),
+  unwatchFile: (filePath: string) => ipcRenderer.invoke('file:unwatch', filePath),
   
   // Config operations
   loadConfig: () => ipcRenderer.invoke('config:load'),

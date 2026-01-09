@@ -152,6 +152,53 @@ function AppContent() {
         };
     }, [saveFile, saveFileAs, saveAllFiles, closeFile, closeAllFiles, showInFolder]);
 
+    // Handle external file changes (for real-time config updates)
+    useEffect(() => {
+        const cleanup = window.electronAPI.onExternalFileChange(async (filePath) => {
+            console.log('[App] External file change detected:', filePath);
+            
+            // Find if this file is open
+            const openFile = state.openFiles.find(f => f.path === filePath);
+            if (!openFile) {
+                return;
+            }
+
+            // For config file, automatically reload without prompting
+            if (filePath.endsWith('config.json')) {
+                console.log('[App] Auto-reloading config file');
+                const fileData = await window.electronAPI.readFile(filePath);
+                if (fileData) {
+                    dispatch({
+                        type: 'UPDATE_FILE_CONTENT',
+                        payload: {
+                            id: openFile.id,
+                            content: fileData.content,
+                            lineEnding: fileData.lineEnding,
+                        },
+                    });
+                }
+            } else {
+                // For other files, only reload if not dirty
+                if (!openFile.isDirty) {
+                    console.log('[App] Auto-reloading clean file');
+                    const fileData = await window.electronAPI.readFile(filePath);
+                    if (fileData) {
+                        dispatch({
+                            type: 'UPDATE_FILE_CONTENT',
+                            payload: {
+                                id: openFile.id,
+                                content: fileData.content,
+                                lineEnding: fileData.lineEnding,
+                            },
+                        });
+                    }
+                }
+            }
+        });
+
+        return cleanup;
+    }, [state.openFiles, dispatch]);
+
     // Set up file opening from command line arguments (file associations)
     useEffect(() => {
         console.log('[App] Setting up file opening from command line');

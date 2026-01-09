@@ -5,6 +5,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import CodeIcon from '@mui/icons-material/Code';
 import DescriptionIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
 import type { IFile } from '../types';
@@ -107,7 +108,7 @@ export function TabBar() {
     const [contextMenu, setContextMenu] = React.useState<{ mouseX: number; mouseY: number; fileId: string } | null>(null);
     const [renameDialog, setRenameDialog] = React.useState<{ open: boolean; fileId: string; currentName: string }>({ open: false, fileId: '', currentName: '' });
     const [newFileName, setNewFileName] = React.useState('');
-    const { renameFile } = useFileOperations();
+    const { renameFile, showInFolder } = useFileOperations();
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
         dispatch({ type: 'SELECT_TAB', payload: { id: newValue } });
@@ -150,6 +151,16 @@ export function TabBar() {
             if (file) {
                 setNewFileName(file.name);
                 setRenameDialog({ open: true, fileId: file.id, currentName: file.name });
+            }
+        }
+        handleContextMenuClose();
+    };
+
+    const handleOpenLocationClick = async () => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file && file.path) {
+                await window.electronAPI.showInFolder(file.path);
             }
         }
         handleContextMenuClose();
@@ -213,6 +224,13 @@ export function TabBar() {
                 <MenuItem onClick={handleRenameClick}>
                     <EditIcon sx={{ mr: 1, fontSize: 18 }} />
                     Rename
+                </MenuItem>
+                <MenuItem 
+                    onClick={handleOpenLocationClick}
+                    disabled={!state.openFiles.find(f => f.id === contextMenu?.fileId)?.path}
+                >
+                    <FolderOpenIcon sx={{ mr: 1, fontSize: 18 }} />
+                    Open File Location
                 </MenuItem>
             </Menu>
             <Dialog open={renameDialog.open} onClose={handleRenameDialogClose}>

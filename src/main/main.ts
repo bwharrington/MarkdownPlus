@@ -1,10 +1,12 @@
 import { app, BrowserWindow, dialog, Menu, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import { initLogger, log, logError, flushLogsSync, getLogFilePath } from './logger';
 
 let mainWindow: BrowserWindow | null;
 let pendingFilesToOpen: string[] = [];
+let fileWatchers: Map<string, fsSync.FSWatcher> = new Map();
 
 // Config file path - next to the app executable
 const getConfigPath = () => {
@@ -81,6 +83,41 @@ async function openConfigFile(): Promise<{ filePath: string; content: string; li
     } catch (error) {
         console.error('Failed to open config file:', error);
         return null;
+    }
+}
+
+// Watch a file for external changes
+function watchFile(filePath: string) {
+    // Don't watch if already watching
+    if (fileWatchers.has(filePath)) {
+        return;
+    }
+
+    try {
+        const watcher = fsSync.watch(filePath, (eventType) => {
+            if (eventType === 'change') {
+                log('File changed externally', { filePath });
+                // Notify renderer
+                if (mainWindow && !mainWindow.isDestroyed()) {
+                    mainWindow.webContents.send('file:external-change', filePath);
+                }
+            }
+        });
+
+        fileWatchers.set(filePath, watcher);
+        log('Started watching file', { filePath });
+    } catch (error) {
+        logError(`Failed to watch file: ${filePath}`, error as Error);
+    }
+}
+
+// Stop watching a file
+function unwatchFile(filePath: string) {
+    const watcher = fileWatchers.get(filePath);
+    if (watcher) {
+        watcher.close();
+        fileWatchers.delete(filePath);
+        log('Stopped watching file', { filePath });
     }
 }
 
@@ -339,6 +376,15 @@ function registerIpcHandlers() {
     // Shell: Show in folder
     ipcMain.handle('shell:show-in-folder', async (_event, filePath: string) => {
         shell.showItemInFolder(filePath);
+    });
+
+    // File watching
+    ipcMain.handle('file:watch', async (_event, filePath: string) => {
+        watchFile(filePath);
+    });
+
+    ipcMain.handle('file:unwatch', async (_event, filePath: string) => {
+        unwatchFile(filePath);
     });
 }
 

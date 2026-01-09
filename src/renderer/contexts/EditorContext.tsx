@@ -35,6 +35,7 @@ type EditorAction =
     | { type: 'SHOW_NOTIFICATION'; payload: Omit<Notification, 'id'> }
     | { type: 'DISMISS_NOTIFICATION'; payload: { id: string } }
     | { type: 'RELOAD_FILE'; payload: { id: string; content: string } }
+    | { type: 'UPDATE_FILE_CONTENT'; payload: { id: string; content: string; lineEnding: 'CRLF' | 'LF' } }
     | { type: 'REORDER_TABS'; payload: { fromIndex: number; toIndex: number } }
     | { type: 'UNDO'; payload: { id: string } }
     | { type: 'REDO'; payload: { id: string } }
@@ -246,6 +247,26 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             };
         }
 
+        case 'UPDATE_FILE_CONTENT': {
+            return {
+                ...state,
+                openFiles: state.openFiles.map(f =>
+                    f.id === action.payload.id
+                        ? { 
+                            ...f, 
+                            content: action.payload.content, 
+                            originalContent: action.payload.content,
+                            lineEnding: action.payload.lineEnding || f.lineEnding,
+                            isDirty: false,
+                            undoStack: [action.payload.content],
+                            redoStack: [],
+                            undoStackPointer: 0,
+                        }
+                        : f
+                ),
+            };
+        }
+
         case 'PUSH_UNDO': {
             const MAX_HISTORY = 100;
             return {
@@ -394,6 +415,25 @@ export function EditorProvider({ children }: EditorProviderProps) {
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [state.openFiles]);
+
+    // Watch/unwatch files when they're opened/closed
+    useEffect(() => {
+        // Watch all currently open files
+        state.openFiles.forEach(file => {
+            if (file.path) {
+                window.electronAPI.watchFile(file.path);
+            }
+        });
+
+        // Cleanup function to unwatch files that are no longer open
+        return () => {
+            state.openFiles.forEach(file => {
+                if (file.path) {
+                    window.electronAPI.unwatchFile(file.path);
+                }
+            });
         };
     }, [state.openFiles]);
 
