@@ -67,9 +67,17 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         }
 
         case 'OPEN_FILE': {
+            console.log('[EditorContext] OPEN_FILE action received', { 
+                id: action.payload.id, 
+                path: action.payload.path, 
+                name: action.payload.name,
+                currentOpenFilesCount: state.openFiles.length 
+            });
+            
             // Check for duplicate
             const existingFile = state.openFiles.find(f => f.path === action.payload.path);
             if (existingFile) {
+                console.log('[EditorContext] File already open, switching to it', { existingFileId: existingFile.id });
                 return {
                     ...state,
                     activeFileId: existingFile.id,
@@ -90,6 +98,12 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 undoStackPointer: 0,
                 scrollPosition: 0,
             };
+            
+            console.log('[EditorContext] Adding new file to state', { 
+                fileId: newFile.id, 
+                newOpenFilesCount: state.openFiles.length + 1 
+            });
+            
             return {
                 ...state,
                 openFiles: [...state.openFiles, newFile],
@@ -321,36 +335,8 @@ export function EditorProvider({ children }: EditorProviderProps) {
                 const config = await window.electronAPI.loadConfig();
                 dispatch({ type: 'SET_CONFIG', payload: config });
 
-                // Restore open files from last session (exclude config.json)
-                for (const filePath of config.openFiles) {
-                    // Skip config.json - it should only be opened manually via Settings
-                    if (filePath.endsWith('config.json')) {
-                        continue;
-                    }
-                    try {
-                        const result = await window.electronAPI.readFile(filePath);
-                        if (result) {
-                            dispatch({
-                                type: 'OPEN_FILE',
-                                payload: {
-                                    id: generateId(),
-                                    path: result.filePath,
-                                    name: filePath.split(/[\\/]/).pop() || 'Unknown',
-                                    content: result.content,
-                                    lineEnding: result.lineEnding,
-                                },
-                            });
-                        }
-                    } catch {
-                        dispatch({
-                            type: 'SHOW_NOTIFICATION',
-                            payload: {
-                                message: `Could not open "${filePath.split(/[\\/]/).pop()}"`,
-                                severity: 'warning',
-                            },
-                        });
-                    }
-                }
+                // Don't automatically restore open files - let App.tsx handle this
+                // so it can prioritize command-line files over recent files
             } catch (error) {
                 console.error('Failed to load config:', error);
             }

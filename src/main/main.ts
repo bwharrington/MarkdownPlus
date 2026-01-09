@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog, Menu, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { initLogger, log, logError, flushLogsSync } from './logger';
 
 let mainWindow: BrowserWindow | null;
 let pendingFilesToOpen: string[] = [];
@@ -116,12 +117,14 @@ function registerIpcHandlers() {
 
     // File: Read specific file
     ipcMain.handle('file:read', async (_event, filePath: string) => {
+        log('IPC: file:read called', { filePath });
         try {
             const content = await fs.readFile(filePath, 'utf-8');
             const lineEnding = detectLineEnding(content);
+            log('IPC: file:read success', { filePath, contentLength: content.length, lineEnding });
             return { filePath, content, lineEnding };
         } catch (error) {
-            console.error('Failed to read file:', error);
+            logError('IPC: file:read failed', error);
             return null;
         }
     });
@@ -202,9 +205,27 @@ function registerIpcHandlers() {
 
     // Get initial files to open (from command line)
     ipcMain.handle('get-initial-files', () => {
+        log('IPC: get-initial-files called', { pendingFiles: pendingFilesToOpen });
         const files = pendingFilesToOpen;
         pendingFilesToOpen = []; // Clear after retrieving
+        log('IPC: Returning files and clearing pending', { files });
         return files;
+    });
+
+    // Renderer ready - send pending files
+    ipcMain.handle('renderer-ready', () => {
+        log('IPC: renderer-ready called', { pendingFiles: pendingFilesToOpen });
+        if (pendingFilesToOpen.length > 0 && mainWindow && !mainWindow.isDestroyed()) {
+            log('Sending files to renderer after ready signal', { files: pendingFilesToOpen });
+            mainWindow.webContents.send('open-files-from-args', pendingFilesToOpen);
+            log('IPC event "open-files-from-args" sent to renderer');
+            const files = [...pendingFilesToOpen];
+            pendingFilesToOpen = []; // Clear after sending
+            log('Returning files from renderer-ready', { files });
+            return files;
+        }
+        log('No files to send from renderer-ready');
+        return [];
     });
 
     // Config: Sync recent files with open files
@@ -302,8 +323,9 @@ function createWindow() {
     // Load the index.html file
     mainWindow.loadFile(path.join(__dirname, 'index.html'));
 
-    // Open the DevTools in development mode
-    if (process.env.NODE_ENV === 'development') {
+    // Open the DevTools in development mode OR when opening files from command line
+    if (process.env.NODE_ENV === 'development' || pendingFilesToOpen.length > 0) {
+        log('Opening DevTools', { isDev: process.env.NODE_ENV === 'development', hasPendingFiles: pendingFilesToOpen.length > 0 });
         mainWindow.webContents.openDevTools();
     }
 
@@ -316,29 +338,39 @@ function createWindow() {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
+    // Initialize logger first
+    initLogger();
+    log('=== App Starting ===');
+    log('Electron app ready');
+    
     // Handle command line arguments (file associations) - MUST be done before creating window
     const args = process.argv.slice(1); // Skip the first argument (electron executable)
-    console.log('Command line args:', args);
+    log('Command line arguments received', { args, length: args.length });
     
     // Filter for markdown files (case-insensitive) and exclude flags
     pendingFilesToOpen = args.filter(arg => {
         const lowerArg = arg.toLowerCase();
         const isMarkdown = lowerArg.endsWith('.md') || lowerArg.endsWith('.markdown');
         const isNotFlag = !arg.startsWith('--') && !arg.startsWith('-');
-        return isMarkdown && isNotFlag;
+        const result = isMarkdown && isNotFlag;
+        log('Filtering argument', { arg, lowerArg, isMarkdown, isNotFlag, included: result });
+        return result;
     });
     
-    console.log('Pending files to open:', pendingFilesToOpen);
+    log('Pending files to open after filtering', { pendingFilesToOpen, count: pendingFilesToOpen.length });
 
+    log('Registering IPC handlers');
     registerIpcHandlers();
     // Remove the native menu bar
     Menu.setApplicationMenu(null);
+    log('Creating main window');
     createWindow();
+    log('Main window created');
 });
 
 // Handle second instance (when user tries to open another file while app is running)
 app.on('second-instance', (_event, commandLine) => {
-    console.log('Second instance command line:', commandLine);
+    log('Second instance detected', { commandLine });
     
     // Focus the existing window
     if (mainWindow) {
@@ -348,6 +380,8 @@ app.on('second-instance', (_event, commandLine) => {
 
     // Handle command line arguments from second instance
     const args = commandLine.slice(1); // Skip the first argument
+    log('Second instance args', { args });
+    
     const filesToOpen = args.filter(arg => {
         const lowerArg = arg.toLowerCase();
         const isMarkdown = lowerArg.endsWith('.md') || lowerArg.endsWith('.markdown');
@@ -355,9 +389,10 @@ app.on('second-instance', (_event, commandLine) => {
         return isMarkdown && isNotFlag;
     });
     
-    console.log('Second instance files to open:', filesToOpen);
+    log('Second instance files to open', { filesToOpen });
 
     if (filesToOpen.length > 0 && mainWindow && !mainWindow.isDestroyed()) {
+        log('Sending second instance files to renderer', { filesToOpen });
         mainWindow.webContents.send('open-files-from-args', filesToOpen);
     }
 });
@@ -367,3 +402,9 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
     app.quit();
 }
+
+// Flush logs before quit
+app.on('before-quit', async () => {
+    log('App quitting, flushing logs');
+    await flushLogsSync();
+});

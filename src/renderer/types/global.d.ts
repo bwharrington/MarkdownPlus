@@ -49,6 +49,9 @@ export interface ElectronAPI {
   // Get initial files from command line
   getInitialFiles: () => Promise<string[]>;
   
+  // Signal that renderer is ready
+  rendererReady: () => Promise<string[]>;
+  
   // Dialog operations
   confirmClose: (fileName: string) => Promise<ConfirmCloseResult>;
   showExternalChangeDialog: (fileName: string) => Promise<'reload' | 'keep'>;

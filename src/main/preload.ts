@@ -19,6 +19,9 @@ const electronAPI = {
   // Get initial files from command line
   getInitialFiles: () => ipcRenderer.invoke('get-initial-files'),
   
+  // Signal that renderer is ready
+  rendererReady: () => ipcRenderer.invoke('renderer-ready'),
+  
   // Dialog operations
   confirmClose: (fileName: string) => ipcRenderer.invoke('dialog:confirm-close', fileName),
   showExternalChangeDialog: (fileName: string) => ipcRenderer.invoke('dialog:external-change', fileName),
