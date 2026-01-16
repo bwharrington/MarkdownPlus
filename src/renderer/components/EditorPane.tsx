@@ -34,11 +34,11 @@ const ContentEditableDiv = styled('div')(({ theme }) => ({
         pointerEvents: 'none',
     },
     '& .word-highlight': {
-        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 238, 144, 0.3)' : 'rgba(144, 238, 144, 0.7)',
         borderRadius: 2,
     },
     '& .search-highlight': {
-        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 238, 144, 0.3)' : 'rgba(144, 238, 144, 0.7)',
         borderRadius: 2,
     },
     '& .current-match': {
@@ -142,11 +142,11 @@ const MarkdownPreview = styled(Box)(({ theme }) => ({
         maxWidth: '100%',
     },
     '& .word-highlight': {
-        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 238, 144, 0.3)' : 'rgba(144, 238, 144, 0.7)',
         borderRadius: 2,
     },
     '& .search-highlight': {
-        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 238, 144, 0.3)' : 'rgba(144, 238, 144, 0.7)',
         borderRadius: 2,
     },
     '& .current-match': {
@@ -476,6 +476,13 @@ export function EditorPane() {
         if (!activeFile || !contentEditableRef.current) return;
 
         const element = contentEditableRef.current;
+        const selection = window.getSelection();
+        if (!selection) return;
+
+        // Get the selected word (browser automatically selects on double-click)
+        const selectedText = selection.toString().trim();
+        if (!selectedText || !/^[a-zA-Z0-9]+$/.test(selectedText)) return;
+
         const position = getCursorPosition(element);
         const text = getPlainText(element);
 
@@ -483,6 +490,10 @@ export function EditorPane() {
         const result = getWordAtPosition(text, position);
 
         if (result && result.matches.length > 0) {
+            // Find which match was clicked
+            const clickedIndex = result.matches.findIndex(m => position >= m.start && position <= m.end);
+            const clickedMatch = clickedIndex >= 0 ? result.matches[clickedIndex] : result.matches[0];
+
             // Clear existing highlights
             clearWordHighlights(element);
 
@@ -491,14 +502,45 @@ export function EditorPane() {
 
             // Store match info for state tracking
             setHighlightedMatches(result.matches);
-
-            // Find which match was clicked
-            const clickedIndex = result.matches.findIndex(m => position >= m.start && position <= m.end);
             setCurrentMatchIndex(clickedIndex >= 0 ? clickedIndex : 0);
 
-            // Restore cursor position after highlighting
+            // Restore the word selection after highlighting
             requestAnimationFrame(() => {
-                setCursorPosition(element, position);
+                // Re-select the word to maintain selection
+                const range = document.createRange();
+                const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+
+                let currentOffset = 0;
+                let node;
+                let startNode: Node | null = null;
+                let startOffset = 0;
+                let endNode: Node | null = null;
+                let endOffset = 0;
+
+                while ((node = walker.nextNode())) {
+                    const nodeLength = node.textContent?.length || 0;
+
+                    if (!startNode && currentOffset + nodeLength > clickedMatch.start) {
+                        startNode = node;
+                        startOffset = clickedMatch.start - currentOffset;
+                    }
+
+                    if (currentOffset + nodeLength >= clickedMatch.end) {
+                        endNode = node;
+                        endOffset = clickedMatch.end - currentOffset;
+                        break;
+                    }
+
+                    currentOffset += nodeLength;
+                }
+
+                if (startNode && endNode) {
+                    range.setStart(startNode, startOffset);
+                    range.setEnd(endNode, endOffset);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+
                 element.focus();
             });
         } else {
@@ -554,6 +596,38 @@ export function EditorPane() {
 
         // Find and highlight all matching words in the preview
         highlightWordInElement(previewElement, word);
+
+        // Re-select the first highlighted word after highlighting
+        requestAnimationFrame(() => {
+            const highlightedElements = previewElement.querySelectorAll('.word-highlight');
+            if (highlightedElements.length > 0) {
+                // Find the highlighted element closest to where the user clicked
+                const clickX = e.clientX;
+                const clickY = e.clientY;
+                let closestElement: Element | null = null;
+                let minDistance = Infinity;
+
+                highlightedElements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestElement = el;
+                    }
+                });
+
+                // Select the closest highlighted word
+                if (closestElement) {
+                    const range = document.createRange();
+                    range.selectNodeContents(closestElement);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            }
+        });
     }, [activeFile]);
 
     const handlePreviewClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
