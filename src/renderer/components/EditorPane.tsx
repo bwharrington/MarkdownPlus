@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Box, styled } from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, styled, TextField, Button, IconButton, Typography } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActiveFile, useEditorDispatch } from '../contexts';
@@ -36,7 +37,40 @@ const ContentEditableDiv = styled('div')(({ theme }) => ({
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
         borderRadius: 2,
     },
+    '& .search-highlight': {
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        borderRadius: 2,
+    },
+    '& .current-match': {
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 152, 0, 0.5)' : 'rgba(255, 152, 0, 0.6)',
+        borderRadius: 2,
+    },
+    '& .current-line-highlight': {
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.1)',
+        display: 'block',
+    },
 }));
+
+const FindDialogContainer = styled(Box)(({ theme }) => ({
+    position: 'absolute',
+    top: 50,
+    right: 16,
+    zIndex: 1000,
+    backgroundColor: theme.palette.background.paper,
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 4,
+    padding: 16,
+    boxShadow: theme.shadows[4],
+    minWidth: 300,
+}));
+
+const EditorWrapper = styled(Box)({
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    overflow: 'hidden',
+    position: 'relative',
+});
 
 const MarkdownPreview = styled(Box)(({ theme }) => ({
     flex: 1,
@@ -109,6 +143,14 @@ const MarkdownPreview = styled(Box)(({ theme }) => ({
     },
     '& .word-highlight': {
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        borderRadius: 2,
+    },
+    '& .search-highlight': {
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 235, 59, 0.3)' : 'rgba(255, 235, 59, 0.5)',
+        borderRadius: 2,
+    },
+    '& .current-match': {
+        backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 152, 0, 0.5)' : 'rgba(255, 152, 0, 0.6)',
         borderRadius: 2,
     },
 }));
@@ -294,6 +336,74 @@ function clearWordHighlights(element: HTMLElement): void {
     });
 }
 
+// Clear search-specific highlights (separate from word highlights)
+function clearSearchHighlights(element: HTMLElement): void {
+    element.querySelectorAll('.search-highlight, .current-match, .current-line-highlight').forEach(el => {
+        const parent = el.parentNode;
+        if (parent) {
+            parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+            parent.normalize();
+        }
+    });
+}
+
+// Highlight text at specific range with given class
+function highlightTextRange(element: HTMLElement, start: number, end: number, className: string): void {
+    const text = element.textContent || '';
+    if (start < 0 || end > text.length || start >= end) return;
+
+    // Clear existing search highlights first
+    clearSearchHighlights(element);
+
+    // Set the plain text content and then highlight
+    element.textContent = text;
+
+    const range = document.createRange();
+    const selection = window.getSelection();
+
+    let currentOffset = 0;
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+
+    let startNode: Node | null = null;
+    let startOffset = 0;
+    let endNode: Node | null = null;
+    let endOffset = 0;
+
+    let node;
+    while ((node = walker.nextNode())) {
+        const nodeLength = node.textContent?.length || 0;
+
+        // Find start node
+        if (!startNode && currentOffset + nodeLength > start) {
+            startNode = node;
+            startOffset = start - currentOffset;
+        }
+
+        // Find end node
+        if (currentOffset + nodeLength >= end) {
+            endNode = node;
+            endOffset = end - currentOffset;
+            break;
+        }
+
+        currentOffset += nodeLength;
+    }
+
+    if (startNode && endNode) {
+        range.setStart(startNode, startOffset);
+        range.setEnd(endNode, endOffset);
+
+        const highlightSpan = document.createElement('span');
+        highlightSpan.className = className;
+        range.surroundContents(highlightSpan);
+
+        // Restore selection/cursor
+        if (selection) {
+            selection.removeAllRanges();
+        }
+    }
+}
+
 export function EditorPane() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
@@ -303,6 +413,14 @@ export function EditorPane() {
     const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [highlightedMatches, setHighlightedMatches] = useState<Array<{ start: number; end: number }>>([]);
     const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
+
+    // Find dialog state
+    const [findDialogOpen, setFindDialogOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchMatches, setSearchMatches] = useState<Array<{ start: number; end: number }>>([]);
+    const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+    const [matchCount, setMatchCount] = useState<number | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     const handleContentChange = useCallback(() => {
         if (activeFile && contentEditableRef.current) {
@@ -693,6 +811,268 @@ export function EditorPane() {
         }
     }, [activeFile, dispatch]);
 
+    // Find all matches of search query in text (case-insensitive)
+    const findAllMatches = useCallback((text: string, query: string): Array<{ start: number; end: number }> => {
+        if (!query) return [];
+
+        const matches: Array<{ start: number; end: number }> = [];
+        const lowerText = text.toLowerCase();
+        const lowerQuery = query.toLowerCase();
+        let index = 0;
+
+        while ((index = lowerText.indexOf(lowerQuery, index)) !== -1) {
+            matches.push({ start: index, end: index + query.length });
+            index += 1;
+        }
+
+        return matches;
+    }, []);
+
+    // Highlight search match in preview mode
+    const highlightSearchInPreview = useCallback((query: string, matchIndex: number) => {
+        if (!previewRef.current || !query) return;
+
+        const previewElement = previewRef.current;
+
+        // Clear existing search highlights
+        previewElement.querySelectorAll('.search-highlight, .current-match').forEach(el => {
+            const parent = el.parentNode;
+            if (parent) {
+                parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+                parent.normalize();
+            }
+        });
+
+        // Find all text nodes and highlight matches
+        let currentMatchCount = 0;
+        const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+        const highlightInNode = (node: Node) => {
+            if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+                const text = node.textContent;
+                if (regex.test(text)) {
+                    regex.lastIndex = 0;
+                    const span = document.createElement('span');
+                    let lastIndex = 0;
+                    let match;
+
+                    while ((match = regex.exec(text)) !== null) {
+                        if (match.index > lastIndex) {
+                            span.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+                        }
+
+                        const highlight = document.createElement('span');
+                        highlight.className = currentMatchCount === matchIndex ? 'current-match' : 'search-highlight';
+                        highlight.textContent = match[0];
+                        span.appendChild(highlight);
+
+                        if (currentMatchCount === matchIndex) {
+                            requestAnimationFrame(() => {
+                                highlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            });
+                        }
+
+                        currentMatchCount++;
+                        lastIndex = match.index + match[0].length;
+                    }
+
+                    if (lastIndex < text.length) {
+                        span.appendChild(document.createTextNode(text.substring(lastIndex)));
+                    }
+
+                    node.parentNode?.replaceChild(span, node);
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const el = node as HTMLElement;
+                if (!['SCRIPT', 'STYLE'].includes(el.tagName)) {
+                    Array.from(node.childNodes).forEach(highlightInNode);
+                }
+            }
+        };
+
+        Array.from(previewElement.childNodes).forEach(highlightInNode);
+    }, []);
+
+    // Highlight search match and line in edit mode
+    const highlightSearchMatch = useCallback((matchIndex: number, matches: Array<{ start: number; end: number }>) => {
+        if (!contentEditableRef.current || !activeFile || matches.length === 0 || matchIndex < 0) return;
+
+        const element = contentEditableRef.current;
+        const text = activeFile.content;
+
+        // Clear existing search highlights
+        clearSearchHighlights(element);
+
+        // Reset content to plain text
+        element.textContent = text;
+
+        if (matchIndex >= matches.length) return;
+
+        const match = matches[matchIndex];
+
+        // Find line boundaries for current match
+        const lineStart = text.lastIndexOf('\n', match.start - 1) + 1;
+        let lineEnd = text.indexOf('\n', match.start);
+        if (lineEnd === -1) lineEnd = text.length;
+
+        // We need to highlight both the line and the match
+        // First, wrap the entire line in a line-highlight span
+        // Then wrap the match in a current-match span
+
+        const beforeLine = text.substring(0, lineStart);
+        const lineContent = text.substring(lineStart, lineEnd);
+        const afterLine = text.substring(lineEnd);
+
+        // Calculate match position within the line
+        const matchStartInLine = match.start - lineStart;
+        const matchEndInLine = match.end - lineStart;
+
+        const beforeMatch = lineContent.substring(0, matchStartInLine);
+        const matchText = lineContent.substring(matchStartInLine, matchEndInLine);
+        const afterMatch = lineContent.substring(matchEndInLine);
+
+        // Build the DOM
+        element.textContent = '';
+
+        if (beforeLine) {
+            element.appendChild(document.createTextNode(beforeLine));
+        }
+
+        // Create line highlight span
+        const lineSpan = document.createElement('span');
+        lineSpan.className = 'current-line-highlight';
+
+        if (beforeMatch) {
+            lineSpan.appendChild(document.createTextNode(beforeMatch));
+        }
+
+        // Create match highlight span
+        const matchSpan = document.createElement('span');
+        matchSpan.className = 'current-match';
+        matchSpan.textContent = matchText;
+        lineSpan.appendChild(matchSpan);
+
+        if (afterMatch) {
+            lineSpan.appendChild(document.createTextNode(afterMatch));
+        }
+
+        element.appendChild(lineSpan);
+
+        if (afterLine) {
+            element.appendChild(document.createTextNode(afterLine));
+        }
+
+        // Scroll match into view
+        requestAnimationFrame(() => {
+            matchSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }, [activeFile]);
+
+    // Find Next - search from current cursor position (works in both edit and preview modes)
+    const handleFindNext = useCallback(() => {
+        if (!searchQuery || !activeFile) return;
+
+        const text = activeFile.content;
+        const matches = findAllMatches(text, searchQuery);
+
+        if (matches.length === 0) {
+            setSearchMatches([]);
+            setCurrentSearchIndex(-1);
+            setMatchCount(0);
+            return;
+        }
+
+        setSearchMatches(matches);
+
+        // Calculate next index
+        let nextIndex;
+        if (currentSearchIndex >= 0 && currentSearchIndex < matches.length) {
+            // Move to next match
+            nextIndex = (currentSearchIndex + 1) % matches.length;
+        } else {
+            // Start from beginning or from cursor position in edit mode
+            if (activeFile.viewMode === 'edit' && contentEditableRef.current) {
+                const cursorPos = getCursorPosition(contentEditableRef.current);
+                nextIndex = matches.findIndex(m => m.start >= cursorPos);
+                if (nextIndex === -1) {
+                    nextIndex = 0; // Wrap to beginning
+                }
+            } else {
+                nextIndex = 0;
+            }
+        }
+
+        setCurrentSearchIndex(nextIndex);
+
+        // Highlight based on view mode
+        if (activeFile.viewMode === 'edit') {
+            highlightSearchMatch(nextIndex, matches);
+            if (contentEditableRef.current) {
+                setCursorPosition(contentEditableRef.current, matches[nextIndex].end);
+            }
+        } else {
+            // Preview mode
+            highlightSearchInPreview(searchQuery, nextIndex);
+        }
+    }, [searchQuery, activeFile, findAllMatches, highlightSearchMatch, highlightSearchInPreview, currentSearchIndex]);
+
+    // Count occurrences
+    const handleCount = useCallback(() => {
+        if (!searchQuery || !activeFile) {
+            setMatchCount(0);
+            return;
+        }
+
+        const matches = findAllMatches(activeFile.content, searchQuery);
+        setMatchCount(matches.length);
+        setSearchMatches(matches);
+    }, [searchQuery, activeFile, findAllMatches]);
+
+    // Open Find dialog
+    const handleOpenFind = useCallback(() => {
+        setFindDialogOpen(true);
+        setMatchCount(null);
+        // Focus input after dialog opens
+        requestAnimationFrame(() => {
+            searchInputRef.current?.focus();
+        });
+    }, []);
+
+    // Close Find dialog
+    const handleCloseFind = useCallback(() => {
+        setFindDialogOpen(false);
+        setSearchQuery('');
+        setSearchMatches([]);
+        setCurrentSearchIndex(-1);
+        setMatchCount(null);
+
+        // Clear search highlights based on view mode
+        if (activeFile?.viewMode === 'edit' && contentEditableRef.current) {
+            contentEditableRef.current.textContent = activeFile.content;
+        } else if (activeFile?.viewMode === 'preview' && previewRef.current) {
+            // Clear search highlights in preview
+            previewRef.current.querySelectorAll('.search-highlight, .current-match').forEach(el => {
+                const parent = el.parentNode;
+                if (parent) {
+                    parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+                    parent.normalize();
+                }
+            });
+        }
+    }, [activeFile]);
+
+    // Listen for Ctrl+F event from App.tsx
+    useEffect(() => {
+        const handleOpenFindEvent = () => {
+            if (activeFile) {
+                handleOpenFind();
+            }
+        };
+
+        window.addEventListener('open-find-dialog', handleOpenFindEvent);
+        return () => window.removeEventListener('open-find-dialog', handleOpenFindEvent);
+    }, [activeFile, handleOpenFind]);
+
     // Sync activeFile content to contenteditable when it changes programmatically (undo/redo/file switch)
     React.useEffect(() => {
         if (!activeFile || !contentEditableRef.current) return;
@@ -763,18 +1143,105 @@ export function EditorPane() {
                     onInsert={handleMarkdownInsert}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
+                    onFind={handleOpenFind}
                 />
-                <ContentEditableDiv
-                    ref={contentEditableRef}
-                    contentEditable
-                    suppressContentEditableWarning
-                    data-placeholder="Start typing markdown..."
-                    onInput={handleContentChange}
-                    onKeyDown={handleKeyDown}
-                    onClick={handleClick}
-                    onDoubleClick={handleDoubleClick}
-                    onPaste={handlePaste}
-                    spellCheck={false}
+                <EditorWrapper>
+                    <ContentEditableDiv
+                        ref={contentEditableRef}
+                        contentEditable
+                        suppressContentEditableWarning
+                        data-placeholder="Start typing markdown..."
+                        onInput={handleContentChange}
+                        onKeyDown={handleKeyDown}
+                        onClick={handleClick}
+                        onDoubleClick={handleDoubleClick}
+                        onPaste={handlePaste}
+                        spellCheck={false}
+                        onScroll={(e) => {
+                            if (activeFile) {
+                                const target = e.target as HTMLDivElement;
+                                dispatch({
+                                    type: 'UPDATE_SCROLL_POSITION',
+                                    payload: { id: activeFile.id, scrollPosition: target.scrollTop }
+                                });
+                            }
+                        }}
+                    />
+                    {findDialogOpen && (
+                        <FindDialogContainer>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                <TextField
+                                    inputRef={searchInputRef}
+                                    autoFocus
+                                    size="small"
+                                    placeholder="Find what:"
+                                    value={searchQuery}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentSearchIndex(-1);
+                                        setMatchCount(null);
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            handleFindNext();
+                                        } else if (e.key === 'Escape') {
+                                            handleCloseFind();
+                                        }
+                                    }}
+                                    fullWidth
+                                    InputProps={{
+                                        sx: {
+                                            '& input::placeholder': {
+                                                color: 'text.secondary',
+                                                opacity: 1,
+                                            },
+                                        },
+                                    }}
+                                />
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={handleFindNext}
+                                        disabled={!searchQuery}
+                                    >
+                                        Find Next
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={handleCount}
+                                        disabled={!searchQuery}
+                                    >
+                                        Count
+                                    </Button>
+                                    <IconButton size="small" onClick={handleCloseFind}>
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </Box>
+                                {matchCount !== null && (
+                                    <Typography variant="body2" color="text.secondary">
+                                        {matchCount === 0
+                                            ? 'No matches found'
+                                            : `${matchCount} occurrence${matchCount !== 1 ? 's' : ''} found`}
+                                    </Typography>
+                                )}
+                            </Box>
+                        </FindDialogContainer>
+                    )}
+                </EditorWrapper>
+            </EditorContainer>
+        );
+    }
+
+    // Preview mode - show rendered markdown
+    return (
+        <EditorContainer>
+            <EditorWrapper>
+                <MarkdownPreview
+                    ref={previewRef}
+                    onClick={handlePreviewClick}
+                    onDoubleClick={handlePreviewDoubleClick}
                     onScroll={(e) => {
                         if (activeFile) {
                             const target = e.target as HTMLDivElement;
@@ -784,32 +1251,74 @@ export function EditorPane() {
                             });
                         }
                     }}
-                />
-            </EditorContainer>
-        );
-    }
-
-    // Preview mode - show rendered markdown
-    return (
-        <EditorContainer>
-            <MarkdownPreview
-                ref={previewRef}
-                onClick={handlePreviewClick}
-                onDoubleClick={handlePreviewDoubleClick}
-                onScroll={(e) => {
-                    if (activeFile) {
-                        const target = e.target as HTMLDivElement;
-                        dispatch({
-                            type: 'UPDATE_SCROLL_POSITION',
-                            payload: { id: activeFile.id, scrollPosition: target.scrollTop }
-                        });
-                    }
-                }}
-            >
-                <ReactMarkdown remarkPlugins={markdownPlugins}>
-                    {activeFile.content || '*No content*'}
-                </ReactMarkdown>
-            </MarkdownPreview>
+                >
+                    <ReactMarkdown remarkPlugins={markdownPlugins}>
+                        {activeFile.content || '*No content*'}
+                    </ReactMarkdown>
+                </MarkdownPreview>
+                {findDialogOpen && (
+                    <FindDialogContainer>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <TextField
+                                inputRef={searchInputRef}
+                                autoFocus
+                                size="small"
+                                placeholder="Find what:"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setCurrentSearchIndex(-1);
+                                    setMatchCount(null);
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        handleFindNext();
+                                    } else if (e.key === 'Escape') {
+                                        handleCloseFind();
+                                    }
+                                }}
+                                fullWidth
+                                InputProps={{
+                                    sx: {
+                                        '& input::placeholder': {
+                                            color: 'text.secondary',
+                                            opacity: 1,
+                                        },
+                                    },
+                                }}
+                            />
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    onClick={handleFindNext}
+                                    disabled={!searchQuery}
+                                >
+                                    Find Next
+                                </Button>
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={handleCount}
+                                    disabled={!searchQuery}
+                                >
+                                    Count
+                                </Button>
+                                <IconButton size="small" onClick={handleCloseFind}>
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </Box>
+                            {matchCount !== null && (
+                                <Typography variant="body2" color="text.secondary">
+                                    {matchCount === 0
+                                        ? 'No matches found'
+                                        : `${matchCount} occurrence${matchCount !== 1 ? 's' : ''} found`}
+                                </Typography>
+                            )}
+                        </Box>
+                    </FindDialogContainer>
+                )}
+            </EditorWrapper>
         </EditorContainer>
     );
 }

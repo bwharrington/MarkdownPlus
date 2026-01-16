@@ -92,6 +92,13 @@ function AppContent() {
                 return;
             }
 
+            // Ctrl+F - Open Find Dialog
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-find-dialog'));
+                return;
+            }
+
             // Ctrl+E - Toggle Edit/Preview Mode
             if (e.ctrlKey && e.key === 'e' && state.activeFileId) {
                 e.preventDefault();

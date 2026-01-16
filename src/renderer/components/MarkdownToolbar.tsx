@@ -15,6 +15,7 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
 import UndoIcon from '@mui/icons-material/Undo';
 import RedoIcon from '@mui/icons-material/Redo';
+import SearchIcon from '@mui/icons-material/Search';
 import { useActiveFile } from '../contexts';
 
 const ToolbarContainer = styled(Box)(({ theme }) => ({
@@ -36,9 +37,10 @@ interface MarkdownToolbarProps {
     onInsert: (before: string, after: string, placeholder?: string) => void;
     onUndo?: () => void;
     onRedo?: () => void;
+    onFind?: () => void;
 }
 
-export function MarkdownToolbar({ onInsert, onUndo, onRedo }: MarkdownToolbarProps) {
+export function MarkdownToolbar({ onInsert, onUndo, onRedo, onFind }: MarkdownToolbarProps) {
     const activeFile = useActiveFile();
     const canUndo = activeFile ? activeFile.undoStackPointer > 0 : false;
     const canRedo = activeFile ? activeFile.redoStack.length > 0 : false;
@@ -166,6 +168,14 @@ export function MarkdownToolbar({ onInsert, onUndo, onRedo }: MarkdownToolbarPro
             <Tooltip title="Horizontal Rule">
                 <IconButton size="small" onClick={() => onInsert('\n---\n', '', '')}>
                     <HorizontalRuleIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
+
+            <ToolbarDivider orientation="vertical" flexItem />
+
+            <Tooltip title="Find (Ctrl+F)">
+                <IconButton size="small" onClick={onFind}>
+                    <SearchIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
         </ToolbarContainer>
