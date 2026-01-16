@@ -1214,6 +1214,7 @@ export function EditorPane() {
         return (
             <EditorContainer>
                 <MarkdownToolbar
+                    mode="edit"
                     onInsert={handleMarkdownInsert}
                     onUndo={handleUndo}
                     onRedo={handleRedo}
@@ -1311,6 +1312,10 @@ export function EditorPane() {
     // Preview mode - show rendered markdown
     return (
         <EditorContainer>
+            <MarkdownToolbar
+                mode="preview"
+                onFind={handleOpenFind}
+            />
             <EditorWrapper>
                 <MarkdownPreview
                     ref={previewRef}
