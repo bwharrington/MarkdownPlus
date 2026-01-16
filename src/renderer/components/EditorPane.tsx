@@ -169,9 +169,9 @@ function highlightWordInElement(element: HTMLElement, word: string): void {
                 node.parentNode?.replaceChild(span, node);
             }
         } else if (node.nodeType === Node.ELEMENT_NODE) {
-            // Skip code blocks and other elements where we don't want to highlight
+            // Skip PRE (code blocks), SCRIPT, and STYLE elements, but allow inline CODE
             const el = node as HTMLElement;
-            if (!['CODE', 'PRE', 'SCRIPT', 'STYLE'].includes(el.tagName)) {
+            if (!['PRE', 'SCRIPT', 'STYLE'].includes(el.tagName)) {
                 // Process child nodes (create array to avoid live collection issues)
                 Array.from(node.childNodes).forEach(processNode);
             }
@@ -697,12 +697,47 @@ export function EditorPane() {
     React.useEffect(() => {
         if (!activeFile || !contentEditableRef.current) return;
 
+        // Only update if we're in edit mode
+        if (activeFile.viewMode !== 'edit') return;
+
         const currentText = getPlainText(contentEditableRef.current);
         if (currentText !== activeFile.content) {
+            // Clear any highlights first
+            clearWordHighlights(contentEditableRef.current);
+
             const cursorPos = getCursorPosition(contentEditableRef.current);
             setPlainText(contentEditableRef.current, activeFile.content, cursorPos);
+
+            // Clear highlight state
+            setHighlightedMatches([]);
+            setCurrentMatchIndex(0);
         }
-    }, [activeFile?.content]);
+    }, [activeFile?.content, activeFile?.viewMode]);
+
+    // Initialize contenteditable when switching to edit mode
+    React.useEffect(() => {
+        if (!activeFile || activeFile.viewMode !== 'edit' || !contentEditableRef.current) return;
+
+        // Ensure contenteditable is populated with content when switching to edit mode
+        const currentText = getPlainText(contentEditableRef.current);
+        if (currentText !== activeFile.content) {
+            clearWordHighlights(contentEditableRef.current);
+            contentEditableRef.current.textContent = activeFile.content;
+            setHighlightedMatches([]);
+            setCurrentMatchIndex(0);
+        }
+
+        // Clear any highlights from preview mode
+        if (previewRef.current) {
+            previewRef.current.querySelectorAll('.word-highlight').forEach(el => {
+                const parent = el.parentNode;
+                if (parent) {
+                    parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+                    parent.normalize();
+                }
+            });
+        }
+    }, [activeFile?.viewMode, activeFile?.id]);
 
     // Restore scroll position when switching modes or changing files
     React.useEffect(() => {
