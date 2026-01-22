@@ -490,25 +490,35 @@ export function EditorPane() {
         const selectedText = selection.toString().trim();
         if (!selectedText || !/^[a-zA-Z0-9]+$/.test(selectedText)) return;
 
-        const position = getCursorPosition(element);
         const text = getPlainText(element);
+        
+        // Find all matches of the selected word using regex word boundaries
+        const matches: Array<{ start: number; end: number }> = [];
+        const regex = new RegExp(`\\b${selectedText}\\b`, 'g');
+        let match;
+        
+        while ((match = regex.exec(text)) !== null) {
+            matches.push({
+                start: match.index,
+                end: match.index + selectedText.length,
+            });
+        }
 
-        // Get word at position and all matches
-        const result = getWordAtPosition(text, position);
-
-        if (result && result.matches.length > 0) {
+        if (matches.length > 0) {
+            const position = getCursorPosition(element);
+            
             // Find which match was clicked
-            const clickedIndex = result.matches.findIndex(m => position >= m.start && position <= m.end);
-            const clickedMatch = clickedIndex >= 0 ? result.matches[clickedIndex] : result.matches[0];
+            const clickedIndex = matches.findIndex(m => position >= m.start && position <= m.end);
+            const clickedMatch = clickedIndex >= 0 ? matches[clickedIndex] : matches[0];
 
             // Clear existing highlights
             clearWordHighlights(element);
 
             // Highlight all matches using the same function as preview mode
-            highlightWordInElement(element, result.word);
+            highlightWordInElement(element, selectedText);
 
             // Store match info for state tracking
-            setHighlightedMatches(result.matches);
+            setHighlightedMatches(matches);
             setCurrentMatchIndex(clickedIndex >= 0 ? clickedIndex : 0);
 
             // Restore the word selection after highlighting
@@ -574,22 +584,9 @@ export function EditorPane() {
         if (!selection || selection.rangeCount === 0) return;
 
         // Get the selected word after double-click (browser automatically selects the word)
-        let word = selection.toString().trim();
+        const word = selection.toString().trim();
 
-        // If no selection, try to get word from click position
-        if (!word) {
-            const range = selection.getRangeAt(0);
-            const textNode = range.startContainer;
-            if (textNode.nodeType === Node.TEXT_NODE && textNode.textContent) {
-                const text = textNode.textContent;
-                const offset = range.startOffset;
-                const result = getWordAtPosition(text, offset);
-                if (result) {
-                    word = result.word;
-                }
-            }
-        }
-
+        // Browser should always select text on double-click; if not, bail out
         if (!word || !/^[a-zA-Z0-9]+$/.test(word)) return;
 
         // Remove existing highlights
