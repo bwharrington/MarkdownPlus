@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab, Checkbox, FormControlLabel } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
+import { Box, styled } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActiveFile, useEditorDispatch } from '../contexts';
 import { MarkdownToolbar } from './MarkdownToolbar';
+import { FindReplaceDialog } from './FindReplaceDialog';
 
 const EditorContainer = styled(Box)({
     display: 'flex',
@@ -49,19 +49,6 @@ const ContentEditableDiv = styled('div')(({ theme }) => ({
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.1)',
         display: 'block',
     },
-}));
-
-const FindDialogContainer = styled(Box)(({ theme }) => ({
-    position: 'absolute',
-    top: 50,
-    right: 16,
-    zIndex: 1000,
-    backgroundColor: theme.palette.background.paper,
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: 4,
-    padding: 16,
-    boxShadow: theme.shadows[4],
-    minWidth: 300,
 }));
 
 const EditorWrapper = styled(Box)({
@@ -411,6 +398,9 @@ export function EditorPane() {
     const previewRef = useRef<HTMLDivElement>(null);
     const lastContentRef = useRef<string>('');
     const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const isUserInputRef = useRef<boolean>(false);
+    const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
+    const highlightedMatchesRef = useRef<Array<{ start: number; end: number }>>([]);
     const [highlightedMatches, setHighlightedMatches] = useState<Array<{ start: number; end: number }>>([]);
     const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
 
@@ -420,23 +410,38 @@ export function EditorPane() {
     const [searchMatches, setSearchMatches] = useState<Array<{ start: number; end: number }>>([]);
     const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
     const [matchCount, setMatchCount] = useState<number | null>(null);
-    const searchInputRef = useRef<HTMLInputElement>(null);
+
+    // Replace state
+    const [replaceQuery, setReplaceQuery] = useState('');
+    const [activeDialogTab, setActiveDialogTab] = useState<'find' | 'replace'>('find');
+
+    // Keep ref in sync with state for use in callbacks without causing re-renders
+    highlightedMatchesRef.current = highlightedMatches;
+
+    // Stable reference to activeFile.id to avoid callback recreation
+    const activeFileIdRef = useRef<string | null>(null);
+    activeFileIdRef.current = activeFile?.id ?? null;
 
     const handleContentChange = useCallback(() => {
-        if (activeFile && contentEditableRef.current) {
+        const fileId = activeFileIdRef.current;
+        if (fileId && contentEditableRef.current) {
+            // Mark this as user input to prevent sync useEffect from running
+            isUserInputRef.current = true;
+
             const newContent = getPlainText(contentEditableRef.current);
 
-            // Clear word highlights when content changes
-            clearWordHighlights(contentEditableRef.current);
+            // Only clear word highlights if there are any (avoid unnecessary DOM operations)
+            // Use ref to avoid dependency on highlightedMatches state
+            if (highlightedMatchesRef.current.length > 0) {
+                clearWordHighlights(contentEditableRef.current);
+                setHighlightedMatches([]);
+                setCurrentMatchIndex(0);
+            }
 
             dispatch({
                 type: 'UPDATE_CONTENT',
-                payload: { id: activeFile.id, content: newContent },
+                payload: { id: fileId, content: newContent },
             });
-
-            // Clear highlighted matches state
-            setHighlightedMatches([]);
-            setCurrentMatchIndex(0);
 
             // Push to undo stack after a short delay (debounce)
             if (undoTimeoutRef.current) {
@@ -446,34 +451,36 @@ export function EditorPane() {
                 if (lastContentRef.current !== newContent) {
                     dispatch({
                         type: 'PUSH_UNDO',
-                        payload: { id: activeFile.id, content: newContent },
+                        payload: { id: fileId, content: newContent },
                     });
                     lastContentRef.current = newContent;
                 }
             }, 500);
         }
-    }, [activeFile, dispatch]);
+    }, [dispatch]);
 
     const handleUndo = useCallback(() => {
-        if (activeFile) {
+        const fileId = activeFileIdRef.current;
+        if (fileId) {
             dispatch({
                 type: 'UNDO',
-                payload: { id: activeFile.id },
+                payload: { id: fileId },
             });
         }
-    }, [activeFile, dispatch]);
+    }, [dispatch]);
 
     const handleRedo = useCallback(() => {
-        if (activeFile) {
+        const fileId = activeFileIdRef.current;
+        if (fileId) {
             dispatch({
                 type: 'REDO',
-                payload: { id: activeFile.id },
+                payload: { id: fileId },
             });
         }
-    }, [activeFile, dispatch]);
+    }, [dispatch]);
 
     const handleDoubleClick = useCallback(() => {
-        if (!activeFile || !contentEditableRef.current) return;
+        if (!activeFileIdRef.current || !contentEditableRef.current) return;
 
         const element = contentEditableRef.current;
         const selection = window.getSelection();
@@ -547,19 +554,20 @@ export function EditorPane() {
             setHighlightedMatches([]);
             setCurrentMatchIndex(0);
         }
-    }, [activeFile]);
+    }, []);
 
     const handleClick = useCallback(() => {
         // Clear highlights on single click
-        if (highlightedMatches.length > 0 && contentEditableRef.current) {
+        // Use ref to avoid dependency on highlightedMatches state
+        if (highlightedMatchesRef.current.length > 0 && contentEditableRef.current) {
             clearWordHighlights(contentEditableRef.current);
             setHighlightedMatches([]);
             setCurrentMatchIndex(0);
         }
-    }, [highlightedMatches]);
+    }, []);
 
     const handlePreviewDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-        if (!activeFile || !previewRef.current) return;
+        if (!activeFileIdRef.current || !previewRef.current) return;
 
         const selection = window.getSelection();
 
@@ -628,7 +636,7 @@ export function EditorPane() {
                 }
             }
         });
-    }, [activeFile]);
+    }, []);
 
     const handlePreviewClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (!previewRef.current) return;
@@ -651,7 +659,8 @@ export function EditorPane() {
     }, []);
 
     const handleMarkdownInsert = useCallback((before: string, after: string, placeholder?: string) => {
-        if (!activeFile || !contentEditableRef.current) return;
+        const fileId = activeFileIdRef.current;
+        if (!fileId || !contentEditableRef.current) return;
 
         const element = contentEditableRef.current;
         const selection = window.getSelection();
@@ -667,11 +676,11 @@ export function EditorPane() {
 
             dispatch({
                 type: 'UPDATE_CONTENT',
-                payload: { id: activeFile.id, content: newContent },
+                payload: { id: fileId, content: newContent },
             });
             dispatch({
                 type: 'PUSH_UNDO',
-                payload: { id: activeFile.id, content: newContent },
+                payload: { id: fileId, content: newContent },
             });
             return;
         }
@@ -701,17 +710,19 @@ export function EditorPane() {
         const newContent = getPlainText(element);
         dispatch({
             type: 'UPDATE_CONTENT',
-            payload: { id: activeFile.id, content: newContent },
+            payload: { id: fileId, content: newContent },
         });
         dispatch({
             type: 'PUSH_UNDO',
-            payload: { id: activeFile.id, content: newContent },
+            payload: { id: fileId, content: newContent },
         });
 
         element.focus();
-    }, [activeFile, dispatch]);
+    }, [dispatch]);
 
     const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+        const fileId = activeFileIdRef.current;
+        
         // Handle Ctrl+Z for Undo
         if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
             e.preventDefault();
@@ -741,7 +752,7 @@ export function EditorPane() {
         }
 
         // Handle Enter key for list continuation
-        if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && !e.altKey && activeFile && contentEditableRef.current) {
+        if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && !e.altKey && fileId && contentEditableRef.current) {
             const element = contentEditableRef.current;
             const position = getCursorPosition(element);
             const value = getPlainText(element);
@@ -773,7 +784,7 @@ export function EditorPane() {
                 const newValue = getPlainText(element);
                 dispatch({
                     type: 'UPDATE_CONTENT',
-                    payload: { id: activeFile.id, content: newValue },
+                    payload: { id: fileId, content: newValue },
                 });
                 return;
             }
@@ -800,7 +811,7 @@ export function EditorPane() {
                 const newValue = getPlainText(element);
                 dispatch({
                     type: 'UPDATE_CONTENT',
-                    payload: { id: activeFile.id, content: newValue },
+                    payload: { id: fileId, content: newValue },
                 });
                 return;
             }
@@ -827,14 +838,14 @@ export function EditorPane() {
                 const newValue = getPlainText(element);
                 dispatch({
                     type: 'UPDATE_CONTENT',
-                    payload: { id: activeFile.id, content: newValue },
+                    payload: { id: fileId, content: newValue },
                 });
                 return;
             }
         }
 
         // Handle Tab key for indentation
-        if (e.key === 'Tab' && activeFile && contentEditableRef.current) {
+        if (e.key === 'Tab' && fileId && contentEditableRef.current) {
             e.preventDefault();
 
             const selection = window.getSelection();
@@ -849,13 +860,29 @@ export function EditorPane() {
                 const newValue = getPlainText(contentEditableRef.current);
                 dispatch({
                     type: 'UPDATE_CONTENT',
-                    payload: { id: activeFile.id, content: newValue },
+                    payload: { id: fileId, content: newValue },
                 });
             }
         }
-    }, [activeFile, dispatch, handleMarkdownInsert, handleUndo, handleRedo]);
+    }, [dispatch, handleMarkdownInsert, handleUndo, handleRedo]);
 
     const markdownPlugins = useMemo(() => [remarkGfm], []);
+
+    // Throttled scroll position update to reduce dispatch calls
+    const handleScrollThrottled = useCallback((scrollTop: number) => {
+        const fileId = activeFileIdRef.current;
+        if (!fileId) return;
+        
+        if (scrollThrottleRef.current) {
+            clearTimeout(scrollThrottleRef.current);
+        }
+        scrollThrottleRef.current = setTimeout(() => {
+            dispatch({
+                type: 'UPDATE_SCROLL_POSITION',
+                payload: { id: fileId, scrollPosition: scrollTop }
+            });
+        }, 100);
+    }, [dispatch]);
 
     // Handle paste to strip rich text formatting
     const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
@@ -876,14 +903,15 @@ export function EditorPane() {
         }
 
         // Update content
-        if (activeFile && contentEditableRef.current) {
+        const fileId = activeFileIdRef.current;
+        if (fileId && contentEditableRef.current) {
             const newContent = getPlainText(contentEditableRef.current);
             dispatch({
                 type: 'UPDATE_CONTENT',
-                payload: { id: activeFile.id, content: newContent },
+                payload: { id: fileId, content: newContent },
             });
         }
-    }, [activeFile, dispatch]);
+    }, [dispatch]);
 
     // Find all matches of search query in text (case-insensitive)
     const findAllMatches = useCallback((text: string, query: string): Array<{ start: number; end: number }> => {
@@ -968,11 +996,11 @@ export function EditorPane() {
     }, []);
 
     // Highlight search match and line in edit mode
-    const highlightSearchMatch = useCallback((matchIndex: number, matches: Array<{ start: number; end: number }>) => {
+    const highlightSearchMatch = useCallback((matchIndex: number, matches: Array<{ start: number; end: number }>, customText?: string) => {
         if (!contentEditableRef.current || !activeFile || matches.length === 0 || matchIndex < 0) return;
 
         const element = contentEditableRef.current;
-        const text = activeFile.content;
+        const text = customText ?? activeFile.content;
 
         // Clear existing search highlights
         clearSearchHighlights(element);
@@ -1102,23 +1130,140 @@ export function EditorPane() {
         setSearchMatches(matches);
     }, [searchQuery, activeFile, findAllMatches]);
 
-    // Open Find dialog
-    const handleOpenFind = useCallback(() => {
-        setFindDialogOpen(true);
-        setMatchCount(null);
-        // Focus input after dialog opens
-        requestAnimationFrame(() => {
-            searchInputRef.current?.focus();
+    // Replace current match
+    const handleReplace = useCallback(() => {
+        if (!searchQuery || !activeFile || activeFile.viewMode !== 'edit') return;
+        if (!contentEditableRef.current) return;
+
+        const text = activeFile.content;
+        let matches = searchMatches;
+
+        // If matches haven't been found yet, find them now
+        if (matches.length === 0) {
+            matches = findAllMatches(text, searchQuery);
+            if (matches.length === 0) {
+                setMatchCount(0);
+                return;
+            }
+            setSearchMatches(matches);
+            setMatchCount(matches.length);
+        }
+
+        // If no current match selected, find the first one from cursor position
+        let matchIndex = currentSearchIndex;
+        if (matchIndex < 0 || matchIndex >= matches.length) {
+            const cursorPos = getCursorPosition(contentEditableRef.current);
+            matchIndex = matches.findIndex(m => m.start >= cursorPos);
+            if (matchIndex === -1) {
+                matchIndex = 0; // Wrap to beginning
+            }
+            setCurrentSearchIndex(matchIndex);
+            highlightSearchMatch(matchIndex, matches);
+            return; // Just highlight on first call, replace on next
+        }
+
+        const match = matches[matchIndex];
+
+        // Build new content with replacement
+        const newContent = text.substring(0, match.start) + replaceQuery + text.substring(match.end);
+
+        // Update content via dispatch
+        dispatch({
+            type: 'UPDATE_CONTENT',
+            payload: { id: activeFile.id, content: newContent },
         });
+        dispatch({
+            type: 'PUSH_UNDO',
+            payload: { id: activeFile.id, content: newContent },
+        });
+
+        // Update contenteditable DOM
+        const newCursorPos = match.start + replaceQuery.length;
+        setPlainText(contentEditableRef.current, newContent, newCursorPos);
+
+        // Recalculate matches with new content
+        const newMatches = findAllMatches(newContent, searchQuery);
+        setSearchMatches(newMatches);
+        setMatchCount(newMatches.length);
+
+        // Find and navigate to next match
+        if (newMatches.length > 0) {
+            // Find the next match at or after the replacement position
+            let nextIndex = newMatches.findIndex(m => m.start >= newCursorPos);
+            if (nextIndex === -1) {
+                nextIndex = 0; // Wrap to beginning
+            }
+            setCurrentSearchIndex(nextIndex);
+            highlightSearchMatch(nextIndex, newMatches, newContent);
+            setCursorPosition(contentEditableRef.current, newMatches[nextIndex].end);
+        } else {
+            setCurrentSearchIndex(-1);
+            clearSearchHighlights(contentEditableRef.current);
+        }
+    }, [searchQuery, replaceQuery, activeFile, currentSearchIndex, searchMatches, dispatch, findAllMatches, highlightSearchMatch]);
+
+    // Replace all matches
+    const handleReplaceAll = useCallback(() => {
+        if (!searchQuery || !activeFile || activeFile.viewMode !== 'edit') return;
+        if (!contentEditableRef.current) return;
+
+        const matches = findAllMatches(activeFile.content, searchQuery);
+        if (matches.length === 0) return;
+
+        let text = activeFile.content;
+        const replacedCount = matches.length;
+
+        // Replace from end to beginning to preserve positions
+        const sortedMatches = [...matches].sort((a, b) => b.start - a.start);
+
+        for (const match of sortedMatches) {
+            text = text.substring(0, match.start) + replaceQuery + text.substring(match.end);
+        }
+
+        // Update content via dispatch
+        dispatch({
+            type: 'UPDATE_CONTENT',
+            payload: { id: activeFile.id, content: text },
+        });
+        dispatch({
+            type: 'PUSH_UNDO',
+            payload: { id: activeFile.id, content: text },
+        });
+
+        // Update DOM
+        contentEditableRef.current.textContent = text;
+
+        // Clear matches and show notification
+        setSearchMatches([]);
+        setCurrentSearchIndex(-1);
+        setMatchCount(0);
+
+        // Show notification
+        dispatch({
+            type: 'SHOW_NOTIFICATION',
+            payload: {
+                message: `Replaced ${replacedCount} occurrence${replacedCount !== 1 ? 's' : ''}`,
+                severity: 'success',
+            },
+        });
+    }, [searchQuery, replaceQuery, activeFile, dispatch, findAllMatches]);
+
+    // Open Find dialog
+    const handleOpenFind = useCallback((tab: 'find' | 'replace' = 'find') => {
+        setFindDialogOpen(true);
+        setActiveDialogTab(tab);
+        setMatchCount(null);
     }, []);
 
     // Close Find dialog
     const handleCloseFind = useCallback(() => {
         setFindDialogOpen(false);
         setSearchQuery('');
+        setReplaceQuery('');
         setSearchMatches([]);
         setCurrentSearchIndex(-1);
         setMatchCount(null);
+        setActiveDialogTab('find');
 
         // Clear search highlights based on view mode
         if (activeFile?.viewMode === 'edit' && contentEditableRef.current) {
@@ -1135,11 +1280,13 @@ export function EditorPane() {
         }
     }, [activeFile]);
 
-    // Listen for Ctrl+F event from App.tsx
+    // Listen for Ctrl+F / Ctrl+H events from App.tsx
     useEffect(() => {
-        const handleOpenFindEvent = () => {
+        const handleOpenFindEvent = (e: Event) => {
             if (activeFile) {
-                handleOpenFind();
+                const customEvent = e as CustomEvent<{ tab?: 'find' | 'replace' }>;
+                const tab = customEvent.detail?.tab || 'find';
+                handleOpenFind(tab);
             }
         };
 
@@ -1149,6 +1296,12 @@ export function EditorPane() {
 
     // Sync activeFile content to contenteditable when it changes programmatically (undo/redo/file switch)
     React.useEffect(() => {
+        // Skip if this is a user input change (content already in DOM)
+        if (isUserInputRef.current) {
+            isUserInputRef.current = false;
+            return;
+        }
+
         if (!activeFile || !contentEditableRef.current) return;
 
         // Only update if we're in edit mode
@@ -1233,77 +1386,32 @@ export function EditorPane() {
                         onPaste={handlePaste}
                         spellCheck={false}
                         onScroll={(e) => {
-                            if (activeFile) {
-                                const target = e.target as HTMLDivElement;
-                                dispatch({
-                                    type: 'UPDATE_SCROLL_POSITION',
-                                    payload: { id: activeFile.id, scrollPosition: target.scrollTop }
-                                });
-                            }
+                            const target = e.target as HTMLDivElement;
+                            handleScrollThrottled(target.scrollTop);
                         }}
                     />
-                    {findDialogOpen && (
-                        <FindDialogContainer>
-                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                <TextField
-                                    inputRef={searchInputRef}
-                                    autoFocus
-                                    size="small"
-                                    placeholder="Find what:"
-                                    value={searchQuery}
-                                    onChange={(e) => {
-                                        setSearchQuery(e.target.value);
-                                        setCurrentSearchIndex(-1);
-                                        setMatchCount(null);
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            handleFindNext();
-                                        } else if (e.key === 'Escape') {
-                                            handleCloseFind();
-                                        }
-                                    }}
-                                    fullWidth
-                                    InputProps={{
-                                        sx: {
-                                            '& input::placeholder': {
-                                                color: 'text.secondary',
-                                                opacity: 1,
-                                            },
-                                        },
-                                    }}
-                                />
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        onClick={handleFindNext}
-                                        disabled={!searchQuery}
-                                    >
-                                        Find Next
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={handleCount}
-                                        disabled={!searchQuery}
-                                    >
-                                        Count
-                                    </Button>
-                                    <IconButton size="small" onClick={handleCloseFind}>
-                                        <CloseIcon fontSize="small" />
-                                    </IconButton>
-                                </Box>
-                                {matchCount !== null && (
-                                    <Typography variant="body2" color="text.secondary">
-                                        {matchCount === 0
-                                            ? 'No matches found'
-                                            : `${matchCount} occurrence${matchCount !== 1 ? 's' : ''} found`}
-                                    </Typography>
-                                )}
-                            </Box>
-                        </FindDialogContainer>
-                    )}
+                    <FindReplaceDialog
+                        open={findDialogOpen}
+                        mode="edit"
+                        activeTab={activeDialogTab}
+                        searchQuery={searchQuery}
+                        replaceQuery={replaceQuery}
+                        matchCount={matchCount}
+                        currentMatchIndex={currentSearchIndex}
+                        totalMatches={searchMatches.length}
+                        onTabChange={setActiveDialogTab}
+                        onSearchQueryChange={(query) => {
+                            setSearchQuery(query);
+                            setCurrentSearchIndex(-1);
+                            setMatchCount(null);
+                        }}
+                        onReplaceQueryChange={setReplaceQuery}
+                        onFindNext={handleFindNext}
+                        onCount={handleCount}
+                        onReplace={handleReplace}
+                        onReplaceAll={handleReplaceAll}
+                        onClose={handleCloseFind}
+                    />
                 </EditorWrapper>
             </EditorContainer>
         );
@@ -1322,81 +1430,36 @@ export function EditorPane() {
                     onClick={handlePreviewClick}
                     onDoubleClick={handlePreviewDoubleClick}
                     onScroll={(e) => {
-                        if (activeFile) {
-                            const target = e.target as HTMLDivElement;
-                            dispatch({
-                                type: 'UPDATE_SCROLL_POSITION',
-                                payload: { id: activeFile.id, scrollPosition: target.scrollTop }
-                            });
-                        }
+                        const target = e.target as HTMLDivElement;
+                        handleScrollThrottled(target.scrollTop);
                     }}
                 >
                     <ReactMarkdown remarkPlugins={markdownPlugins}>
                         {activeFile.content || '*No content*'}
                     </ReactMarkdown>
                 </MarkdownPreview>
-                {findDialogOpen && (
-                    <FindDialogContainer>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                            <TextField
-                                inputRef={searchInputRef}
-                                autoFocus
-                                size="small"
-                                placeholder="Find what:"
-                                value={searchQuery}
-                                onChange={(e) => {
-                                    setSearchQuery(e.target.value);
-                                    setCurrentSearchIndex(-1);
-                                    setMatchCount(null);
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        handleFindNext();
-                                    } else if (e.key === 'Escape') {
-                                        handleCloseFind();
-                                    }
-                                }}
-                                fullWidth
-                                InputProps={{
-                                    sx: {
-                                        '& input::placeholder': {
-                                            color: 'text.secondary',
-                                            opacity: 1,
-                                        },
-                                    },
-                                }}
-                            />
-                            <Box sx={{ display: 'flex', gap: 1 }}>
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    onClick={handleFindNext}
-                                    disabled={!searchQuery}
-                                >
-                                    Find Next
-                                </Button>
-                                <Button
-                                    variant="outlined"
-                                    size="small"
-                                    onClick={handleCount}
-                                    disabled={!searchQuery}
-                                >
-                                    Count
-                                </Button>
-                                <IconButton size="small" onClick={handleCloseFind}>
-                                    <CloseIcon fontSize="small" />
-                                </IconButton>
-                            </Box>
-                            {matchCount !== null && (
-                                <Typography variant="body2" color="text.secondary">
-                                    {matchCount === 0
-                                        ? 'No matches found'
-                                        : `${matchCount} occurrence${matchCount !== 1 ? 's' : ''} found`}
-                                </Typography>
-                            )}
-                        </Box>
-                    </FindDialogContainer>
-                )}
+                <FindReplaceDialog
+                    open={findDialogOpen}
+                    mode="preview"
+                    activeTab={activeDialogTab}
+                    searchQuery={searchQuery}
+                    replaceQuery={replaceQuery}
+                    matchCount={matchCount}
+                    currentMatchIndex={currentSearchIndex}
+                    totalMatches={searchMatches.length}
+                    onTabChange={setActiveDialogTab}
+                    onSearchQueryChange={(query) => {
+                        setSearchQuery(query);
+                        setCurrentSearchIndex(-1);
+                        setMatchCount(null);
+                    }}
+                    onReplaceQueryChange={setReplaceQuery}
+                    onFindNext={handleFindNext}
+                    onCount={handleCount}
+                    onReplace={handleReplace}
+                    onReplaceAll={handleReplaceAll}
+                    onClose={handleCloseFind}
+                />
             </EditorWrapper>
         </EditorContainer>
     );

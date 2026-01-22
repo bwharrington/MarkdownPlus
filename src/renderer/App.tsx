@@ -95,7 +95,14 @@ function AppContent() {
             // Ctrl+F - Open Find Dialog
             if (e.ctrlKey && e.key === 'f') {
                 e.preventDefault();
-                window.dispatchEvent(new CustomEvent('open-find-dialog'));
+                window.dispatchEvent(new CustomEvent('open-find-dialog', { detail: { tab: 'find' } }));
+                return;
+            }
+
+            // Ctrl+H - Open Find and Replace Dialog
+            if (e.ctrlKey && e.key === 'h') {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-find-dialog', { detail: { tab: 'replace' } }));
                 return;
             }
 
