@@ -107,6 +107,13 @@ export function FindReplaceDialog({
         }
     }, [open]);
 
+    // Switch to Find tab if mode changes to preview while on Replace tab
+    useEffect(() => {
+        if (mode === 'preview' && activeTab === 'replace') {
+            onTabChange('find');
+        }
+    }, [mode, activeTab, onTabChange]);
+
     // Focus search input when dialog opens or tab changes
     useEffect(() => {
         if (open) {
@@ -278,7 +285,11 @@ export function FindReplaceDialog({
                 onChange={handleTabChange}
             >
                 <StyledTab label="Find" />
-                <StyledTab label="Replace" />
+                <StyledTab 
+                    label="Replace" 
+                    disabled={isPreviewMode}
+                    title={isPreviewMode ? "Switch to edit mode to replace" : undefined}
+                />
             </StyledTabs>
 
             <DialogContent>
