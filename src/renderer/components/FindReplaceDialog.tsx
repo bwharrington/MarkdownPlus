@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab, Tooltip } from '@mui/material';
+import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
@@ -209,7 +209,6 @@ export function FindReplaceDialog({
     if (!open) return null;
 
     const isPreviewMode = mode === 'preview';
-    const canReplace = !isPreviewMode && searchQuery;
 
     const handleSearchKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -384,30 +383,22 @@ export function FindReplaceDialog({
                             >
                                 Find Next
                             </Button>
-                            <Tooltip title={isPreviewMode ? "Switch to edit mode to replace" : ""}>
-                                <span>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={onReplace}
-                                        disabled={!canReplace}
-                                    >
-                                        Replace
-                                    </Button>
-                                </span>
-                            </Tooltip>
-                            <Tooltip title={isPreviewMode ? "Switch to edit mode to replace" : ""}>
-                                <span>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={onReplaceAll}
-                                        disabled={!canReplace}
-                                    >
-                                        Replace All
-                                    </Button>
-                                </span>
-                            </Tooltip>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={onReplace}
+                                disabled={!searchQuery}
+                            >
+                                Replace
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={onReplaceAll}
+                                disabled={!searchQuery}
+                            >
+                                Replace All
+                            </Button>
                             <IconButton size="small" onClick={onClose}>
                                 <CloseIcon fontSize="small" />
                             </IconButton>
