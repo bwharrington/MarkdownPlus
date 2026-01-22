@@ -1,9 +1,39 @@
 {
   "recentFiles": [
-    "C:\\Users\\bwharrington\\Desktop\\prompts\\copilot-instructions.md"
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\.vscode\\prompts\\plan-buildMarkdownEditor.prompt.md",
+      "mode": "edit"
+    },
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\.vscode\\prompts\\ReactArchitecture.prompt.md",
+      "mode": "edit"
+    },
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\markdownplus-debug.log",
+      "mode": "preview"
+    },
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\.vscode\\prompts\\test.md",
+      "mode": "edit"
+    }
   ],
   "openFiles": [
-    "C:\\Users\\bwharrington\\Desktop\\prompts\\copilot-instructions.md"
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\.vscode\\prompts\\plan-buildMarkdownEditor.prompt.md",
+      "mode": "edit"
+    },
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\.vscode\\prompts\\ReactArchitecture.prompt.md",
+      "mode": "edit"
+    },
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\markdownplus-debug.log",
+      "mode": "preview"
+    },
+    {
+      "fileName": "C:\\Projects\\MarkdownPlus\\.vscode\\prompts\\test.md",
+      "mode": "edit"
+    }
   ],
   "defaultLineEnding": "CRLF",
   "devToolsOpen": false

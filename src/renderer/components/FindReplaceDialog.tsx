@@ -1,11 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab, Tooltip } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',
-    top: 50,
-    right: 16,
     zIndex: 1000,
     backgroundColor: theme.palette.background.paper,
     border: `1px solid ${theme.palette.divider}`,
@@ -13,6 +12,19 @@ const DialogContainer = styled(Box)(({ theme }) => ({
     boxShadow: theme.shadows[4],
     minWidth: 320,
     overflow: 'hidden',
+}));
+
+const DragHandle = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '4px',
+    cursor: 'move',
+    backgroundColor: theme.palette.action.hover,
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    '&:hover': {
+        backgroundColor: theme.palette.action.selected,
+    },
 }));
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
@@ -74,6 +86,25 @@ export function FindReplaceDialog({
 }: FindReplaceDialogProps) {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const replaceInputRef = useRef<HTMLInputElement>(null);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState({ x: 0, y: 50 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+    // Initialize position when dialog opens
+    useEffect(() => {
+        if (open && dialogRef.current) {
+            const rect = dialogRef.current.getBoundingClientRect();
+            const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
+            if (parentRect) {
+                // Position on the right side by default
+                setPosition({
+                    x: parentRect.width - rect.width - 16,
+                    y: 50
+                });
+            }
+        }
+    }, [open]);
 
     // Focus search input when dialog opens or tab changes
     useEffect(() => {
@@ -83,6 +114,50 @@ export function FindReplaceDialog({
             });
         }
     }, [open, activeTab]);
+
+    // Handle dragging
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (dialogRef.current) {
+            setIsDragging(true);
+            setDragStart({
+                x: e.clientX - position.x,
+                y: e.clientY - position.y
+            });
+            e.preventDefault();
+        }
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isDragging && dialogRef.current) {
+                const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
+                if (parentRect) {
+                    let newX = e.clientX - dragStart.x;
+                    let newY = e.clientY - dragStart.y;
+
+                    // Constrain to parent bounds
+                    const dialogRect = dialogRef.current.getBoundingClientRect();
+                    newX = Math.max(0, Math.min(newX, parentRect.width - dialogRect.width));
+                    newY = Math.max(0, Math.min(newY, parentRect.height - dialogRect.height));
+
+                    setPosition({ x: newX, y: newY });
+                }
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+        };
+
+        if (isDragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [isDragging, dragStart]);
 
     if (!open) return null;
 
@@ -145,7 +220,17 @@ export function FindReplaceDialog({
     };
 
     return (
-        <DialogContainer>
+        <DialogContainer
+            ref={dialogRef}
+            sx={{
+                left: position.x,
+                top: position.y,
+                cursor: isDragging ? 'grabbing' : 'default',
+            }}
+        >
+            <DragHandle onMouseDown={handleMouseDown}>
+                <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+            </DragHandle>
             <StyledTabs
                 value={activeTab === 'find' ? 0 : 1}
                 onChange={handleTabChange}
