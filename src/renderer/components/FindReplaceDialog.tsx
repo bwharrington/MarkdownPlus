@@ -90,6 +90,7 @@ export function FindReplaceDialog({
     const [position, setPosition] = useState({ x: 0, y: 50 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [isDialogFocused, setIsDialogFocused] = useState(true);
 
     // Initialize position when dialog opens
     useEffect(() => {
@@ -111,9 +112,48 @@ export function FindReplaceDialog({
         if (open) {
             requestAnimationFrame(() => {
                 searchInputRef.current?.focus();
+                setIsDialogFocused(true);
             });
         }
     }, [open, activeTab]);
+
+    // Handle focus/blur events to change opacity
+    useEffect(() => {
+        const handleFocusIn = (e: FocusEvent) => {
+            // Check if the focus is within the dialog
+            if (dialogRef.current && dialogRef.current.contains(e.target as Node)) {
+                setIsDialogFocused(true);
+            }
+        };
+
+        const handleFocusOut = (e: FocusEvent) => {
+            // Check if the new focus is outside the dialog
+            if (dialogRef.current && !dialogRef.current.contains(e.relatedTarget as Node)) {
+                setIsDialogFocused(false);
+            }
+        };
+
+        const handleMouseDown = (e: MouseEvent) => {
+            // Check if clicking outside the dialog
+            if (dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
+                setIsDialogFocused(false);
+            } else if (dialogRef.current && dialogRef.current.contains(e.target as Node)) {
+                setIsDialogFocused(true);
+            }
+        };
+
+        if (open) {
+            document.addEventListener('focusin', handleFocusIn);
+            document.addEventListener('focusout', handleFocusOut);
+            document.addEventListener('mousedown', handleMouseDown);
+
+            return () => {
+                document.removeEventListener('focusin', handleFocusIn);
+                document.removeEventListener('focusout', handleFocusOut);
+                document.removeEventListener('mousedown', handleMouseDown);
+            };
+        }
+    }, [open]);
 
     // Handle dragging
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -226,6 +266,8 @@ export function FindReplaceDialog({
                 left: position.x,
                 top: position.y,
                 cursor: isDragging ? 'grabbing' : 'default',
+                opacity: isDialogFocused ? 1 : 0.6,
+                transition: 'opacity 0.2s ease-in-out',
             }}
         >
             <DragHandle onMouseDown={handleMouseDown}>
