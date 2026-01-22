@@ -90,12 +90,12 @@ export function EmptyState() {
                             Recent Files
                         </Typography>
                         <List dense>
-                            {recentFiles.map((filePath, index) => (
+                            {recentFiles.map((fileRef, index) => (
                                 <ListItem key={index} disablePadding>
-                                    <ListItemButton onClick={() => openRecentFile(filePath)}>
+                                    <ListItemButton onClick={() => openRecentFile(fileRef.fileName)}>
                                         <ListItemText
-                                            primary={filePath.split(/[\\/]/).pop()}
-                                            secondary={filePath}
+                                            primary={fileRef.fileName.split(/[\\/]/).pop()}
+                                            secondary={fileRef.fileName}
                                             primaryTypographyProps={{ noWrap: true }}
                                             secondaryTypographyProps={{ noWrap: true, fontSize: 12 }}
                                         />

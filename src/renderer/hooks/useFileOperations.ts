@@ -98,15 +98,20 @@ export function useFileOperations() {
             }
 
             // Update recent files and open files in config
-            const allOpenFiles = [
-                ...state.openFiles.map(f => f.path).filter((p): p is string => p !== null && !p.endsWith('config.json')),
-                ...openedFilePaths
+            const allOpenFileRefs = [
+                ...state.openFiles
+                    .filter(f => f.path !== null && !f.path.endsWith('config.json'))
+                    .map(f => ({ fileName: f.path!, mode: f.viewMode })),
+                ...openedFilePaths.map(p => ({ fileName: p, mode: 'edit' as const }))
             ];
-            const uniqueOpenFiles = Array.from(new Set(allOpenFiles));
-            
+            // Remove duplicates by fileName
+            const uniqueOpenFiles = allOpenFileRefs.filter((ref, index, self) =>
+                index === self.findIndex(r => r.fileName === ref.fileName)
+            );
+
             const newRecentFiles = [
-                ...openedFilePaths,
-                ...state.config.recentFiles.filter(f => !openedFilePaths.includes(f)),
+                ...openedFilePaths.map(p => ({ fileName: p, mode: 'edit' as const })),
+                ...state.config.recentFiles.filter(ref => !openedFilePaths.includes(ref.fileName)),
             ].slice(0, 10);
 
             const newConfig: IConfig = {
@@ -146,13 +151,17 @@ export function useFileOperations() {
             });
             
             // Update openFiles in config
-            const openFilePaths = [
-                ...state.openFiles.map(f => f.path).filter((p): p is string => p !== null && !p.endsWith('config.json')),
-                result.filePath
+            const openFileRefs = [
+                ...state.openFiles
+                    .filter(f => f.path !== null && !f.path.endsWith('config.json'))
+                    .map(f => ({ fileName: f.path!, mode: f.viewMode })),
+                { fileName: result.filePath, mode: 'edit' as const }
             ];
-            // Remove duplicates
-            const uniqueOpenFiles = Array.from(new Set(openFilePaths));
-            
+            // Remove duplicates by fileName
+            const uniqueOpenFiles = openFileRefs.filter((ref, index, self) =>
+                index === self.findIndex(r => r.fileName === ref.fileName)
+            );
+
             const newConfig: IConfig = {
                 ...state.config,
                 openFiles: uniqueOpenFiles,
@@ -218,16 +227,19 @@ export function useFileOperations() {
             });
 
             // Update config with new open files (exclude config.json)
-            const openFilePaths = state.openFiles
-                .map(f => f.id === file.id ? result.filePath : f.path)
-                .filter((p): p is string => p !== null && !p.endsWith('config.json'));
-            
+            const openFileRefs = state.openFiles
+                .filter(f => (f.id === file.id ? result.filePath : f.path) !== null && !(f.id === file.id ? result.filePath : f.path)!.endsWith('config.json'))
+                .map(f => ({
+                    fileName: f.id === file.id ? result.filePath : f.path!,
+                    mode: f.viewMode,
+                }));
+
             const newConfig: IConfig = {
                 ...state.config,
-                openFiles: openFilePaths,
+                openFiles: openFileRefs,
                 recentFiles: [
-                    result.filePath,
-                    ...state.config.recentFiles.filter(f => f !== result.filePath),
+                    { fileName: result.filePath, mode: file.viewMode },
+                    ...state.config.recentFiles.filter(ref => ref.fileName !== result.filePath),
                 ].slice(0, 10),
             };
             await saveConfigAndUpdateEditor(newConfig);
@@ -279,13 +291,13 @@ export function useFileOperations() {
         dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
 
         // Update config (exclude config.json from openFiles)
-        const openFilePaths = state.openFiles
+        const openFileRefs = state.openFiles
             .filter(f => f.id !== file.id && f.path !== null && !f.path.endsWith('config.json'))
-            .map(f => f.path as string);
-        
+            .map(f => ({ fileName: f.path!, mode: f.viewMode }));
+
         const newConfig: IConfig = {
             ...state.config,
-            openFiles: openFilePaths,
+            openFiles: openFileRefs,
         };
         await saveConfigAndUpdateEditor(newConfig);
     }, [activeFile, state.openFiles, state.config, dispatch, saveFile, saveConfigAndUpdateEditor]);
@@ -347,16 +359,20 @@ export function useFileOperations() {
     }, [dispatch]);
 
     const openAllRecentFiles = useCallback(async () => {
-        const recentFiles = state.config.recentFiles.filter(f => !f.endsWith('config.json'));
-        const openedFilePaths: string[] = [];
-        
-        for (const filePath of recentFiles) {
+        const recentFileRefs = state.config.recentFiles.filter(ref => !ref.fileName.endsWith('config.json'));
+        const openedFileRefs: { fileName: string; mode: 'edit' | 'preview' }[] = [];
+
+        for (const fileRef of recentFileRefs) {
             // Skip if file is already open
-            if (state.openFiles.some(f => f.path === filePath)) {
-                openedFilePaths.push(filePath);
+            if (state.openFiles.some(f => f.path === fileRef.fileName)) {
+                // Use existing file's mode
+                const existingFile = state.openFiles.find(f => f.path === fileRef.fileName);
+                if (existingFile) {
+                    openedFileRefs.push({ fileName: fileRef.fileName, mode: existingFile.viewMode });
+                }
                 continue;
             }
-            const result = await window.electronAPI.readFile(filePath);
+            const result = await window.electronAPI.readFile(fileRef.fileName);
             if (result) {
                 dispatch({
                     type: 'OPEN_FILE',
@@ -366,21 +382,26 @@ export function useFileOperations() {
                         name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
                         content: result.content,
                         lineEnding: result.lineEnding,
+                        viewMode: fileRef.mode,
                     },
                 });
-                openedFilePaths.push(result.filePath);
+                openedFileRefs.push({ fileName: result.filePath, mode: fileRef.mode });
             }
         }
-        
+
         // Update config with all opened files
-        if (openedFilePaths.length > 0) {
-            const allOpenFiles = [
-                ...state.openFiles.map(f => f.path).filter((p): p is string => p !== null && !p.endsWith('config.json')),
-                ...openedFilePaths
+        if (openedFileRefs.length > 0) {
+            const allOpenFileRefs = [
+                ...state.openFiles
+                    .filter(f => f.path !== null && !f.path.endsWith('config.json'))
+                    .map(f => ({ fileName: f.path!, mode: f.viewMode })),
+                ...openedFileRefs
             ];
-            // Remove duplicates
-            const uniqueOpenFiles = Array.from(new Set(allOpenFiles));
-            
+            // Remove duplicates by fileName
+            const uniqueOpenFiles = allOpenFileRefs.filter((ref, index, self) =>
+                index === self.findIndex(r => r.fileName === ref.fileName)
+            );
+
             const newConfig: IConfig = {
                 ...state.config,
                 openFiles: uniqueOpenFiles,
@@ -427,14 +448,19 @@ export function useFileOperations() {
             });
 
             // Update config
-            const openFilePaths = state.openFiles
-                .map(f => f.id === fileId ? newPath : f.path)
-                .filter((p): p is string => p !== null && !p.endsWith('config.json'));
+            const openFileRefs = state.openFiles
+                .filter(f => (f.id === fileId ? newPath : f.path) !== null && !(f.id === fileId ? newPath : f.path)!.endsWith('config.json'))
+                .map(f => ({
+                    fileName: f.id === fileId ? newPath : f.path!,
+                    mode: f.viewMode,
+                }));
 
             const newConfig: IConfig = {
                 ...state.config,
-                openFiles: openFilePaths,
-                recentFiles: state.config.recentFiles.map(p => p === file.path ? newPath : p),
+                openFiles: openFileRefs,
+                recentFiles: state.config.recentFiles.map(ref =>
+                    ref.fileName === file.path ? { ...ref, fileName: newPath } : ref
+                ),
             };
 
             await saveConfigAndUpdateEditor(newConfig);

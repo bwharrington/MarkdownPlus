@@ -3,6 +3,11 @@
 export type LineEnding = 'CRLF' | 'LF';
 export type ViewMode = 'edit' | 'preview';
 
+export interface IFileReference {
+  fileName: string;
+  mode: ViewMode;
+}
+
 export interface FileOpenResult {
   filePath: string;
   content: string;
@@ -16,8 +21,8 @@ export interface FileSaveResult {
 }
 
 export interface IConfig {
-  recentFiles: string[];
-  openFiles: string[];
+  recentFiles: IFileReference[];
+  openFiles: IFileReference[];
   windowBounds?: {
     width: number;
     height: number;
@@ -45,7 +50,7 @@ export interface ElectronAPI {
   loadConfig: () => Promise<IConfig>;
   saveConfig: (config: IConfig) => Promise<void>;
   openConfig: () => Promise<FileOpenResult | null>;
-  syncRecentFiles: (openFiles: string[]) => Promise<void>;
+  syncRecentFiles: (openFiles: IFileReference[]) => Promise<void>;
   
   // Get initial files from command line
   getInitialFiles: () => Promise<string[]>;

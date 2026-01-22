@@ -28,8 +28,8 @@ const getConfigPath = () => {
 
 // Default config
 const defaultConfig = {
-    recentFiles: [],
-    openFiles: [],
+    recentFiles: [] as { fileName: string; mode: 'edit' | 'preview' }[],
+    openFiles: [] as { fileName: string; mode: 'edit' | 'preview' }[],
     defaultLineEnding: 'CRLF' as const,
     devToolsOpen: false,
 };
@@ -58,7 +58,22 @@ async function loadConfig() {
     try {
         const configPath = getConfigPath();
         const data = await fs.readFile(configPath, 'utf-8');
-        return { ...defaultConfig, ...JSON.parse(data) };
+        const loadedConfig = JSON.parse(data);
+
+        // Handle migration from old format (string arrays) to new format (object arrays)
+        // If recentFiles or openFiles contain strings instead of objects, reset them
+        if (loadedConfig.recentFiles && Array.isArray(loadedConfig.recentFiles) && loadedConfig.recentFiles.length > 0) {
+            if (typeof loadedConfig.recentFiles[0] === 'string') {
+                loadedConfig.recentFiles = [];
+            }
+        }
+        if (loadedConfig.openFiles && Array.isArray(loadedConfig.openFiles) && loadedConfig.openFiles.length > 0) {
+            if (typeof loadedConfig.openFiles[0] === 'string') {
+                loadedConfig.openFiles = [];
+            }
+        }
+
+        return { ...defaultConfig, ...loadedConfig };
     } catch {
         return defaultConfig;
     }
@@ -277,7 +292,7 @@ function registerIpcHandlers() {
     });
 
     // Config: Sync recent files with open files
-    ipcMain.handle('config:sync-recent-files', async (_event, openFiles: string[]) => {
+    ipcMain.handle('config:sync-recent-files', async (_event, openFiles: { fileName: string; mode: 'edit' | 'preview' }[]) => {
         const config = await loadConfig();
         const newConfig = {
             ...config,

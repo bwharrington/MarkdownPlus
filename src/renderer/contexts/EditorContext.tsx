@@ -23,7 +23,7 @@ const initialState: EditorState = {
 // Action types
 type EditorAction =
     | { type: 'NEW_FILE' }
-    | { type: 'OPEN_FILE'; payload: { id: string; path: string; name: string; content: string; lineEnding: 'CRLF' | 'LF' } }
+    | { type: 'OPEN_FILE'; payload: { id: string; path: string; name: string; content: string; lineEnding: 'CRLF' | 'LF'; viewMode?: 'edit' | 'preview' } }
     | { type: 'CLOSE_FILE'; payload: { id: string } }
     | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
     | { type: 'SET_DIRTY'; payload: { id: string; isDirty: boolean } }
@@ -92,7 +92,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 content: action.payload.content,
                 originalContent: action.payload.content,
                 isDirty: false,
-                viewMode: 'edit',
+                viewMode: action.payload.viewMode || 'edit',
                 lineEnding: action.payload.lineEnding,
                 undoStack: [action.payload.content],
                 redoStack: [],
@@ -402,12 +402,12 @@ export function EditorProvider({ children }: EditorProviderProps) {
     // Sync recent files with open files before closing
     useEffect(() => {
         const handleBeforeUnload = async () => {
-            const openFilePaths = state.openFiles
-                .map(f => f.path)
-                .filter((p): p is string => p !== null && !p.endsWith('config.json'));
-            
-            if (openFilePaths.length > 0) {
-                await window.electronAPI.syncRecentFiles(openFilePaths);
+            const openFileRefs = state.openFiles
+                .filter(f => f.path !== null && !f.path.endsWith('config.json'))
+                .map(f => ({ fileName: f.path!, mode: f.viewMode }));
+
+            if (openFileRefs.length > 0) {
+                await window.electronAPI.syncRecentFiles(openFileRefs);
             }
         };
 

@@ -16,7 +16,7 @@ const electronAPI = {
   loadConfig: () => ipcRenderer.invoke('config:load'),
   saveConfig: (config: unknown) => ipcRenderer.invoke('config:save', config),
   openConfig: () => ipcRenderer.invoke('config:open'),
-  syncRecentFiles: (openFiles: string[]) => ipcRenderer.invoke('config:sync-recent-files', openFiles),
+  syncRecentFiles: (openFiles: { fileName: string; mode: 'edit' | 'preview' }[]) => ipcRenderer.invoke('config:sync-recent-files', openFiles),
   
   // Get initial files from command line
   getInitialFiles: () => ipcRenderer.invoke('get-initial-files'),

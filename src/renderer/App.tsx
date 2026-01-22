@@ -313,15 +313,15 @@ function AppContent() {
                     try {
                         const config = await window.electronAPI.loadConfig();
                         console.log('[App] Config loaded', { openFilesCount: config.openFiles.length });
-                        for (const filePath of config.openFiles) {
+                        for (const fileRef of config.openFiles) {
                             // Skip config.json - it should only be opened manually via Settings
-                            if (filePath.endsWith('config.json')) {
+                            if (fileRef.fileName.endsWith('config.json')) {
                                 console.log('[App] Skipping config.json');
                                 continue;
                             }
                             try {
-                                console.log('[App] Restoring recent file:', filePath);
-                                const result = await window.electronAPI.readFile(filePath);
+                                console.log('[App] Restoring recent file:', fileRef.fileName, 'with mode:', fileRef.mode);
+                                const result = await window.electronAPI.readFile(fileRef.fileName);
                                 if (result) {
                                     dispatch({
                                         type: 'OPEN_FILE',
@@ -331,12 +331,13 @@ function AppContent() {
                                             name: getFilename(result.filePath),
                                             content: result.content,
                                             lineEnding: result.lineEnding,
+                                            viewMode: fileRef.mode,
                                         },
                                     });
-                                    console.log('[App] Recent file restored:', filePath);
+                                    console.log('[App] Recent file restored:', fileRef.fileName);
                                 }
                             } catch (error) {
-                                console.warn('[App] Failed to restore recent file:', filePath, error);
+                                console.warn('[App] Failed to restore recent file:', fileRef.fileName, error);
                                 // Silently skip files that can't be opened
                             }
                         }
