@@ -421,7 +421,7 @@ function createWindow() {
         minWidth: 600,
         minHeight: 400,
         frame: false,
-        icon: path.join(__dirname, 'assets', 'MarkdownPlus.png'),
+        icon: path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'MarkdownPlus.png'),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

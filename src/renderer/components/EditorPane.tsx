@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, styled } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActiveFile, useEditorDispatch } from '../contexts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
+import { MermaidDiagram } from './MermaidDiagram';
 
 const EditorContainer = styled(Box)({
     display: 'flex',
@@ -865,6 +866,27 @@ export function EditorPane() {
 
     const markdownPlugins = useMemo(() => [remarkGfm], []);
 
+    // Custom components for ReactMarkdown to handle Mermaid diagrams
+    const markdownComponents: Components = useMemo(() => ({
+        code({ node, className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || '');
+            const language = match ? match[1] : '';
+            
+            // Check if this is a mermaid code block
+            if (language === 'mermaid') {
+                const chartCode = String(children).replace(/\n$/, '');
+                return <MermaidDiagram chart={chartCode} />;
+            }
+            
+            // For other code blocks, render normally
+            return (
+                <code className={className} {...props}>
+                    {children}
+                </code>
+            );
+        },
+    }), []);
+
     // Throttled scroll position update to reduce dispatch calls
     const handleScrollThrottled = useCallback((scrollTop: number) => {
         const fileId = activeFileIdRef.current;
@@ -1431,7 +1453,10 @@ export function EditorPane() {
                         handleScrollThrottled(target.scrollTop);
                     }}
                 >
-                    <ReactMarkdown remarkPlugins={markdownPlugins}>
+                    <ReactMarkdown 
+                        remarkPlugins={markdownPlugins}
+                        components={markdownComponents}
+                    >
                         {activeFile.content || '*No content*'}
                     </ReactMarkdown>
                 </MarkdownPreview>
