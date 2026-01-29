@@ -1,20 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Box, styled, useTheme as useMuiTheme } from '@mui/material';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Box, IconButton, styled, Tooltip, useTheme as useMuiTheme } from '@mui/material';
+import { Add as ZoomInIcon, Remove as ZoomOutIcon, CenterFocusStrong as ResetIcon, OpenWith as PanIcon } from '@mui/icons-material';
 import mermaid from 'mermaid';
 
-const MermaidContainer = styled(Box)(({ theme }) => ({
+const DiagramWrapper = styled(Box)(({ theme }) => ({
+    position: 'relative',
+    margin: '16px 0',
+    borderRadius: 8,
+    border: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+    overflow: 'hidden',
+}));
+
+const ControlsBar = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    padding: '4px 8px',
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
+}));
+
+const ZoomLabel = styled('span')(({ theme }) => ({
+    fontSize: 12,
+    color: theme.palette.text.secondary,
+    marginRight: 8,
+    minWidth: 45,
+    textAlign: 'center',
+}));
+
+const MermaidContainer = styled(Box)<{ isDragging?: boolean }>(({ isDragging }) => ({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
-    margin: '16px 0',
-    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.02)',
-    borderRadius: 8,
-    border: `1px solid ${theme.palette.divider}`,
-    overflow: 'auto',
+    minHeight: 200,
+    overflow: 'hidden',
+    cursor: isDragging ? 'grabbing' : 'grab',
     '& svg': {
-        maxWidth: '100%',
+        maxWidth: 'none',
         height: 'auto',
+        transformOrigin: 'center center',
+        transition: 'transform 0.1s ease-out',
     },
 }));
 
@@ -37,12 +65,70 @@ interface MermaidDiagramProps {
 // Counter for generating unique IDs
 let mermaidIdCounter = 0;
 
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.25;
+
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [error, setError] = useState<string | null>(null);
     const [svg, setSvg] = useState<string>('');
     const idRef = useRef<string>(`mermaid-diagram-${mermaidIdCounter++}`);
     const muiTheme = useMuiTheme();
+    
+    // Zoom and pan state
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartRef = useRef({ x: 0, y: 0 });
+    const panStartRef = useRef({ x: 0, y: 0 });
+
+    const handleZoomIn = useCallback(() => {
+        setZoom(prev => Math.min(prev + ZOOM_STEP, MAX_ZOOM));
+    }, []);
+
+    const handleZoomOut = useCallback(() => {
+        setZoom(prev => Math.max(prev - ZOOM_STEP, MIN_ZOOM));
+    }, []);
+
+    const handleResetView = useCallback(() => {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+    }, []);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        if (e.button !== 0) return; // Only left mouse button
+        setIsDragging(true);
+        dragStartRef.current = { x: e.clientX, y: e.clientY };
+        panStartRef.current = { ...pan };
+        e.preventDefault();
+    }, [pan]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!isDragging) return;
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        setPan({
+            x: panStartRef.current.x + dx,
+            y: panStartRef.current.y + dy,
+        });
+    }, [isDragging]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    const handleMouseLeave = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+            setZoom(prev => Math.max(MIN_ZOOM, Math.min(prev + delta, MAX_ZOOM)));
+        }
+    }, []);
 
     useEffect(() => {
         const renderDiagram = async () => {
@@ -70,6 +156,9 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
                     const { svg: renderedSvg } = await mermaid.render(uniqueId, chart);
                     setSvg(renderedSvg);
                     setError(null);
+                    // Reset zoom and pan when diagram changes
+                    setZoom(1);
+                    setPan({ x: 0, y: 0 });
                 }
             } catch (err) {
                 const errorMessage = err instanceof Error ? err.message : 'Failed to render Mermaid diagram';
@@ -95,11 +184,61 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
         );
     }
 
+    const zoomPercent = Math.round(zoom * 100);
+
     return (
-        <MermaidContainer
-            ref={containerRef}
-            dangerouslySetInnerHTML={{ __html: svg }}
-        />
+        <DiagramWrapper>
+            <ControlsBar>
+                <Tooltip title="Drag to pan, Ctrl+Scroll to zoom" placement="left">
+                    <PanIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                </Tooltip>
+                <ZoomLabel>{zoomPercent}%</ZoomLabel>
+                <Tooltip title="Zoom Out">
+                    <span>
+                        <IconButton 
+                            size="small" 
+                            onClick={handleZoomOut}
+                            disabled={zoom <= MIN_ZOOM}
+                        >
+                            <ZoomOutIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </Tooltip>
+                <Tooltip title="Zoom In">
+                    <span>
+                        <IconButton 
+                            size="small" 
+                            onClick={handleZoomIn}
+                            disabled={zoom >= MAX_ZOOM}
+                        >
+                            <ZoomInIcon fontSize="small" />
+                        </IconButton>
+                    </span>
+                </Tooltip>
+                <Tooltip title="Reset View">
+                    <IconButton size="small" onClick={handleResetView}>
+                        <ResetIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+            </ControlsBar>
+            <MermaidContainer
+                ref={containerRef}
+                isDragging={isDragging}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
+                onWheel={handleWheel}
+            >
+                <Box
+                    sx={{
+                        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                        transformOrigin: 'center center',
+                    }}
+                    dangerouslySetInnerHTML={{ __html: svg }}
+                />
+            </MermaidContainer>
+        </DiagramWrapper>
     );
 };
 
