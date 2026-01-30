@@ -17,13 +17,14 @@ function isMarkdownFile(filePath: string): boolean {
     return MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
 }
 
-// Config file path - next to the app executable
+// Config file path - in user data directory (preserved during uninstall)
 const getConfigPath = () => {
-    // In development, use the project root; in production, use the app's directory
-    const appPath = app.isPackaged 
-        ? path.dirname(app.getPath('exe'))
-        : app.getAppPath();
-    return path.join(appPath, 'config.json');
+    // Use userData directory which is preserved across installations
+    // Windows: C:\Users\<user>\AppData\Roaming\markdownplus
+    // macOS: ~/Library/Application Support/markdownplus
+    // Linux: ~/.config/markdownplus
+    const userDataPath = app.getPath('userData');
+    return path.join(userDataPath, 'config.json');
 };
 
 // Default config
