@@ -1,8 +1,17 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import type { IFile, EditorState, Notification, IConfig } from '../types';
+import type { IFile, EditorState, Notification, IConfig, FileType } from '../types';
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
+
+// Determine file type from path
+const getFileTypeFromPath = (filePath: string): FileType => {
+    const lowerPath = filePath.toLowerCase();
+    if (['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'].some(ext => lowerPath.endsWith(ext))) return 'markdown';
+    if (['.rst', '.rest'].some(ext => lowerPath.endsWith(ext))) return 'rst';
+    if (['.txt'].some(ext => lowerPath.endsWith(ext))) return 'text';
+    return 'unknown';
+};
 
 // Default config
 const defaultConfig: IConfig = {
@@ -23,7 +32,7 @@ const initialState: EditorState = {
 // Action types
 type EditorAction =
     | { type: 'NEW_FILE' }
-    | { type: 'OPEN_FILE'; payload: { id: string; path: string; name: string; content: string; lineEnding: 'CRLF' | 'LF'; viewMode?: 'edit' | 'preview' } }
+    | { type: 'OPEN_FILE'; payload: { id: string; path: string; name: string; content: string; lineEnding: 'CRLF' | 'LF'; viewMode?: 'edit' | 'preview'; fileType?: FileType } }
     | { type: 'CLOSE_FILE'; payload: { id: string } }
     | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
     | { type: 'SET_DIRTY'; payload: { id: string; isDirty: boolean } }
@@ -58,6 +67,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 redoStack: [],
                 undoStackPointer: 0,
                 scrollPosition: 0,
+                fileType: 'markdown',
             };
             return {
                 ...state,
@@ -92,12 +102,13 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 content: action.payload.content,
                 originalContent: action.payload.content,
                 isDirty: false,
-                viewMode: action.payload.viewMode || 'edit',
+                viewMode: action.payload.viewMode || 'preview',
                 lineEnding: action.payload.lineEnding,
                 undoStack: [action.payload.content],
                 redoStack: [],
                 undoStackPointer: 0,
                 scrollPosition: 0,
+                fileType: action.payload.fileType || 'markdown',
             };
             
             console.log('[EditorContext] Adding new file to state', { 
@@ -388,6 +399,7 @@ export function EditorProvider({ children }: EditorProviderProps) {
                             name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
                             content: result.content,
                             lineEnding: result.lineEnding,
+                            fileType: getFileTypeFromPath(result.filePath),
                         },
                     });
                 }

@@ -1,21 +1,23 @@
 import { useCallback } from 'react';
 import { useEditorState, useEditorDispatch, useActiveFile } from '../contexts';
-import type { IConfig } from '../types';
+import type { IConfig, FileType } from '../types';
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 // Supported file extensions
 const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
+const RST_EXTENSIONS = ['.rst', '.rest'];
 const TEXT_EXTENSIONS = ['.txt'];
-const BEST_EFFORT_EXTENSIONS = ['.rst', '.adoc', '.asciidoc', '.org', '.textile'];
+const BEST_EFFORT_EXTENSIONS = ['.adoc', '.asciidoc', '.org', '.textile'];
 
 // Check file type
-function getFileType(filePath: string): 'markdown' | 'text' | 'best-effort' | 'unknown' {
+export function getFileType(filePath: string): FileType {
     const lowerPath = filePath.toLowerCase();
     if (MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'markdown';
+    if (RST_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'rst';
     if (TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
-    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'best-effort';
+    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text'; // Treat as plain text
     return 'unknown';
 }
 
@@ -66,11 +68,11 @@ export function useFileOperations() {
                 
                 // Check file type and track unsupported formats
                 const fileType = getFileType(result.filePath);
-                if (fileType === 'best-effort' || fileType === 'unknown') {
+                if (fileType === 'unknown') {
                     const fileName = result.filePath.split(/[\\/]/).pop() || 'Unknown';
                     unsupportedFiles.push(fileName);
                 }
-                
+
                 dispatch({
                     type: 'OPEN_FILE',
                     payload: {
@@ -79,6 +81,7 @@ export function useFileOperations() {
                         name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
                         content: result.content,
                         lineEnding: result.lineEnding,
+                        fileType: fileType,
                     },
                 });
                 openedFilePaths.push(result.filePath);
@@ -89,9 +92,9 @@ export function useFileOperations() {
                 dispatch({
                     type: 'SHOW_NOTIFICATION',
                     payload: {
-                        message: unsupportedFiles.length === 1 
-                            ? `"${unsupportedFiles[0]}" may not fully support Markdown preview.`
-                            : `${unsupportedFiles.length} files may not fully support Markdown preview.`,
+                        message: unsupportedFiles.length === 1
+                            ? `"${unsupportedFiles[0]}" may not fully support preview.`
+                            : `${unsupportedFiles.length} files may not fully support preview.`,
                         severity: 'warning',
                     },
                 });
@@ -128,17 +131,17 @@ export function useFileOperations() {
         if (result) {
             // Check file type and show notification for unsupported formats
             const fileType = getFileType(result.filePath);
-            if (fileType === 'best-effort' || fileType === 'unknown') {
+            if (fileType === 'unknown') {
                 const fileName = result.filePath.split(/[\\/]/).pop() || 'Unknown';
                 dispatch({
                     type: 'SHOW_NOTIFICATION',
                     payload: {
-                        message: `"${fileName}" may not fully support Markdown preview.`,
+                        message: `"${fileName}" may not fully support preview.`,
                         severity: 'warning',
                     },
                 });
             }
-            
+
             dispatch({
                 type: 'OPEN_FILE',
                 payload: {
@@ -147,6 +150,7 @@ export function useFileOperations() {
                     name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
                     content: result.content,
                     lineEnding: result.lineEnding,
+                    fileType: fileType,
                 },
             });
             
@@ -374,6 +378,7 @@ export function useFileOperations() {
             }
             const result = await window.electronAPI.readFile(fileRef.fileName);
             if (result) {
+                const fileType = getFileType(result.filePath);
                 dispatch({
                     type: 'OPEN_FILE',
                     payload: {
@@ -383,6 +388,7 @@ export function useFileOperations() {
                         content: result.content,
                         lineEnding: result.lineEnding,
                         viewMode: fileRef.mode,
+                        fileType: fileType,
                     },
                 });
                 openedFileRefs.push({ fileName: result.filePath, mode: fileRef.mode });

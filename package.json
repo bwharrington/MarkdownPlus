@@ -112,6 +112,20 @@
         "description": "Markdown document",
         "icon": "assets/MarkdownPlus-padded.png",
         "role": "Editor"
+      },
+      {
+        "ext": "rst",
+        "name": "reStructuredText",
+        "description": "reStructuredText document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
+      },
+      {
+        "ext": "rest",
+        "name": "reStructuredText",
+        "description": "reStructuredText document",
+        "icon": "assets/MarkdownPlus-padded.png",
+        "role": "Editor"
       }
     ],
     "win": {

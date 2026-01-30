@@ -6,6 +6,7 @@ import { useActiveFile, useEditorDispatch } from '../contexts';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
 import { MermaidDiagram } from './MermaidDiagram';
+import { RstRenderer } from './RstRenderer';
 
 const EditorContainer = styled(Box)({
     display: 'flex',
@@ -1436,7 +1437,9 @@ export function EditorPane() {
         );
     }
 
-    // Preview mode - show rendered markdown
+    // Preview mode - show rendered content (markdown or RST)
+    const isRstFile = activeFile.fileType === 'rst';
+
     return (
         <EditorContainer>
             <MarkdownToolbar
@@ -1444,22 +1447,37 @@ export function EditorPane() {
                 onFind={handleOpenFind}
             />
             <EditorWrapper>
-                <MarkdownPreview
-                    ref={previewRef}
-                    onClick={handlePreviewClick}
-                    onDoubleClick={handlePreviewDoubleClick}
-                    onScroll={(e) => {
-                        const target = e.target as HTMLDivElement;
-                        handleScrollThrottled(target.scrollTop);
-                    }}
-                >
-                    <ReactMarkdown 
-                        remarkPlugins={markdownPlugins}
-                        components={markdownComponents}
+                {isRstFile ? (
+                    <Box
+                        ref={previewRef}
+                        onClick={handlePreviewClick}
+                        onDoubleClick={handlePreviewDoubleClick}
+                        onScroll={(e) => {
+                            const target = e.target as HTMLDivElement;
+                            handleScrollThrottled(target.scrollTop);
+                        }}
+                        sx={{ flex: 1, overflow: 'auto' }}
                     >
-                        {activeFile.content || '*No content*'}
-                    </ReactMarkdown>
-                </MarkdownPreview>
+                        <RstRenderer content={activeFile.content || ''} />
+                    </Box>
+                ) : (
+                    <MarkdownPreview
+                        ref={previewRef}
+                        onClick={handlePreviewClick}
+                        onDoubleClick={handlePreviewDoubleClick}
+                        onScroll={(e) => {
+                            const target = e.target as HTMLDivElement;
+                            handleScrollThrottled(target.scrollTop);
+                        }}
+                    >
+                        <ReactMarkdown
+                            remarkPlugins={markdownPlugins}
+                            components={markdownComponents}
+                        >
+                            {activeFile.content || '*No content*'}
+                        </ReactMarkdown>
+                    </MarkdownPreview>
+                )}
                 <FindReplaceDialog
                     open={findDialogOpen}
                     mode="preview"

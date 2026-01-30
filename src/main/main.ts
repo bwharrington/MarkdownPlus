@@ -151,9 +151,9 @@ function registerIpcHandlers() {
     ipcMain.handle('file:open', async () => {
         const result = await dialog.showOpenDialog(mainWindow!, {
             filters: [
-                { name: 'Markdown', extensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdx', 'mdwn'] },
+                { name: 'Markup Files', extensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdx', 'mdwn', 'rst', 'rest'] },
                 { name: 'Text Files', extensions: ['txt'] },
-                { name: 'Other Markup', extensions: ['rst', 'adoc', 'asciidoc', 'org', 'textile'] },
+                { name: 'Other Markup', extensions: ['adoc', 'asciidoc', 'org', 'textile'] },
                 { name: 'All Files', extensions: ['*'] },
             ],
             properties: ['openFile', 'multiSelections'],

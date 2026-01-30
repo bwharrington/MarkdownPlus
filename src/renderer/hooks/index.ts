@@ -1,2 +1,2 @@
-export { useFileOperations } from './useFileOperations';
+export { useFileOperations, getFileType } from './useFileOperations';
 export { useWindowTitle } from './useWindowTitle';

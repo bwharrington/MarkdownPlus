@@ -4,3 +4,4 @@ release
 /config.json
 /markdownplus-debug.log
 /TODO_Features.md
+/dist/renderer.js.map

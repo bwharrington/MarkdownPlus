@@ -1,6 +1,9 @@
 // Re-export all types
 export * from './global.d';
 
+// File type for different document formats
+export type FileType = 'markdown' | 'rst' | 'text' | 'unknown';
+
 // File interface for editor state
 export interface IFile {
   id: string;
@@ -15,6 +18,7 @@ export interface IFile {
   redoStack: string[];
   undoStackPointer: number;
   scrollPosition: number; // Track scroll position when switching modes
+  fileType: FileType; // Type of file for rendering
 }
 
 // Editor state interface

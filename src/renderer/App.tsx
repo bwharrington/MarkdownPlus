@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar } from './components';
-import { useWindowTitle, useFileOperations } from './hooks';
+import { useWindowTitle, useFileOperations, getFileType } from './hooks';
 
 // Intercept console methods and send to main process
 const originalConsole = {
@@ -223,15 +223,9 @@ function AppContent() {
             return filePath.split(/[\\/]/).pop() || filePath;
         };
         
-        // Supported file extensions for checking unsupported formats
-        const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
-        const TEXT_EXTENSIONS = ['.txt'];
-        
         const isUnsupportedFormat = (filePath: string): boolean => {
-            const lowerPath = filePath.toLowerCase();
-            const isMarkdown = MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
-            const isText = TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext));
-            return !isMarkdown && !isText;
+            const fileType = getFileType(filePath);
+            return fileType === 'unknown';
         };
         
         // Helper to open files
@@ -251,7 +245,8 @@ function AppContent() {
                         }
                         const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
                         const fileName = getFilename(fileData.filePath);
-                        console.log('[App] Dispatching OPEN_FILE action', { fileId, path: fileData.filePath, name: fileName });
+                        const fileType = getFileType(fileData.filePath);
+                        console.log('[App] Dispatching OPEN_FILE action', { fileId, path: fileData.filePath, name: fileName, fileType });
                         dispatch({
                             type: 'OPEN_FILE',
                             payload: {
@@ -260,6 +255,7 @@ function AppContent() {
                                 name: fileName,
                                 content: fileData.content,
                                 lineEnding: fileData.lineEnding,
+                                fileType: fileType,
                             },
                         });
                         console.log('[App] File opened successfully, dispatched OPEN_FILE');
@@ -276,9 +272,9 @@ function AppContent() {
                 dispatch({
                     type: 'SHOW_NOTIFICATION',
                     payload: {
-                        message: unsupportedFiles.length === 1 
-                            ? `"${unsupportedFiles[0]}" may not fully support Markdown preview.`
-                            : `${unsupportedFiles.length} files may not fully support Markdown preview.`,
+                        message: unsupportedFiles.length === 1
+                            ? `"${unsupportedFiles[0]}" may not fully support preview.`
+                            : `${unsupportedFiles.length} files may not fully support preview.`,
                         severity: 'warning',
                     },
                 });
@@ -339,6 +335,7 @@ function AppContent() {
                                             content: result.content,
                                             lineEnding: result.lineEnding,
                                             viewMode: fileRef.mode,
+                                            fileType: getFileType(result.filePath),
                                         },
                                     });
                                     console.log('[App] Recent file restored:', fileRef.fileName);
