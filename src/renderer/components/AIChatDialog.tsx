@@ -16,6 +16,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import SendIcon from '@mui/icons-material/Send';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat, AIProvider } from '../hooks';
 
@@ -26,11 +28,11 @@ const DialogContainer = styled(Box)(({ theme }) => ({
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: 4,
     boxShadow: theme.shadows[4],
-    width: 450,
-    height: 550,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
+    minWidth: 350,
+    minHeight: 42,
 }));
 
 const DragHandle = styled(Box)(({ theme }) => ({
@@ -131,6 +133,26 @@ const StatusDot = styled('span')<{ status: string }>(({ status }) => ({
         : '#9e9e9e',
 }));
 
+const ResizeHandle = styled(Box)(({ theme }) => ({
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 16,
+    height: 16,
+    cursor: 'nwse-resize',
+    '&::after': {
+        content: '""',
+        position: 'absolute',
+        bottom: 2,
+        right: 2,
+        width: 0,
+        height: 0,
+        borderStyle: 'solid',
+        borderWidth: '0 0 10px 10px',
+        borderColor: `transparent transparent ${theme.palette.divider} transparent`,
+    },
+}));
+
 interface AIChatDialogProps {
     open: boolean;
     onClose: () => void;
@@ -145,6 +167,14 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [isDialogFocused, setIsDialogFocused] = useState(true);
+
+    // Collapse/Expand state
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Resize state
+    const [size, setSize] = useState({ width: 450, height: 550 });
+    const [isResizing, setIsResizing] = useState(false);
+    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
     const {
         provider,
@@ -273,6 +303,46 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         }
     }, [isDragging, dragStart]);
 
+    // Handle resizing
+    const handleResizeMouseDown = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsResizing(true);
+        setResizeStart({
+            x: e.clientX,
+            y: e.clientY,
+            width: size.width,
+            height: size.height,
+        });
+    };
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (isResizing) {
+                const deltaX = e.clientX - resizeStart.x;
+                const deltaY = e.clientY - resizeStart.y;
+
+                const newWidth = Math.max(350, resizeStart.width + deltaX);
+                const newHeight = Math.max(200, resizeStart.height + deltaY);
+
+                setSize({ width: newWidth, height: newHeight });
+            }
+        };
+
+        const handleMouseUp = () => {
+            setIsResizing(false);
+        };
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [isResizing, resizeStart]);
+
     if (!open) return null;
 
     const providerOptions = getProviderOptions();
@@ -293,7 +363,9 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             sx={{
                 left: position.x,
                 top: position.y,
-                cursor: isDragging ? 'grabbing' : 'default',
+                width: isCollapsed ? 'auto' : size.width,
+                height: isCollapsed ? 'auto' : size.height,
+                cursor: isDragging ? 'grabbing' : (isResizing ? 'nwse-resize' : 'default'),
                 opacity: isDialogFocused ? 1 : 0.6,
                 transition: 'opacity 0.2s ease-in-out',
             }}
@@ -306,6 +378,9 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>
+                    <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} title={isCollapsed ? "Expand" : "Collapse"}>
+                        {isCollapsed ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
+                    </IconButton>
                     <IconButton size="small" onClick={clearChat} title="Clear chat">
                         <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
@@ -315,7 +390,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                 </HeaderControls>
             </DragHandle>
 
-            {!hasProviders ? (
+            {!isCollapsed && (!hasProviders ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
                     <Typography color="text.secondary" gutterBottom>
                         No AI providers configured
@@ -424,7 +499,9 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         </Button>
                     </InputContainer>
                 </>
-            )}
+            ))}
+
+            {!isCollapsed && <ResizeHandle onMouseDown={handleResizeMouseDown} />}
         </DialogContainer>
     );
 }

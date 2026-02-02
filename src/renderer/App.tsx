@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
-import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog } from './components';
+import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog } from './components';
 import { useWindowTitle, useFileOperations, getFileType } from './hooks';
 
 // Intercept console methods and send to main process
@@ -60,6 +60,17 @@ function AppContent() {
 
     const handleCloseAIChat = useCallback(() => {
         setAiChatOpen(false);
+    }, []);
+
+    // Settings dialog state
+    const [settingsOpen, setSettingsOpen] = useState(false);
+
+    const handleOpenSettings = useCallback(() => {
+        setSettingsOpen(true);
+    }, []);
+
+    const handleCloseSettings = useCallback(() => {
+        setSettingsOpen(false);
     }, []);
 
     // Set up window title management
@@ -124,6 +135,13 @@ function AppContent() {
                 return;
             }
 
+            // Ctrl+, - Open Settings Dialog
+            if (e.ctrlKey && e.key === ',') {
+                e.preventDefault();
+                handleOpenSettings();
+                return;
+            }
+
             // Ctrl+E - Toggle Edit/Preview Mode
             if (e.ctrlKey && e.key === 'e' && state.activeFileId) {
                 e.preventDefault();
@@ -149,7 +167,7 @@ function AppContent() {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile, state.activeFileId, state.openFiles, dispatch, handleOpenAIChat]);
+    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile, state.activeFileId, state.openFiles, dispatch, handleOpenAIChat, handleOpenSettings]);
 
     // Set up AI Chat event listener
     useEffect(() => {
@@ -163,6 +181,19 @@ function AppContent() {
             window.removeEventListener('open-ai-chat', handleAIChatEvent);
         };
     }, [handleOpenAIChat]);
+
+    // Set up Settings event listener
+    useEffect(() => {
+        const handleSettingsEvent = () => {
+            handleOpenSettings();
+        };
+
+        window.addEventListener('open-settings', handleSettingsEvent);
+
+        return () => {
+            window.removeEventListener('open-settings', handleSettingsEvent);
+        };
+    }, [handleOpenSettings]);
 
     // Set up menu event listeners
     useEffect(() => {
@@ -398,6 +429,7 @@ function AppContent() {
             <MainContent>
                 {hasOpenFiles ? <EditorPane /> : <EmptyState />}
                 <AIChatDialog open={aiChatOpen} onClose={handleCloseAIChat} />
+                <SettingsDialog open={settingsOpen} onClose={handleCloseSettings} />
             </MainContent>
             <NotificationSnackbar />
         </AppContainer>

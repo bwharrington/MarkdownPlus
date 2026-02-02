@@ -20,6 +20,16 @@ export interface FileSaveResult {
   error?: string;
 }
 
+export interface AIModelConfig {
+  enabled: boolean;
+}
+
+export interface AIModelsConfig {
+  xai?: Record<string, AIModelConfig>;
+  claude?: Record<string, AIModelConfig>;
+  openai?: Record<string, AIModelConfig>;
+}
+
 export interface IConfig {
   recentFiles: IFileReference[];
   openFiles: IFileReference[];
@@ -30,6 +40,8 @@ export interface IConfig {
     y: number;
   };
   defaultLineEnding: LineEnding;
+  devToolsOpen?: boolean;
+  aiModels?: AIModelsConfig;
 }
 
 export interface ConfirmCloseResult {

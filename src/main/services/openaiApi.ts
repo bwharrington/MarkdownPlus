@@ -25,15 +25,14 @@ export interface ListModelsResponse {
     data: OpenAIModel[];
 }
 
-// Default models to use if API listing fails
+// Default models to use if API listing fails (only -latest models)
 export const DEFAULT_OPENAI_MODELS = [
-    { id: 'gpt-4o', displayName: 'GPT-4 Omni' },
-    { id: 'gpt-4o-mini', displayName: 'GPT-4 Omni Mini' },
-    { id: 'gpt-4-turbo', displayName: 'GPT-4 Turbo' },
-    { id: 'gpt-3.5-turbo', displayName: 'GPT-3.5 Turbo' },
+    { id: 'gpt-4o-latest', displayName: 'GPT-4 Omni Latest' },
+    { id: 'gpt-4o-mini-latest', displayName: 'GPT-4 Omni Mini Latest' },
+    { id: 'gpt-4-turbo-latest', displayName: 'GPT-4 Turbo Latest' },
 ];
 
-export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o-mini'): Promise<string> {
+export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o-mini-latest'): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY not found in environment variables');
@@ -97,8 +96,10 @@ export async function listOpenAIModels(): Promise<OpenAIModel[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
-        // Filter to only GPT chat models
-        return data.data.filter(model => model.id.startsWith('gpt-'));
+        // Filter to only GPT chat models with -latest suffix
+        return data.data.filter(model =>
+            model.id.startsWith('gpt-') && model.id.includes('-latest')
+        );
     } catch (error) {
         logError('Error listing OpenAI models', error as Error);
         throw new Error(`Failed to list models: ${error instanceof Error ? error.message : String(error)}`);

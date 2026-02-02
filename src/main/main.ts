@@ -5,6 +5,9 @@ import * as fsSync from 'fs';
 import * as dotenv from 'dotenv';
 import { initLogger, log, logError, flushLogsSync, getLogFilePath } from './logger';
 import { registerAIIpcHandlers } from './aiIpcHandlers';
+import { listModels as listXAIModels, hasApiKey as hasXaiApiKey } from './services/xaiApi';
+import { listClaudeModels, hasApiKey as hasClaudeApiKey } from './services/claudeApi';
+import { listOpenAIModels, hasApiKey as hasOpenAIApiKey } from './services/openaiApi';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -38,6 +41,7 @@ const defaultConfig = {
     openFiles: [] as { fileName: string; mode: 'edit' | 'preview' }[],
     defaultLineEnding: 'CRLF' as const,
     devToolsOpen: false,
+    aiModels: {} as Record<string, Record<string, { enabled: boolean }>>,
 };
 
 // Detect line ending in content
@@ -113,6 +117,91 @@ async function openConfigFile(): Promise<{ filePath: string; content: string; li
     } catch (error) {
         console.error('Failed to open config file:', error);
         return null;
+    }
+}
+
+// Sync AI models with config - adds new models, preserves existing enabled/disabled state
+async function syncAIModelsConfig() {
+    try {
+        const config = await loadConfig();
+
+        // Initialize aiModels if it doesn't exist
+        if (!config.aiModels) {
+            config.aiModels = {};
+        }
+
+        let configUpdated = false;
+
+        // Sync xAI models
+        if (hasXaiApiKey()) {
+            try {
+                const models = await listXAIModels();
+                if (!config.aiModels.xai) {
+                    config.aiModels.xai = {};
+                    configUpdated = true;
+                }
+
+                for (const model of models) {
+                    if (!config.aiModels.xai[model.id]) {
+                        config.aiModels.xai[model.id] = { enabled: true };
+                        configUpdated = true;
+                        log('Added new xAI model to config', { modelId: model.id });
+                    }
+                }
+            } catch (error) {
+                logError('Failed to sync xAI models', error as Error);
+            }
+        }
+
+        // Sync Claude models
+        if (hasClaudeApiKey()) {
+            try {
+                const models = await listClaudeModels();
+                if (!config.aiModels.claude) {
+                    config.aiModels.claude = {};
+                    configUpdated = true;
+                }
+
+                for (const model of models) {
+                    if (!config.aiModels.claude[model.id]) {
+                        config.aiModels.claude[model.id] = { enabled: true };
+                        configUpdated = true;
+                        log('Added new Claude model to config', { modelId: model.id });
+                    }
+                }
+            } catch (error) {
+                logError('Failed to sync Claude models', error as Error);
+            }
+        }
+
+        // Sync OpenAI models
+        if (hasOpenAIApiKey()) {
+            try {
+                const models = await listOpenAIModels();
+                if (!config.aiModels.openai) {
+                    config.aiModels.openai = {};
+                    configUpdated = true;
+                }
+
+                for (const model of models) {
+                    if (!config.aiModels.openai[model.id]) {
+                        config.aiModels.openai[model.id] = { enabled: true };
+                        configUpdated = true;
+                        log('Added new OpenAI model to config', { modelId: model.id });
+                    }
+                }
+            } catch (error) {
+                logError('Failed to sync OpenAI models', error as Error);
+            }
+        }
+
+        // Save config if it was updated
+        if (configUpdated) {
+            await saveConfig(config);
+            log('AI models config synced and saved');
+        }
+    } catch (error) {
+        logError('Failed to sync AI models config', error as Error);
     }
 }
 
@@ -478,7 +567,8 @@ app.whenReady().then(async () => {
     initLogger();
     log('=== App Starting ===');
     log('Electron app ready');
-    
+    log('Config file location', { path: getConfigPath() });
+
     // Handle command line arguments (file associations) - MUST be done before creating window
     const args = process.argv.slice(1); // Skip the first argument (electron executable)
     log('Command line arguments received', { args, length: args.length });
@@ -497,6 +587,11 @@ app.whenReady().then(async () => {
     log('Registering IPC handlers');
     registerIpcHandlers();
     registerAIIpcHandlers();
+
+    // Sync AI models with config
+    log('Syncing AI models config');
+    await syncAIModelsConfig();
+
     // Remove the native menu bar
     Menu.setApplicationMenu(null);
     log('Creating main window');

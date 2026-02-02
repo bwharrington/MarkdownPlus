@@ -232,8 +232,12 @@ export function Toolbar() {
                     </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Settings">
-                    <IconButton onClick={openConfigFile} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                <Tooltip title="Settings (Ctrl+,)">
+                    <IconButton
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-settings'))}
+                        color="inherit"
+                        sx={{ WebkitAppRegion: 'no-drag' }}
+                    >
                         <SettingsIcon />
                     </IconButton>
                 </Tooltip>

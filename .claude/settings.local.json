@@ -6,7 +6,8 @@
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:github.com)",
       "Bash(git rm:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(dir:*)"
     ]
   }
 }
