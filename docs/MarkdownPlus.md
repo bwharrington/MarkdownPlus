@@ -17,6 +17,8 @@ MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, Reac
    - [File Operations](#file-operations)
    - [Find and Replace](#find-and-replace)
    - [Markdown Formatting Toolbar](#markdown-formatting-toolbar)
+   - [reStructuredText Support](#restructuredtext-support)
+   - [Mermaid Diagrams](#mermaid-diagrams)
    - [Theme Support](#theme-support)
    - [Configuration](#configuration)
    - [Logging](#logging)
@@ -34,6 +36,8 @@ MarkdownPlus is a desktop Markdown editor designed for writers, developers, and 
 - **Dual viewing modes** - Switch between raw Markdown editing and rendered preview
 - **Multi-tab interface** - Work on multiple documents simultaneously
 - **GitHub Flavored Markdown** - Full GFM support including tables, task lists, and strikethrough
+- **reStructuredText support** - Full RST rendering with dedicated formatting toolbar
+- **Mermaid diagrams** - Embedded diagram support in both Markdown and RST files
 - **Modern UI** - Built with Material UI for a clean, responsive interface
 - **Cross-platform** - Available for Windows, macOS, and Linux
 
@@ -51,9 +55,13 @@ Download the appropriate installer for your platform from the releases page:
 
 ### File Associations
 
-MarkdownPlus automatically registers as the default handler for Markdown files:
+MarkdownPlus automatically registers as the default handler for markup files:
 
+**Markdown:**
 - `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdx`, `.mdwn`
+
+**reStructuredText:**
+- `.rst`, `.rest`
 
 Double-clicking any of these file types will open them in MarkdownPlus.
 
@@ -179,6 +187,93 @@ In Edit mode, a comprehensive formatting toolbar provides quick access to Markdo
 | Undo | `Ctrl+Z` |
 | Redo | `Ctrl+Y` or `Ctrl+Shift+Z` |
 
+### reStructuredText Support
+
+MarkdownPlus provides full support for reStructuredText (RST) files with live preview rendering and a dedicated formatting toolbar.
+
+#### Supported RST Elements
+
+| Element | Syntax | Description |
+|---------|--------|-------------|
+| **Headings** | Text with underlines (`=`, `-`, `~`, `^`) | Multiple heading levels supported |
+| **Bold** | `**text**` | Strong emphasis |
+| **Italic** | `*text*` | Emphasis |
+| **Inline Code** | ``` ``code`` ``` | Monospace inline text |
+| **Code Blocks** | `.. code-block:: language` | Syntax-highlighted code |
+| **Bullet Lists** | `* item` or `- item` | Unordered lists |
+| **Numbered Lists** | `#. item` or `1. item` | Auto-numbered or explicit |
+| **Links** | ``` `text <url>`_ ``` | Inline hyperlinks |
+| **Images** | `.. image:: url` | Image embedding |
+| **Block Quotes** | Indented text | Quoted content |
+| **Literal Blocks** | `::` followed by indented text | Preformatted text |
+| **Admonitions** | `.. note::`, `.. warning::`, etc. | Callout boxes |
+| **Horizontal Rules** | `----` | Section dividers |
+
+#### RST Formatting Toolbar
+
+When editing RST files, a specialized toolbar appears with RST-specific formatting buttons:
+
+| Button | Action | RST Syntax |
+|--------|--------|------------|
+| Bold | Insert bold text | `**text**` |
+| Italic | Insert italic text | `*text*` |
+| H1 | Heading with `=` underline | `Title` + `====` |
+| H2 | Heading with `-` underline | `Title` + `----` |
+| H3 | Heading with `~` underline | `Title` + `~~~~` |
+| Code | Inline code | ``` ``code`` ``` |
+| Code Block | Code block directive | `.. code-block::` |
+| Quote | Block quote | Indented text |
+| Bullet List | Unordered list item | `* item` |
+| Numbered List | Auto-numbered item | `#. item` |
+| Link | Inline link | ``` `text <url>`_ ``` |
+| Image | Image directive | `.. image:: url` |
+| Note | Note admonition | `.. note::` |
+| Warning | Warning admonition | `.. warning::` |
+| Horizontal Rule | Section divider | `----` |
+
+### Mermaid Diagrams
+
+MarkdownPlus supports embedded Mermaid diagrams in both Markdown and RST files. Diagrams are rendered live in preview mode.
+
+#### Mermaid in Markdown
+
+Use fenced code blocks with the `mermaid` language identifier:
+
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action 1]
+    B -->|No| D[Action 2]
+```
+````
+
+#### Mermaid in RST
+
+Use the `code-block` directive with `mermaid` as the language:
+
+```rst
+.. code-block:: mermaid
+
+   graph TD
+       A[Start] --> B{Decision}
+       B -->|Yes| C[Action 1]
+       B -->|No| D[Action 2]
+```
+
+#### Supported Diagram Types
+
+| Type | Description |
+|------|-------------|
+| Flowchart | `graph TD` or `graph LR` - Flow diagrams |
+| Sequence | `sequenceDiagram` - Interaction sequences |
+| Class | `classDiagram` - UML class diagrams |
+| State | `stateDiagram-v2` - State machines |
+| ER Diagram | `erDiagram` - Entity relationships |
+| Gantt | `gantt` - Project timelines |
+| Pie Chart | `pie` - Pie charts |
+| Git Graph | `gitGraph` - Git branch visualization |
+
 ### Theme Support
 
 MarkdownPlus supports both light and dark themes:
@@ -189,7 +284,13 @@ MarkdownPlus supports both light and dark themes:
 
 ### Configuration
 
-MarkdownPlus stores its configuration in `config.json` located next to the application executable.
+MarkdownPlus stores its configuration in `config.json` located in the user data directory:
+
+- **Windows:** `C:\Users\<user>\AppData\Roaming\markdownplus\config.json`
+- **macOS:** `~/Library/Application Support/markdownplus/config.json`
+- **Linux:** `~/.config/markdownplus/config.json`
+
+This location ensures your settings are preserved across application updates and reinstalls.
 
 #### Configuration Options
 
@@ -276,16 +377,18 @@ When editing lists, pressing `Enter` automatically continues the list:
 
 ## Supported File Formats
 
-### Full Support
-| Extension | Type |
-|-----------|------|
-| `.md` | Markdown |
-| `.markdown` | Markdown |
-| `.mdown` | Markdown |
-| `.mkd` | Markdown |
-| `.mkdn` | Markdown |
-| `.mdx` | MDX |
-| `.mdwn` | Markdown |
+### Markup Files (Full Support)
+| Extension | Type | Features |
+|-----------|------|----------|
+| `.md` | Markdown | Full GFM rendering, Mermaid diagrams |
+| `.markdown` | Markdown | Full GFM rendering, Mermaid diagrams |
+| `.mdown` | Markdown | Full GFM rendering, Mermaid diagrams |
+| `.mkd` | Markdown | Full GFM rendering, Mermaid diagrams |
+| `.mkdn` | Markdown | Full GFM rendering, Mermaid diagrams |
+| `.mdx` | MDX | Full GFM rendering, Mermaid diagrams |
+| `.mdwn` | Markdown | Full GFM rendering, Mermaid diagrams |
+| `.rst` | reStructuredText | Full RST rendering, Mermaid diagrams |
+| `.rest` | reStructuredText | Full RST rendering, Mermaid diagrams |
 
 ### Text Files
 | Extension | Type |
@@ -296,13 +399,12 @@ When editing lists, pressing `Enter` automatically continues the list:
 These formats can be opened but may not render correctly in preview:
 | Extension | Type |
 |-----------|------|
-| `.rst` | reStructuredText |
 | `.adoc` | AsciiDoc |
 | `.asciidoc` | AsciiDoc |
 | `.org` | Org-mode |
 | `.textile` | Textile |
 
-> A warning notification appears when opening files that may not fully support Markdown preview.
+> A warning notification appears when opening files that may not fully support preview rendering.
 
 ---
 
@@ -316,6 +418,8 @@ These formats can be opened but may not render correctly in preview:
 | **UI Framework** | React 19.x |
 | **Component Library** | Material UI (MUI) 7.x |
 | **Markdown Rendering** | react-markdown with remark-gfm |
+| **RST Rendering** | Custom parser with React components |
+| **Diagrams** | Mermaid |
 | **Language** | TypeScript |
 | **Build Tool** | Webpack |
 | **Package Manager** | npm |
@@ -336,6 +440,9 @@ src/
 │   │   ├── TabBar.tsx          # Tab management
 │   │   ├── Toolbar.tsx         # Main application toolbar
 │   │   ├── MarkdownToolbar.tsx # Markdown formatting toolbar
+│   │   ├── RstToolbar.tsx      # RST formatting toolbar
+│   │   ├── RstRenderer.tsx     # reStructuredText parser/renderer
+│   │   ├── MermaidDiagram.tsx  # Mermaid diagram renderer
 │   │   ├── FindReplaceDialog.tsx
 │   │   ├── EmptyState.tsx
 │   │   └── NotificationSnackbar.tsx

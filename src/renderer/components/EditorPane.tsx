@@ -4,6 +4,7 @@ import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useActiveFile, useEditorDispatch } from '../contexts';
 import { MarkdownToolbar } from './MarkdownToolbar';
+import { RstToolbar } from './RstToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
 import { MermaidDiagram } from './MermaidDiagram';
 import { RstRenderer } from './RstRenderer';
@@ -1384,9 +1385,13 @@ export function EditorPane() {
 
     // Edit mode - show textarea editor
     if (activeFile.viewMode === 'edit') {
+        const isRstFileEdit = activeFile.fileType === 'rst';
+        const EditToolbar = isRstFileEdit ? RstToolbar : MarkdownToolbar;
+        const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing markdown...';
+
         return (
             <EditorContainer>
-                <MarkdownToolbar
+                <EditToolbar
                     mode="edit"
                     onInsert={handleMarkdownInsert}
                     onUndo={handleUndo}
@@ -1398,7 +1403,7 @@ export function EditorPane() {
                         ref={contentEditableRef}
                         contentEditable
                         suppressContentEditableWarning
-                        data-placeholder="Start typing markdown..."
+                        data-placeholder={placeholder}
                         onInput={handleContentChange}
                         onKeyDown={handleKeyDown}
                         onClick={handleClick}
@@ -1439,10 +1444,11 @@ export function EditorPane() {
 
     // Preview mode - show rendered content (markdown or RST)
     const isRstFile = activeFile.fileType === 'rst';
+    const PreviewToolbar = isRstFile ? RstToolbar : MarkdownToolbar;
 
     return (
         <EditorContainer>
-            <MarkdownToolbar
+            <PreviewToolbar
                 mode="preview"
                 onFind={handleOpenFind}
             />

@@ -4,4 +4,5 @@ export { EditorPane } from './EditorPane';
 export { EmptyState } from './EmptyState';
 export { NotificationSnackbar } from './NotificationSnackbar';
 export { MarkdownToolbar } from './MarkdownToolbar';
+export { RstToolbar } from './RstToolbar';
 export { MermaidDiagram } from './MermaidDiagram';
