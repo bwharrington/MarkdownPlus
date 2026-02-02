@@ -1,9 +1,17 @@
 import { log, logError } from '../logger';
 import { getApiKeyForService } from '../secureStorageIpcHandlers';
 
+export interface AttachmentData {
+    name: string;
+    type: 'image' | 'text';
+    mimeType?: string;
+    data: string;
+}
+
 export interface Message {
     role: 'user' | 'assistant';
     content: string;
+    attachments?: AttachmentData[];
 }
 
 export interface OpenAIApiResponse {
@@ -40,6 +48,37 @@ export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o
         throw new Error('OPENAI_API_KEY not found. Please set it in Settings');
     }
 
+    // Format messages for OpenAI API (support attachments)
+    const formattedMessages = messages.map(msg => {
+        // If message has attachments, use content array format
+        if (msg.attachments && msg.attachments.length > 0) {
+            const content: any[] = [{ type: 'text', text: msg.content }];
+
+            // Add attachments
+            for (const attachment of msg.attachments) {
+                if (attachment.type === 'image') {
+                    content.push({
+                        type: 'image_url',
+                        image_url: {
+                            url: `data:${attachment.mimeType};base64,${attachment.data}`,
+                        },
+                    });
+                } else if (attachment.type === 'text') {
+                    // Include text files as additional text content
+                    content.push({
+                        type: 'text',
+                        text: `\n\n[File: ${attachment.name}]\n${attachment.data}`,
+                    });
+                }
+            }
+
+            return { role: msg.role, content };
+        }
+
+        // Simple text message
+        return { role: msg.role, content: msg.content };
+    });
+
     log('OpenAI API Request', {
         url: 'https://api.openai.com/v1/chat/completions',
         model,
@@ -54,7 +93,7 @@ export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                messages,
+                messages: formattedMessages,
                 model,
             }),
         });

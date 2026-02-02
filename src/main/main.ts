@@ -289,6 +289,56 @@ function registerIpcHandlers() {
         }
     });
 
+    // File: Read for attachment (supports images and text files)
+    ipcMain.handle('file:read-for-attachment', async (_event, filePath: string) => {
+        log('IPC: file:read-for-attachment called', { filePath });
+        try {
+            const ext = path.extname(filePath).toLowerCase();
+            const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
+            const textExtensions = ['.txt', '.md', '.markdown', '.json', '.js', '.ts', '.tsx', '.jsx', '.css', '.html', '.xml', '.yaml', '.yml', '.log'];
+
+            if (imageExtensions.includes(ext)) {
+                // Read as binary and base64 encode
+                const buffer = await fs.readFile(filePath);
+                const base64 = buffer.toString('base64');
+                const mimeType = ext === '.png' ? 'image/png'
+                    : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg'
+                    : ext === '.gif' ? 'image/gif'
+                    : ext === '.webp' ? 'image/webp'
+                    : 'image/bmp';
+
+                log('IPC: file:read-for-attachment success (image)', { filePath, size: buffer.length });
+                return {
+                    type: 'image',
+                    mimeType,
+                    data: base64,
+                    size: buffer.length,
+                };
+            } else if (textExtensions.includes(ext) || !ext) {
+                // Read as text
+                const content = await fs.readFile(filePath, 'utf-8');
+                log('IPC: file:read-for-attachment success (text)', { filePath, size: content.length });
+                return {
+                    type: 'text',
+                    data: content,
+                    size: content.length,
+                };
+            } else {
+                // Unsupported file type
+                return {
+                    type: 'unsupported',
+                    error: `File type ${ext} is not supported`,
+                };
+            }
+        } catch (error) {
+            logError('IPC: file:read-for-attachment failed', error);
+            return {
+                type: 'error',
+                error: error instanceof Error ? error.message : 'Failed to read file',
+            };
+        }
+    });
+
     // File: Save to existing path
     ipcMain.handle('file:save', async (_event, filePath: string, content: string) => {
         try {
@@ -464,6 +514,15 @@ function registerIpcHandlers() {
         });
 
         return result.response === 0 ? 'reload' : 'keep';
+    });
+
+    // Dialog: Open file
+    ipcMain.handle('dialog:open-file', async (_event, options: { properties: string[] }) => {
+        const result = await dialog.showOpenDialog(mainWindow!, {
+            properties: options.properties as any,
+        });
+
+        return result;
     });
 
     // Window: Set title

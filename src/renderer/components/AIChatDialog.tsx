@@ -11,6 +11,7 @@ import {
     FormControl,
     InputLabel,
     CircularProgress,
+    Chip,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -18,8 +19,12 @@ import SendIcon from '@mui/icons-material/Send';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat, AIProvider } from '../hooks';
+import { useEditorState } from '../contexts/EditorContext';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',
@@ -153,15 +158,48 @@ const ResizeHandle = styled(Box)(({ theme }) => ({
     },
 }));
 
+const AttachmentsContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+    padding: '8px 12px',
+    borderTop: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.action.hover,
+    maxHeight: 100,
+    overflowY: 'auto',
+}));
+
+// Keyframes for glow animation
+const glowAnimation = `
+    @keyframes chipGlow {
+        0%, 100% {
+            box-shadow: 0 0 2px rgba(33, 150, 243, 0.3);
+        }
+        50% {
+            box-shadow: 0 0 12px rgba(33, 150, 243, 0.8), 0 0 20px rgba(33, 150, 243, 0.4);
+        }
+    }
+`;
+
 interface AIChatDialogProps {
     open: boolean;
     onClose: () => void;
+}
+
+interface AttachedFile {
+    name: string;
+    path: string;
+    type: string;
+    size: number;
+    isContextDoc?: boolean; // True if this is the current document
+    enabled?: boolean; // True if context doc is enabled (default true)
 }
 
 export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const editorState = useEditorState();
 
     const [position, setPosition] = useState({ x: 0, y: 50 });
     const [isDragging, setIsDragging] = useState(false);
@@ -175,6 +213,10 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const [size, setSize] = useState({ width: 450, height: 550 });
     const [isResizing, setIsResizing] = useState(false);
     const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+
+    // File attachments state
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
     const {
         provider,
@@ -218,6 +260,49 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             });
         }
     }, [open]);
+
+    // Attach current document when dialog opens
+    useEffect(() => {
+        if (open && editorState.activeFileId) {
+            const activeFile = editorState.openFiles.find(f => f.id === editorState.activeFileId);
+            if (activeFile && activeFile.path && (activeFile.fileType === 'markdown' || activeFile.fileType === 'text')) {
+                // Check if context doc is already attached
+                const hasContextDoc = attachedFiles.some(f => f.isContextDoc);
+                if (!hasContextDoc) {
+                    const contextDoc: AttachedFile = {
+                        name: activeFile.name,
+                        path: activeFile.path,
+                        type: activeFile.fileType,
+                        size: 0,
+                        isContextDoc: true,
+                        enabled: true,
+                    };
+                    setAttachedFiles([contextDoc]);
+                }
+            }
+        }
+    }, [open, editorState.activeFileId, editorState.openFiles]);
+
+    // Detect when context document is saved and trigger glow animation
+    useEffect(() => {
+        if (open && editorState.activeFileId && attachedFiles.length > 0) {
+            const activeFile = editorState.openFiles.find(f => f.id === editorState.activeFileId);
+            const contextDoc = attachedFiles.find(f => f.isContextDoc);
+
+            // Check if the active file is the context document and was just saved (isDirty became false)
+            if (activeFile && contextDoc && activeFile.path === contextDoc.path && !activeFile.isDirty) {
+                // Trigger glow animation
+                setGlowingFile(contextDoc.path);
+
+                // Remove glow after 3 seconds
+                const timeout = setTimeout(() => {
+                    setGlowingFile(null);
+                }, 3000);
+
+                return () => clearTimeout(timeout);
+            }
+        }
+    }, [open, editorState.openFiles, editorState.activeFileId, attachedFiles]);
 
     // Scroll to bottom when new messages arrive
     useEffect(() => {
@@ -348,10 +433,52 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const providerOptions = getProviderOptions();
     const hasProviders = providerOptions.length > 0;
 
+    // File attachment handlers
+    const handleAttachFile = async () => {
+        const result = await window.electronAPI.openFileDialog({
+            properties: ['openFile', 'multiSelections'],
+        });
+
+        if (result && !result.canceled && result.filePaths.length > 0) {
+            const newFiles: AttachedFile[] = result.filePaths.map((filePath: string) => {
+                const fileName = filePath.split(/[/\\]/).pop() || filePath;
+                return {
+                    name: fileName,
+                    path: filePath,
+                    type: fileName.split('.').pop()?.toLowerCase() || 'unknown',
+                    size: 0, // Will be populated when reading the file
+                };
+            });
+            setAttachedFiles(prev => [...prev, ...newFiles]);
+        }
+    };
+
+    const handleRemoveFile = (filePath: string) => {
+        setAttachedFiles(prev => prev.filter(file => file.path !== filePath));
+    };
+
+    const handleToggleContextDoc = (filePath: string) => {
+        setAttachedFiles(prev => prev.map(file =>
+            file.path === filePath && file.isContextDoc
+                ? { ...file, enabled: !file.enabled }
+                : file
+        ));
+    };
+
+    const handleSendMessage = async () => {
+        // Only send enabled files
+        const enabledFiles = attachedFiles.filter(file =>
+            !file.isContextDoc || file.enabled !== false
+        );
+        await sendMessage(enabledFiles.length > 0 ? enabledFiles : undefined);
+        // Clear only non-context files after sending
+        setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            sendMessage();
+            handleSendMessage();
         } else if (e.key === 'Escape') {
             onClose();
         }
@@ -470,7 +597,56 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         <div ref={messagesEndRef} />
                     </MessagesContainer>
 
+                    {/* File Attachments Display */}
+                    {attachedFiles.length > 0 && (
+                        <>
+                            <style>{glowAnimation}</style>
+                            <AttachmentsContainer>
+                                {attachedFiles.map((file) => {
+                                    const isDisabled = file.isContextDoc && file.enabled === false;
+                                    const isGlowing = glowingFile === file.path;
+
+                                    return (
+                                        <Chip
+                                            key={file.path}
+                                            label={file.name}
+                                            size="small"
+                                            title={file.path}
+                                            icon={file.isContextDoc ? (
+                                                isDisabled ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />
+                                            ) : undefined}
+                                            onDelete={file.isContextDoc ? undefined : () => handleRemoveFile(file.path)}
+                                            onClick={file.isContextDoc ? () => handleToggleContextDoc(file.path) : undefined}
+                                            sx={{
+                                                fontSize: '0.75rem',
+                                                cursor: file.isContextDoc ? 'pointer' : 'default',
+                                                opacity: isDisabled ? 0.5 : 1,
+                                                animation: isGlowing ? 'chipGlow 1.5s ease-in-out infinite' : 'none',
+                                                transition: 'box-shadow 0.3s ease-in-out',
+                                                '& .MuiChip-label': {
+                                                    color: isDisabled ? 'text.disabled' : 'text.primary',
+                                                },
+                                                '& .MuiChip-icon': {
+                                                    color: isDisabled ? 'text.disabled' : 'primary.main',
+                                                },
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </AttachmentsContainer>
+                        </>
+                    )}
+
                     <InputContainer>
+                        <IconButton
+                            size="small"
+                            onClick={handleAttachFile}
+                            disabled={isLoading}
+                            title="Attach files"
+                            sx={{ color: 'text.secondary' }}
+                        >
+                            <AttachFileIcon fontSize="small" />
+                        </IconButton>
                         <TextField
                             inputRef={inputRef}
                             multiline
@@ -491,7 +667,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         <Button
                             variant="contained"
                             size="small"
-                            onClick={sendMessage}
+                            onClick={handleSendMessage}
                             disabled={!inputValue.trim() || isLoading}
                             sx={{ minWidth: 'auto', px: 2 }}
                         >

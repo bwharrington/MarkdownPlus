@@ -20,6 +20,14 @@ export interface FileSaveResult {
   error?: string;
 }
 
+export interface FileAttachmentResult {
+  type: 'image' | 'text' | 'unsupported' | 'error';
+  mimeType?: string;
+  data?: string;
+  size?: number;
+  error?: string;
+}
+
 export interface AIModelConfig {
   enabled: boolean;
 }
@@ -87,6 +95,7 @@ export interface ElectronAPI {
   newFile: () => Promise<void>;
   openFile: () => Promise<FileOpenResult[] | null>;
   readFile: (filePath: string) => Promise<FileOpenResult | null>;
+  readFileForAttachment: (filePath: string) => Promise<FileAttachmentResult>;
   saveFile: (filePath: string, content: string) => Promise<FileSaveResult>;
   saveFileAs: (content: string, defaultName?: string) => Promise<FileSaveResult | null>;
   renameFile: (oldPath: string, newPath: string) => Promise<{ success: boolean }>;
@@ -107,6 +116,7 @@ export interface ElectronAPI {
   // Dialog operations
   confirmClose: (fileName: string) => Promise<ConfirmCloseResult>;
   showExternalChangeDialog: (fileName: string) => Promise<'reload' | 'keep'>;
+  openFileDialog: (options: { properties: string[] }) => Promise<{ canceled: boolean; filePaths: string[] }>;
   
   // Window operations
   setWindowTitle: (title: string) => Promise<void>;

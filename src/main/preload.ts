@@ -27,7 +27,9 @@ const electronAPI = {
   // Dialog operations
   confirmClose: (fileName: string) => ipcRenderer.invoke('dialog:confirm-close', fileName),
   showExternalChangeDialog: (fileName: string) => ipcRenderer.invoke('dialog:external-change', fileName),
-  
+  openFileDialog: (options: { properties: string[] }) => ipcRenderer.invoke('dialog:open-file', options),
+  readFileForAttachment: (filePath: string) => ipcRenderer.invoke('file:read-for-attachment', filePath),
+
   // Window operations
   setWindowTitle: (title: string) => ipcRenderer.invoke('window:set-title', title),
   getWindowBounds: () => ipcRenderer.invoke('window:get-bounds'),

@@ -6,6 +6,14 @@ export interface AIMessage {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
+    attachments?: AttachmentData[];
+}
+
+export interface AttachmentData {
+    name: string;
+    type: 'image' | 'text';
+    mimeType?: string;
+    data: string;
 }
 
 export interface AIModelOption {
@@ -106,13 +114,40 @@ export function useAIChat() {
     }, [provider]);
 
     // Send message
-    const sendMessage = useCallback(async () => {
+    const sendMessage = useCallback(async (attachedFiles?: Array<{ name: string; path: string; type: string; size: number }>) => {
         if (!inputValue.trim() || isLoading) return;
+
+        // Read attached files if any
+        let attachments: AttachmentData[] | undefined;
+        if (attachedFiles && attachedFiles.length > 0) {
+            try {
+                const fileDataPromises = attachedFiles.map(async (file): Promise<AttachmentData | null> => {
+                    const fileData = await window.electronAPI.readFileForAttachment(file.path);
+                    if (fileData.type === 'image' || fileData.type === 'text') {
+                        return {
+                            name: file.name,
+                            type: fileData.type,
+                            mimeType: fileData.mimeType,
+                            data: fileData.data!,
+                        } as AttachmentData;
+                    }
+                    return null;
+                });
+
+                const results = await Promise.all(fileDataPromises);
+                attachments = results.filter((f): f is AttachmentData => f !== null);
+            } catch (err) {
+                console.error('Failed to read attached files:', err);
+                setError('Failed to read attached files');
+                return;
+            }
+        }
 
         const userMessage: AIMessage = {
             role: 'user',
             content: inputValue.trim(),
             timestamp: new Date(),
+            attachments,
         };
 
         setMessages(prev => [...prev, userMessage]);
@@ -125,6 +160,7 @@ export function useAIChat() {
             const apiMessages = [...messages, userMessage].map(m => ({
                 role: m.role,
                 content: m.content,
+                attachments: m.attachments,
             }));
 
             const response = provider === 'xai'

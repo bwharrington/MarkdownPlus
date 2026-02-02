@@ -1,9 +1,17 @@
 import { log, logError } from '../logger';
 import { getApiKeyForService } from '../secureStorageIpcHandlers';
 
+export interface AttachmentData {
+    name: string;
+    type: 'image' | 'text';
+    mimeType?: string;
+    data: string;
+}
+
 export interface Message {
     role: 'user' | 'assistant';
     content: string;
+    attachments?: AttachmentData[];
 }
 
 export interface XAiApiResponse {
@@ -40,6 +48,37 @@ export async function callXAiApi(messages: Message[], model: string = 'grok-3-fa
         throw new Error('XAI_API_KEY not found. Please set it in Settings');
     }
 
+    // Format messages for xAI API (support attachments, similar to OpenAI format)
+    const formattedMessages = messages.map(msg => {
+        // If message has attachments, use content array format
+        if (msg.attachments && msg.attachments.length > 0) {
+            const content: any[] = [{ type: 'text', text: msg.content }];
+
+            // Add attachments
+            for (const attachment of msg.attachments) {
+                if (attachment.type === 'image') {
+                    content.push({
+                        type: 'image_url',
+                        image_url: {
+                            url: `data:${attachment.mimeType};base64,${attachment.data}`,
+                        },
+                    });
+                } else if (attachment.type === 'text') {
+                    // Include text files as additional text content
+                    content.push({
+                        type: 'text',
+                        text: `\n\n[File: ${attachment.name}]\n${attachment.data}`,
+                    });
+                }
+            }
+
+            return { role: msg.role, content };
+        }
+
+        // Simple text message
+        return { role: msg.role, content: msg.content };
+    });
+
     log('xAI API Request', {
         url: 'https://api.x.ai/v1/chat/completions',
         model,
@@ -54,7 +93,7 @@ export async function callXAiApi(messages: Message[], model: string = 'grok-3-fa
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                messages,
+                messages: formattedMessages,
                 model,
             }),
         });
