@@ -6,3 +6,4 @@ export { NotificationSnackbar } from './NotificationSnackbar';
 export { MarkdownToolbar } from './MarkdownToolbar';
 export { RstToolbar } from './RstToolbar';
 export { MermaidDiagram } from './MermaidDiagram';
+export { AIChatDialog } from './AIChatDialog';

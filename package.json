@@ -45,6 +45,7 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "dotenv": "^16.4.5",
     "mermaid": "^11.12.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

@@ -13,6 +13,7 @@ import MinimizeIcon from '@mui/icons-material/Minimize';
 import CropSquareIcon from '@mui/icons-material/CropSquare';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import DescriptionIcon from '@mui/icons-material/Description';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile, useTheme, useEditorDispatch } from '../contexts';
 import AppIcon from '../../../assets/MarkdownPlus.svg';
@@ -188,8 +189,8 @@ export function Toolbar() {
                 </Tooltip>
                 <Tooltip title="Close All">
                     <span>
-                        <IconButton 
-                            onClick={handleCloseAllClick} 
+                        <IconButton
+                            onClick={handleCloseAllClick}
                             color="inherit"
                             disabled={!hasOpenFiles}
                             sx={{ WebkitAppRegion: 'no-drag' }}
@@ -197,6 +198,18 @@ export function Toolbar() {
                             <TabUnselectedIcon />
                         </IconButton>
                     </span>
+                </Tooltip>
+
+                <ToolbarDivider orientation="vertical" flexItem />
+
+                <Tooltip title="AI Chat (Ctrl+Shift+A)">
+                    <IconButton
+                        onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}
+                        color="inherit"
+                        sx={{ WebkitAppRegion: 'no-drag' }}
+                    >
+                        <SmartToyIcon />
+                    </IconButton>
                 </Tooltip>
 
                 <DraggableSpacer />

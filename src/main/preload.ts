@@ -93,6 +93,18 @@ const electronAPI = {
     ipcRenderer.on('open-files-from-args', (_event, filePaths: string[]) => callback(filePaths));
     return () => ipcRenderer.removeAllListeners('open-files-from-args');
   },
+
+  // AI Chat operations
+  aiChatRequest: (messages: Array<{ role: string; content: string }>, model: string) =>
+    ipcRenderer.invoke('ai:chat-request', { messages, model }),
+  claudeChatRequest: (messages: Array<{ role: string; content: string }>, model: string) =>
+    ipcRenderer.invoke('ai:claude-chat-request', { messages, model }),
+  openaiChatRequest: (messages: Array<{ role: string; content: string }>, model: string) =>
+    ipcRenderer.invoke('ai:openai-chat-request', { messages, model }),
+  listAIModels: () => ipcRenderer.invoke('ai:list-models'),
+  listClaudeModels: () => ipcRenderer.invoke('ai:list-claude-models'),
+  listOpenAIModels: () => ipcRenderer.invoke('ai:list-openai-models'),
+  getAIProviderStatuses: () => ipcRenderer.invoke('ai:get-provider-status'),
 };
 
 // Expose the API to the renderer process

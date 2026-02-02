@@ -36,6 +36,40 @@ export interface ConfirmCloseResult {
   action: 'save' | 'discard' | 'cancel';
 }
 
+// AI Chat types
+export interface AIMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface AIModelOption {
+  id: string;
+  displayName: string;
+}
+
+export interface AIProviderStatus {
+  enabled: boolean;
+  status: 'success' | 'error' | 'unchecked';
+}
+
+export interface AIProviderStatuses {
+  xai: AIProviderStatus;
+  claude: AIProviderStatus;
+  openai: AIProviderStatus;
+}
+
+export interface AIChatResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+}
+
+export interface AIModelsResponse {
+  success: boolean;
+  models?: AIModelOption[];
+  error?: string;
+}
+
 export interface ElectronAPI {
   // File operations
   newFile: () => Promise<void>;
@@ -93,6 +127,15 @@ export interface ElectronAPI {
   onMenuOpenRecent: (callback: (filePath: string) => void) => () => void;
   onExternalFileChange: (callback: (filePath: string) => void) => () => void;
   onOpenFilesFromArgs: (callback: (filePaths: string[]) => void) => () => void;
+
+  // AI Chat operations
+  aiChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
+  claudeChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
+  openaiChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
+  listAIModels: () => Promise<AIModelsResponse>;
+  listClaudeModels: () => Promise<AIModelsResponse>;
+  listOpenAIModels: () => Promise<AIModelsResponse>;
+  getAIProviderStatuses: () => Promise<AIProviderStatuses>;
 }
 
 declare global {

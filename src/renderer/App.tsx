@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
-import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar } from './components';
+import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog } from './components';
 import { useWindowTitle, useFileOperations, getFileType } from './hooks';
 
 // Intercept console methods and send to main process
@@ -50,7 +50,18 @@ function AppContent() {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
     const { saveFile, saveFileAs, saveAllFiles, openFile, closeFile, closeAllFiles, showInFolder, createNewFile } = useFileOperations();
-    
+
+    // AI Chat dialog state
+    const [aiChatOpen, setAiChatOpen] = useState(false);
+
+    const handleOpenAIChat = useCallback(() => {
+        setAiChatOpen(true);
+    }, []);
+
+    const handleCloseAIChat = useCallback(() => {
+        setAiChatOpen(false);
+    }, []);
+
     // Set up window title management
     useWindowTitle();
 
@@ -106,6 +117,13 @@ function AppContent() {
                 return;
             }
 
+            // Ctrl+Shift+A - Open AI Chat Dialog
+            if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+                e.preventDefault();
+                handleOpenAIChat();
+                return;
+            }
+
             // Ctrl+E - Toggle Edit/Preview Mode
             if (e.ctrlKey && e.key === 'e' && state.activeFileId) {
                 e.preventDefault();
@@ -131,7 +149,20 @@ function AppContent() {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile, state.activeFileId, state.openFiles, dispatch]);
+    }, [createNewFile, openFile, saveFile, saveAllFiles, closeFile, state.activeFileId, state.openFiles, dispatch, handleOpenAIChat]);
+
+    // Set up AI Chat event listener
+    useEffect(() => {
+        const handleAIChatEvent = () => {
+            handleOpenAIChat();
+        };
+
+        window.addEventListener('open-ai-chat', handleAIChatEvent);
+
+        return () => {
+            window.removeEventListener('open-ai-chat', handleAIChatEvent);
+        };
+    }, [handleOpenAIChat]);
 
     // Set up menu event listeners
     useEffect(() => {
@@ -366,6 +397,7 @@ function AppContent() {
             <TabBar />
             <MainContent>
                 {hasOpenFiles ? <EditorPane /> : <EmptyState />}
+                <AIChatDialog open={aiChatOpen} onClose={handleCloseAIChat} />
             </MainContent>
             <NotificationSnackbar />
         </AppContainer>
