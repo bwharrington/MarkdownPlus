@@ -1,4 +1,5 @@
 import { log, logError } from '../logger';
+import { getApiKeyForService } from '../secureStorageIpcHandlers';
 
 export interface Message {
     role: 'user' | 'assistant';
@@ -33,9 +34,10 @@ export const DEFAULT_OPENAI_MODELS = [
 ];
 
 export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o-mini-latest'): Promise<string> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Only use secure storage (no .env fallback)
+    const apiKey = getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY;
     if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not found in environment variables');
+        throw new Error('OPENAI_API_KEY not found. Please set it in Settings');
     }
 
     log('OpenAI API Request', {
@@ -73,9 +75,10 @@ export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o
 }
 
 export async function listOpenAIModels(): Promise<OpenAIModel[]> {
-    const apiKey = process.env.OPENAI_API_KEY;
+    // Only use secure storage (no .env fallback)
+    const apiKey = getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY;
     if (!apiKey) {
-        throw new Error('OPENAI_API_KEY not found in environment variables');
+        throw new Error('OPENAI_API_KEY not found. Please set it in Settings');
     }
 
     log('OpenAI List Models Request', { url: 'https://api.openai.com/v1/models' });
@@ -107,5 +110,40 @@ export async function listOpenAIModels(): Promise<OpenAIModel[]> {
 }
 
 export function hasApiKey(): boolean {
-    return !!process.env.OPENAI_API_KEY;
+    // Only check secure storage (no .env fallback)
+    return !!getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY);
+}
+
+/**
+ * Validate an API key by making a test request
+ */
+export async function validateApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+        log('OpenAI: Validating API key');
+
+        const response = await fetch('https://api.openai.com/v1/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            log('OpenAI: API key validation failed', { status: response.status, error: errorText });
+            return {
+                valid: false,
+                error: response.status === 401 ? 'Invalid API key' : `API error: ${response.statusText}`
+            };
+        }
+
+        log('OpenAI: API key validated successfully');
+        return { valid: true };
+    } catch (error) {
+        logError('OpenAI: API key validation error', error as Error);
+        return {
+            valid: false,
+            error: `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+    }
 }

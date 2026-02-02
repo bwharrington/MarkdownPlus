@@ -1,4 +1,5 @@
 import { log, logError } from '../logger';
+import { getApiKeyForService } from '../secureStorageIpcHandlers';
 
 export interface Message {
     role: 'user' | 'assistant';
@@ -33,9 +34,10 @@ export const DEFAULT_XAI_MODELS = [
 ];
 
 export async function callXAiApi(messages: Message[], model: string = 'grok-3-fast'): Promise<string> {
-    const apiKey = process.env.XAI_API_KEY;
+    // Only use secure storage (no .env fallback)
+    const apiKey = getApiKeyForService('xai'); // || process.env.XAI_API_KEY;
     if (!apiKey) {
-        throw new Error('XAI_API_KEY not found in environment variables');
+        throw new Error('XAI_API_KEY not found. Please set it in Settings');
     }
 
     log('xAI API Request', {
@@ -73,9 +75,10 @@ export async function callXAiApi(messages: Message[], model: string = 'grok-3-fa
 }
 
 export async function listModels(): Promise<Model[]> {
-    const apiKey = process.env.XAI_API_KEY;
+    // Only use secure storage (no .env fallback)
+    const apiKey = getApiKeyForService('xai'); // || process.env.XAI_API_KEY;
     if (!apiKey) {
-        throw new Error('XAI_API_KEY not found in environment variables');
+        throw new Error('XAI_API_KEY not found. Please set it in Settings');
     }
 
     log('xAI List Models Request', { url: 'https://api.x.ai/v1/models' });
@@ -104,5 +107,40 @@ export async function listModels(): Promise<Model[]> {
 }
 
 export function hasApiKey(): boolean {
-    return !!process.env.XAI_API_KEY;
+    // Only check secure storage (no .env fallback)
+    return !!getApiKeyForService('xai'); // || process.env.XAI_API_KEY);
+}
+
+/**
+ * Validate an API key by making a test request
+ */
+export async function validateApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+        log('xAI: Validating API key');
+
+        const response = await fetch('https://api.x.ai/v1/models', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            log('xAI: API key validation failed', { status: response.status, error: errorText });
+            return {
+                valid: false,
+                error: response.status === 401 ? 'Invalid API key' : `API error: ${response.statusText}`
+            };
+        }
+
+        log('xAI: API key validated successfully');
+        return { valid: true };
+    } catch (error) {
+        logError('xAI: API key validation error', error as Error);
+        return {
+            valid: false,
+            error: `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+    }
 }

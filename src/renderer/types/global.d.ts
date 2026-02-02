@@ -148,6 +148,12 @@ export interface ElectronAPI {
   listClaudeModels: () => Promise<AIModelsResponse>;
   listOpenAIModels: () => Promise<AIModelsResponse>;
   getAIProviderStatuses: () => Promise<AIProviderStatuses>;
+
+  // Secure Storage operations (API Keys)
+  setApiKey: (provider: 'xai' | 'claude' | 'openai', key: string) => Promise<{ success: boolean; error?: string }>;
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai') => Promise<boolean>;
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai') => Promise<{ success: boolean; error?: string }>;
+  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean }>;
 }
 
 declare global {

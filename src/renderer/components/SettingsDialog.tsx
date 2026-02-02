@@ -24,13 +24,18 @@ import {
     AccordionDetails,
     Modal,
     Backdrop,
+    TextField,
+    Button,
     styled,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 import { useSettingsConfig } from '../hooks/useSettingsConfig';
+import { useEditorDispatch } from '../contexts/EditorContext';
 import { IConfig, IFileReference, AIProviderStatuses } from '../types/global';
 
 // Styled Components
@@ -148,6 +153,79 @@ function AIProviderSection({ title, provider, config, onModelToggle, expanded, o
     );
 }
 
+// Sub-component: API Key Input
+interface APIKeyInputProps {
+    provider: 'xai' | 'claude' | 'openai';
+    label: string;
+    hasKey: boolean;
+    value: string;
+    onChange: (value: string) => void;
+    onSet: () => void;
+    onClear: () => void;
+}
+
+function APIKeyInput({ provider, label, hasKey, value, onChange, onSet, onClear }: APIKeyInputProps) {
+    return (
+        <Box sx={{ mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 500 }}>{label}</Typography>
+                {hasKey && (
+                    <Chip
+                        icon={<CheckCircleIcon />}
+                        label="Set"
+                        size="small"
+                        color="success"
+                        sx={{ height: 20, fontSize: 11 }}
+                    />
+                )}
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+                <TextField
+                    type="password"
+                    size="small"
+                    fullWidth
+                    placeholder={hasKey ? '••••••••••••••••' : 'Enter API key'}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    disabled={hasKey}
+                    sx={{
+                        '& .MuiInputBase-input': {
+                            fontSize: 14,
+                        },
+                    }}
+                />
+                {hasKey ? (
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        color="error"
+                        startIcon={<DeleteIcon />}
+                        onClick={onClear}
+                        sx={{ minWidth: 90 }}
+                    >
+                        Clear
+                    </Button>
+                ) : (
+                    <Button
+                        variant="contained"
+                        size="small"
+                        onClick={onSet}
+                        disabled={!value.trim()}
+                        sx={{ minWidth: 90 }}
+                    >
+                        Set
+                    </Button>
+                )}
+            </Box>
+            {hasKey && (
+                <FormHelperText>
+                    API key is stored securely. Clear to update with a new key.
+                </FormHelperText>
+            )}
+        </Box>
+    );
+}
+
 // Sub-component: Files Table
 interface FilesTableProps {
     files: IFileReference[];
@@ -221,10 +299,34 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         openai: true,
     });
 
-    // Load provider statuses on mount
+    // API Key management state
+    const [apiKeyStatus, setApiKeyStatus] = useState<{
+        xai: boolean;
+        claude: boolean;
+        openai: boolean;
+    }>({
+        xai: false,
+        claude: false,
+        openai: false,
+    });
+
+    const [apiKeyInputs, setApiKeyInputs] = useState<{
+        xai: string;
+        claude: string;
+        openai: string;
+    }>({
+        xai: '',
+        claude: '',
+        openai: '',
+    });
+
+    const dispatch = useEditorDispatch();
+
+    // Load provider statuses and API key status on mount
     useEffect(() => {
         if (open) {
             window.electronAPI.getAIProviderStatuses().then(setProviderStatuses);
+            window.electronAPI.getApiKeyStatus().then(setApiKeyStatus);
         }
     }, [open]);
 
@@ -328,6 +430,65 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }));
     };
 
+    // API Key handlers
+    const handleSetApiKey = async (provider: 'xai' | 'claude' | 'openai') => {
+        const key = apiKeyInputs[provider].trim();
+        if (!key) {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: 'API key cannot be empty',
+                    severity: 'error',
+                },
+            });
+            return;
+        }
+
+        const result = await window.electronAPI.setApiKey(provider, key);
+        if (result.success) {
+            // Clear input and update status
+            setApiKeyInputs(prev => ({ ...prev, [provider]: '' }));
+            setApiKeyStatus(prev => ({ ...prev, [provider]: true }));
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `API key for ${provider} saved successfully`,
+                    severity: 'success',
+                },
+            });
+        } else {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `Failed to save API key: ${result.error}`,
+                    severity: 'error',
+                },
+            });
+        }
+    };
+
+    const handleClearApiKey = async (provider: 'xai' | 'claude' | 'openai') => {
+        const result = await window.electronAPI.deleteApiKey(provider);
+        if (result.success) {
+            setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `API key for ${provider} cleared`,
+                    severity: 'success',
+                },
+            });
+        } else {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `Failed to clear API key: ${result.error}`,
+                    severity: 'error',
+                },
+            });
+        }
+    };
+
     if (!open) return null;
 
     return (
@@ -392,6 +553,42 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     }
                     label="Developer Tools"
                     sx={{ mb: 2 }}
+                />
+
+                {/* API Keys Section */}
+                <SectionHeader>AI API Keys</SectionHeader>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: 12 }}>
+                    API keys are stored securely using your system's credential storage.
+                </Typography>
+
+                <APIKeyInput
+                    provider="xai"
+                    label="xAI (Grok)"
+                    hasKey={apiKeyStatus.xai}
+                    value={apiKeyInputs.xai}
+                    onChange={(value) => setApiKeyInputs(prev => ({ ...prev, xai: value }))}
+                    onSet={() => handleSetApiKey('xai')}
+                    onClear={() => handleClearApiKey('xai')}
+                />
+
+                <APIKeyInput
+                    provider="claude"
+                    label="Anthropic Claude"
+                    hasKey={apiKeyStatus.claude}
+                    value={apiKeyInputs.claude}
+                    onChange={(value) => setApiKeyInputs(prev => ({ ...prev, claude: value }))}
+                    onSet={() => handleSetApiKey('claude')}
+                    onClear={() => handleClearApiKey('claude')}
+                />
+
+                <APIKeyInput
+                    provider="openai"
+                    label="OpenAI"
+                    hasKey={apiKeyStatus.openai}
+                    value={apiKeyInputs.openai}
+                    onChange={(value) => setApiKeyInputs(prev => ({ ...prev, openai: value }))}
+                    onSet={() => handleSetApiKey('openai')}
+                    onClear={() => handleClearApiKey('openai')}
                 />
 
                 {/* AI Models Section */}

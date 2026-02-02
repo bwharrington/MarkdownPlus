@@ -1,4 +1,5 @@
 import { log, logError } from '../logger';
+import { getApiKeyForService } from '../secureStorageIpcHandlers';
 
 export interface Message {
     role: 'user' | 'assistant';
@@ -44,9 +45,10 @@ export const DEFAULT_CLAUDE_MODELS = [
 ];
 
 export async function callClaudeApi(messages: Message[], model: string = 'claude-sonnet-4-5-20250514'): Promise<string> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // Only use secure storage (no .env fallback)
+    const apiKey = getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not found in environment variables');
+        throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
     }
 
     const requestBody = {
@@ -88,9 +90,10 @@ export async function callClaudeApi(messages: Message[], model: string = 'claude
 }
 
 export async function listClaudeModels(): Promise<ClaudeModel[]> {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    // Only use secure storage (no .env fallback)
+    const apiKey = getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not found in environment variables');
+        throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
     }
 
     log('Claude List Models Request', { url: 'https://api.anthropic.com/v1/models' });
@@ -120,5 +123,41 @@ export async function listClaudeModels(): Promise<ClaudeModel[]> {
 }
 
 export function hasApiKey(): boolean {
-    return !!process.env.ANTHROPIC_API_KEY;
+    // Only check secure storage (no .env fallback)
+    return !!getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY);
+}
+
+/**
+ * Validate an API key by making a test request
+ */
+export async function validateApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+    try {
+        log('Claude: Validating API key');
+
+        const response = await fetch('https://api.anthropic.com/v1/models', {
+            method: 'GET',
+            headers: {
+                'X-Api-Key': apiKey,
+                'anthropic-version': '2023-06-01',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            log('Claude: API key validation failed', { status: response.status, error: errorText });
+            return {
+                valid: false,
+                error: response.status === 401 ? 'Invalid API key' : `API error: ${response.statusText}`
+            };
+        }
+
+        log('Claude: API key validated successfully');
+        return { valid: true };
+    } catch (error) {
+        logError('Claude: API key validation error', error as Error);
+        return {
+            valid: false,
+            error: `Validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        };
+    }
 }

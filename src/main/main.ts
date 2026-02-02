@@ -5,6 +5,8 @@ import * as fsSync from 'fs';
 import * as dotenv from 'dotenv';
 import { initLogger, log, logError, flushLogsSync, getLogFilePath } from './logger';
 import { registerAIIpcHandlers } from './aiIpcHandlers';
+import { registerSecureStorageIpcHandlers } from './secureStorageIpcHandlers';
+import { loadEncryptedKeys } from './services/secureStorage';
 import { listModels as listXAIModels, hasApiKey as hasXaiApiKey } from './services/xaiApi';
 import { listClaudeModels, hasApiKey as hasClaudeApiKey } from './services/claudeApi';
 import { listOpenAIModels, hasApiKey as hasOpenAIApiKey } from './services/openaiApi';
@@ -569,6 +571,9 @@ app.whenReady().then(async () => {
     log('Electron app ready');
     log('Config file location', { path: getConfigPath() });
 
+    // Load encrypted API keys from disk
+    loadEncryptedKeys();
+
     // Handle command line arguments (file associations) - MUST be done before creating window
     const args = process.argv.slice(1); // Skip the first argument (electron executable)
     log('Command line arguments received', { args, length: args.length });
@@ -587,6 +592,7 @@ app.whenReady().then(async () => {
     log('Registering IPC handlers');
     registerIpcHandlers();
     registerAIIpcHandlers();
+    registerSecureStorageIpcHandlers();
 
     // Sync AI models with config
     log('Syncing AI models config');

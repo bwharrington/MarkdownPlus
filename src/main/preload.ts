@@ -105,6 +105,15 @@ const electronAPI = {
   listClaudeModels: () => ipcRenderer.invoke('ai:list-claude-models'),
   listOpenAIModels: () => ipcRenderer.invoke('ai:list-openai-models'),
   getAIProviderStatuses: () => ipcRenderer.invoke('ai:get-provider-status'),
+
+  // Secure Storage operations (API Keys)
+  setApiKey: (provider: 'xai' | 'claude' | 'openai', key: string) =>
+    ipcRenderer.invoke('secure-storage:set-api-key', { provider, key }),
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai') =>
+    ipcRenderer.invoke('secure-storage:has-api-key', provider),
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai') =>
+    ipcRenderer.invoke('secure-storage:delete-api-key', provider),
+  getApiKeyStatus: () => ipcRenderer.invoke('secure-storage:get-key-status'),
 };
 
 // Expose the API to the renderer process
