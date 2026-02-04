@@ -90,6 +90,13 @@ export interface AIModelsResponse {
   error?: string;
 }
 
+export interface AIEditResponse {
+  success: boolean;
+  modifiedContent?: string;
+  summary?: string;
+  error?: string;
+}
+
 export interface ElectronAPI {
   // File operations
   newFile: () => Promise<void>;
@@ -154,6 +161,7 @@ export interface ElectronAPI {
   aiChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
   claudeChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
   openaiChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
+  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai') => Promise<AIEditResponse>;
   listAIModels: () => Promise<AIModelsResponse>;
   listClaudeModels: () => Promise<AIModelsResponse>;
   listOpenAIModels: () => Promise<AIModelsResponse>;

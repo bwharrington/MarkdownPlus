@@ -3,8 +3,8 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { log, logError } from './logger';
 import { callXAiApi, listModels, hasApiKey as hasXaiApiKey, DEFAULT_XAI_MODELS, Message } from './services/xaiApi';
-import { callClaudeApi, listClaudeModels, hasApiKey as hasClaudeApiKey, DEFAULT_CLAUDE_MODELS } from './services/claudeApi';
-import { callOpenAIApi, listOpenAIModels, hasApiKey as hasOpenAIApiKey, DEFAULT_OPENAI_MODELS } from './services/openaiApi';
+import { callClaudeApi, callClaudeApiWithSystemPrompt, listClaudeModels, hasApiKey as hasClaudeApiKey, DEFAULT_CLAUDE_MODELS } from './services/claudeApi';
+import { callOpenAIApi, callOpenAIApiWithJsonMode, listOpenAIModels, hasApiKey as hasOpenAIApiKey, DEFAULT_OPENAI_MODELS } from './services/openaiApi';
 
 export interface AIChatRequestData {
     messages: Message[];
@@ -38,6 +38,36 @@ export interface AIProviderStatusesResponse {
     claude: AIProviderStatus;
     openai: AIProviderStatus;
 }
+
+export interface AIEditRequestData {
+    messages: Array<{ role: string; content: string }>;
+    model: string;
+    provider: 'claude' | 'openai';
+}
+
+export interface AIEditResponse {
+    success: boolean;
+    modifiedContent?: string;
+    summary?: string;
+    error?: string;
+}
+
+// System prompt for AI edit mode - instructs AI to return JSON
+const DIFF_EDIT_SYSTEM_PROMPT = `You are helping edit a markdown document. The user will provide the current document content and request specific changes.
+
+RULES:
+1. Return a JSON object with "modifiedContent" (the complete modified document) and "summary" (brief description of changes)
+2. Preserve all content that the user did not ask to change
+3. Maintain the exact formatting, indentation, and line endings of unchanged sections
+4. Make ONLY the changes the user explicitly requested
+5. The modifiedContent must be the complete document, not a partial diff
+6. Your response MUST be valid JSON and nothing else
+
+Example response format:
+{
+  "modifiedContent": "# Title\\n\\nUpdated content here...",
+  "summary": "Added a new section about X and fixed typo in paragraph 2"
+}`;
 
 // Helper function to load config and filter enabled models
 async function getEnabledModels(provider: 'xai' | 'claude' | 'openai', allModels: AIModelOption[]): Promise<AIModelOption[]> {
@@ -160,6 +190,81 @@ export function registerAIIpcHandlers() {
             // Return default models on error
             const enabledModels = await getEnabledModels('openai', DEFAULT_OPENAI_MODELS);
             return { success: true, models: enabledModels };
+        }
+    });
+
+    // AI Edit Request (structured output for Claude and OpenAI only)
+    ipcMain.handle('ai:edit-request', async (_event, data: AIEditRequestData): Promise<AIEditResponse> => {
+        log('AI IPC: edit-request', { provider: data.provider, model: data.model, messageCount: data.messages.length });
+
+        // xAI not supported for edit mode
+        if ((data.provider as string) === 'xai') {
+            return {
+                success: false,
+                error: 'Edit mode is not supported with xAI. Please switch to Claude or OpenAI.'
+            };
+        }
+
+        try {
+            let response: string;
+
+            if (data.provider === 'claude') {
+                // Claude with system prompt
+                const claudeMessages = data.messages.map(m => ({
+                    role: m.role as 'user' | 'assistant',
+                    content: m.content,
+                }));
+                response = await callClaudeApiWithSystemPrompt(claudeMessages, DIFF_EDIT_SYSTEM_PROMPT, data.model);
+            } else if (data.provider === 'openai') {
+                // OpenAI with JSON mode
+                const openaiMessages = [
+                    { role: 'system', content: DIFF_EDIT_SYSTEM_PROMPT },
+                    ...data.messages
+                ];
+                response = await callOpenAIApiWithJsonMode(openaiMessages, data.model);
+            } else {
+                return { success: false, error: `Unknown provider: ${data.provider}` };
+            }
+
+            // Parse JSON response
+            try {
+                // Handle potential markdown code fences
+                let jsonStr = response.trim();
+                if (jsonStr.startsWith('```json')) {
+                    jsonStr = jsonStr.slice(7);
+                }
+                if (jsonStr.startsWith('```')) {
+                    jsonStr = jsonStr.slice(3);
+                }
+                if (jsonStr.endsWith('```')) {
+                    jsonStr = jsonStr.slice(0, -3);
+                }
+                jsonStr = jsonStr.trim();
+
+                const parsed = JSON.parse(jsonStr);
+
+                if (!parsed.modifiedContent) {
+                    return {
+                        success: false,
+                        error: 'AI response missing modifiedContent field'
+                    };
+                }
+
+                return {
+                    success: true,
+                    modifiedContent: parsed.modifiedContent,
+                    summary: parsed.summary || 'Changes applied'
+                };
+            } catch (parseError) {
+                logError('AI IPC: Failed to parse edit response as JSON', parseError as Error);
+                return {
+                    success: false,
+                    error: 'Failed to parse AI response as JSON. The AI may not have returned valid JSON.'
+                };
+            }
+        } catch (error) {
+            logError('AI IPC: edit-request failed', error as Error);
+            return { success: false, error: (error as Error).message };
         }
     });
 

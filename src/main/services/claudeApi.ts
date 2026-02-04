@@ -130,6 +130,85 @@ export async function callClaudeApi(messages: Message[], model: string = 'claude
     }
 }
 
+/**
+ * Call Claude API with a system prompt for edit mode
+ * This is used for structured JSON output when editing files
+ */
+export async function callClaudeApiWithSystemPrompt(
+    messages: Message[],
+    systemPrompt: string,
+    model: string = 'claude-sonnet-4-5-20250514'
+): Promise<string> {
+    const apiKey = getApiKeyForService('claude');
+    if (!apiKey) {
+        throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
+    }
+
+    // Format messages for Claude API
+    const formattedMessages = messages.map(msg => {
+        if (msg.attachments && msg.attachments.length > 0) {
+            const content: any[] = [{ type: 'text', text: msg.content }];
+            for (const attachment of msg.attachments) {
+                if (attachment.type === 'image') {
+                    content.push({
+                        type: 'image',
+                        source: {
+                            type: 'base64',
+                            media_type: attachment.mimeType,
+                            data: attachment.data,
+                        },
+                    });
+                } else if (attachment.type === 'text') {
+                    content.push({
+                        type: 'text',
+                        text: `\n\n[File: ${attachment.name}]\n${attachment.data}`,
+                    });
+                }
+            }
+            return { role: msg.role, content };
+        }
+        return { role: msg.role, content: msg.content };
+    });
+
+    const requestBody = {
+        messages: formattedMessages,
+        model,
+        max_tokens: 8192,
+        system: systemPrompt,
+    };
+
+    log('Claude API Request (with system prompt)', {
+        url: 'https://api.anthropic.com/v1/messages',
+        model,
+        messageCount: messages.length,
+    });
+
+    try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'X-Api-Key': apiKey,
+                'Content-Type': 'application/json',
+                'anthropic-version': '2023-06-01',
+            },
+            body: JSON.stringify(requestBody),
+        });
+
+        log('Claude API Response Status', { status: response.status, statusText: response.statusText });
+
+        const data: ClaudeApiResponse = await response.json();
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        }
+
+        return data.content[0]?.text || 'No response from Claude';
+    } catch (error) {
+        logError('Error calling Claude API with system prompt', error as Error);
+        throw new Error(`Failed to call Claude API: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
 export async function listClaudeModels(): Promise<ClaudeModel[]> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY;

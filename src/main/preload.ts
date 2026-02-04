@@ -103,6 +103,8 @@ const electronAPI = {
     ipcRenderer.invoke('ai:claude-chat-request', { messages, model }),
   openaiChatRequest: (messages: Array<{ role: string; content: string }>, model: string) =>
     ipcRenderer.invoke('ai:openai-chat-request', { messages, model }),
+  aiEditRequest: (messages: Array<{ role: string; content: string }>, model: string, provider: 'claude' | 'openai') =>
+    ipcRenderer.invoke('ai:edit-request', { messages, model, provider }),
   listAIModels: () => ipcRenderer.invoke('ai:list-models'),
   listClaudeModels: () => ipcRenderer.invoke('ai:list-claude-models'),
   listOpenAIModels: () => ipcRenderer.invoke('ai:list-openai-models'),

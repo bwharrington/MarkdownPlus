@@ -113,6 +113,54 @@ export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o
     }
 }
 
+/**
+ * Call OpenAI API with JSON mode enabled for structured output
+ * This is used for edit mode to get guaranteed JSON responses
+ */
+export async function callOpenAIApiWithJsonMode(
+    messages: Array<{ role: string; content: string }>,
+    model: string = 'gpt-4o-mini-latest'
+): Promise<string> {
+    const apiKey = getApiKeyForService('openai');
+    if (!apiKey) {
+        throw new Error('OPENAI_API_KEY not found. Please set it in Settings');
+    }
+
+    log('OpenAI API Request (JSON mode)', {
+        url: 'https://api.openai.com/v1/chat/completions',
+        model,
+        messageCount: messages.length,
+    });
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                messages,
+                model,
+                response_format: { type: 'json_object' },
+            }),
+        });
+
+        log('OpenAI API Response Status (JSON mode)', { status: response.status, statusText: response.statusText });
+
+        const data: OpenAIApiResponse = await response.json();
+
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+        }
+
+        return data.choices[0]?.message?.content || '';
+    } catch (error) {
+        logError('Error calling OpenAI API with JSON mode', error as Error);
+        throw new Error(`Failed to call OpenAI API: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
 export async function listOpenAIModels(): Promise<OpenAIModel[]> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY;

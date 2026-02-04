@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import type { IFile, EditorState, Notification, IConfig, FileType } from '../types';
+import type { IFile, EditorState, Notification, IConfig, FileType, DiffSession, DiffHunk } from '../types';
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -12,6 +12,69 @@ const getFileTypeFromPath = (filePath: string): FileType => {
     if (['.txt'].some(ext => lowerPath.endsWith(ext))) return 'text';
     return 'unknown';
 };
+
+// Apply hunks based on their status to produce the final content
+// This reconstructs the content by selectively applying accepted changes
+function applyAcceptedHunks(originalContent: string, modifiedContent: string, hunks: DiffHunk[]): string {
+    // If no hunks or all pending, return original
+    if (hunks.length === 0 || hunks.every(h => h.status === 'pending')) {
+        return originalContent;
+    }
+
+    // If all accepted, return modified
+    if (hunks.every(h => h.status === 'accepted')) {
+        return modifiedContent;
+    }
+
+    // If all rejected, return original
+    if (hunks.every(h => h.status === 'rejected')) {
+        return originalContent;
+    }
+
+    // Mixed case: need to selectively apply changes
+    // We'll rebuild the content line by line
+    const originalLines = originalContent.split('\n');
+    const modifiedLines = modifiedContent.split('\n');
+    const result: string[] = [];
+
+    let origIdx = 0;
+    let modIdx = 0;
+
+    for (const hunk of hunks) {
+        // Copy unchanged lines up to this hunk from the appropriate source
+        while (origIdx < hunk.startLine && origIdx < originalLines.length) {
+            result.push(originalLines[origIdx]);
+            origIdx++;
+            modIdx++;
+        }
+
+        if (hunk.status === 'accepted') {
+            // Use the new lines from modified content
+            for (const line of hunk.newLines) {
+                result.push(line);
+            }
+            // Skip original lines that were replaced
+            origIdx = hunk.endLine + 1;
+            // Advance mod index by new lines count
+            modIdx += hunk.newLines.length;
+        } else {
+            // Use original lines (rejected or pending)
+            for (const line of hunk.originalLines) {
+                result.push(line);
+            }
+            origIdx = hunk.endLine + 1;
+            modIdx += hunk.type === 'add' ? hunk.newLines.length : hunk.originalLines.length;
+        }
+    }
+
+    // Copy remaining original lines
+    while (origIdx < originalLines.length) {
+        result.push(originalLines[origIdx]);
+        origIdx++;
+    }
+
+    return result.join('\n');
+}
 
 // Default config
 const defaultConfig: IConfig = {
@@ -27,6 +90,7 @@ const initialState: EditorState = {
     untitledCounter: 1,
     config: defaultConfig,
     notifications: [],
+    diffSession: null,
 };
 
 // Action types
@@ -48,7 +112,13 @@ type EditorAction =
     | { type: 'REORDER_TABS'; payload: { fromIndex: number; toIndex: number } }
     | { type: 'UNDO'; payload: { id: string } }
     | { type: 'REDO'; payload: { id: string } }
-    | { type: 'PUSH_UNDO'; payload: { id: string; content: string } };
+    | { type: 'PUSH_UNDO'; payload: { id: string; content: string } }
+    | { type: 'START_DIFF_SESSION'; payload: { fileId: string; originalContent: string; modifiedContent: string; hunks: DiffHunk[]; summary?: string } }
+    | { type: 'ACCEPT_HUNK'; payload: { hunkId: string } }
+    | { type: 'REJECT_HUNK'; payload: { hunkId: string } }
+    | { type: 'ACCEPT_ALL_HUNKS' }
+    | { type: 'SET_CURRENT_HUNK'; payload: { index: number } }
+    | { type: 'END_DIFF_SESSION' };
 
 // Reducer
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -339,6 +409,109 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             };
         }
 
+        case 'START_DIFF_SESSION': {
+            return {
+                ...state,
+                diffSession: {
+                    fileId: action.payload.fileId,
+                    originalContent: action.payload.originalContent,
+                    modifiedContent: action.payload.modifiedContent,
+                    hunks: action.payload.hunks,
+                    currentHunkIndex: action.payload.hunks.length > 0 ? 0 : -1,
+                    isActive: true,
+                    summary: action.payload.summary,
+                },
+            };
+        }
+
+        case 'ACCEPT_HUNK': {
+            if (!state.diffSession) return state;
+            const updatedHunks = state.diffSession.hunks.map(h =>
+                h.id === action.payload.hunkId ? { ...h, status: 'accepted' as const } : h
+            );
+            // Apply the modified content to the file (showing what's accepted)
+            const newContent = applyAcceptedHunks(
+                state.diffSession.originalContent,
+                state.diffSession.modifiedContent,
+                updatedHunks
+            );
+            // Check if all hunks are resolved
+            const allResolved = updatedHunks.every(h => h.status !== 'pending');
+            return {
+                ...state,
+                diffSession: allResolved ? null : { ...state.diffSession, hunks: updatedHunks },
+                openFiles: state.openFiles.map(f =>
+                    f.id === state.diffSession!.fileId
+                        ? { ...f, content: newContent, isDirty: newContent !== f.originalContent }
+                        : f
+                ),
+            };
+        }
+
+        case 'REJECT_HUNK': {
+            if (!state.diffSession) return state;
+            const updatedHunks = state.diffSession.hunks.map(h =>
+                h.id === action.payload.hunkId ? { ...h, status: 'rejected' as const } : h
+            );
+            // Apply the content keeping rejected hunks as original
+            const newContent = applyAcceptedHunks(
+                state.diffSession.originalContent,
+                state.diffSession.modifiedContent,
+                updatedHunks
+            );
+            // Check if all hunks are resolved
+            const allResolved = updatedHunks.every(h => h.status !== 'pending');
+            return {
+                ...state,
+                diffSession: allResolved ? null : { ...state.diffSession, hunks: updatedHunks },
+                openFiles: state.openFiles.map(f =>
+                    f.id === state.diffSession!.fileId
+                        ? { ...f, content: newContent, isDirty: newContent !== f.originalContent }
+                        : f
+                ),
+            };
+        }
+
+        case 'ACCEPT_ALL_HUNKS': {
+            if (!state.diffSession) return state;
+            // Use the full modified content when accepting all
+            const newContent = state.diffSession.modifiedContent;
+            return {
+                ...state,
+                diffSession: null, // End session
+                openFiles: state.openFiles.map(f =>
+                    f.id === state.diffSession!.fileId
+                        ? { ...f, content: newContent, isDirty: newContent !== f.originalContent }
+                        : f
+                ),
+            };
+        }
+
+        case 'SET_CURRENT_HUNK': {
+            if (!state.diffSession) return state;
+            return {
+                ...state,
+                diffSession: {
+                    ...state.diffSession,
+                    currentHunkIndex: action.payload.index,
+                },
+            };
+        }
+
+        case 'END_DIFF_SESSION': {
+            if (!state.diffSession) return state;
+            // Restore original content when canceling
+            return {
+                ...state,
+                diffSession: null,
+                openFiles: state.openFiles.map(f =>
+                    f.id === state.diffSession!.fileId
+                        ? { ...f, content: state.diffSession!.originalContent }
+                        : f
+                ),
+            };
+        }
+
         default:
             return state;
     }
@@ -487,4 +660,10 @@ export function useEditorDispatch() {
 export function useActiveFile() {
     const state = useEditorState();
     return state.openFiles.find(f => f.id === state.activeFileId) || null;
+}
+
+// Hook to get diff session
+export function useDiffSession() {
+    const state = useEditorState();
+    return state.diffSession;
 }

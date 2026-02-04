@@ -1,63 +1,64 @@
-# Electron Template React TypeScript Application
+# MarkdownPlus
 
-This repository is meant to be cloned into a folder with a different name, then delete the git folder and push to a new repo for development.
+A modern, feature-rich Markdown editor with live preview, AI assistance, and multi-tab support.
 
-## Project Structure
+## Features
 
+- **Dual View Modes** - Switch between raw editing and rendered preview
+- **Multi-Tab Interface** - Work on multiple documents simultaneously
+- **GitHub Flavored Markdown** - Full GFM support including tables, task lists, and code blocks
+- **reStructuredText Support** - Full RST rendering with dedicated toolbar
+- **Mermaid Diagrams** - Embedded diagram support
+- **AI Integration** - Chat assistant and AI-powered editing with diff review
+- **Cross-Platform** - Available for Windows, macOS, and Linux
+
+## AI Features
+
+MarkdownPlus includes integrated AI capabilities:
+
+- **AI Chat Assistant** - Get help with writing and editing
+- **AI Edit Mode** - Make AI-powered edits with visual diff review
+- **Multiple Providers** - Support for Claude (Anthropic), OpenAI, and xAI
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Start in development mode
+npm run dev
+
+# Or build and run
+npm start
 ```
-├── dist/                   # Compiled output
-├── src/
-│   ├── main/               # Electron main process
-│   │   └── main.ts
-│   ├── renderer/           # React renderer process
-│   │   ├── App.tsx
-│   │   ├── index.html
-│   │   └── index.tsx
-│   └── styles/             # CSS styles
-│       └── index.css
-├── package.json
-├── tsconfig.json
-└── webpack.config.js
+
+## Building
+
+```bash
+# Windows
+npm run package
+
+# macOS
+npm run package-mac
+
+# Linux
+npm run package-linux
 ```
-## To get all the dependancies installed, run
 
-### `npm install --save-dev`
+## Documentation
 
-## Available Scripts
+See [docs/MarkdownPlus.md](docs/MarkdownPlus.md) for complete documentation.
 
-In the project directory, you can run:
-
-### `npm start`
-
-Builds the app and starts it.
-
-### `npm run dev`
-
-Runs the app in the development mode with hot reloading.
-
-### `npm run build`
-
-Builds the app for production to the `dist` folder.
-
-### `npm run dist`
-
-Creates a Generate Distribution Executable.
-
-### `npm run package`
-
-Packages the app for Windows distribution.
-
-### `npm run package-mac`
-
-Packages the app for macOS distribution.
-
-### `npm run package-linux`
-
-Packages the app for Linux distribution.
-
-## Technologies Used
+## Technologies
 
 - Electron
 - React
 - TypeScript
-- Webpack
+- Material UI
+- Mermaid
+- diff (for AI edit review)
+
+## License
+
+ISC

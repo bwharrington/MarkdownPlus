@@ -22,10 +22,14 @@ MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, Reac
    - [Theme Support](#theme-support)
    - [Configuration](#configuration)
    - [Logging](#logging)
-4. [Keyboard Shortcuts](#keyboard-shortcuts)
-5. [Supported File Formats](#supported-file-formats)
-6. [Technical Architecture](#technical-architecture)
-7. [Building from Source](#building-from-source)
+4. [AI Features](#ai-features)
+   - [AI Chat Assistant](#ai-chat-assistant)
+   - [AI Edit Mode](#ai-edit-mode)
+   - [AI Provider Configuration](#ai-provider-configuration)
+5. [Keyboard Shortcuts](#keyboard-shortcuts)
+6. [Supported File Formats](#supported-file-formats)
+7. [Technical Architecture](#technical-architecture)
+8. [Building from Source](#building-from-source)
 
 ---
 
@@ -336,6 +340,122 @@ All console output from the renderer process is captured and written to the log 
 
 ---
 
+## AI Features
+
+MarkdownPlus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, and xAI.
+
+### AI Chat Assistant
+
+Access the AI Chat Assistant by clicking the **AI** button in the toolbar. The chat assistant provides a conversational interface for getting help with your documents.
+
+#### Features
+- **Multi-provider support** - Choose between Claude, OpenAI, or xAI
+- **Dynamic model selection** - Available models are fetched from each provider
+- **File attachments** - Attach files for context in your conversations
+- **Context documents** - Add reference files that persist across messages
+- **Persistent chat history** - Conversations are maintained during your session
+- **Draggable dialog** - Position the chat window anywhere on screen
+- **Resizable interface** - Adjust the dialog size to your preference
+- **Collapsible design** - Minimize the dialog when not in use
+
+#### Using the Chat Assistant
+1. Click the **AI** button in the toolbar to open the chat dialog
+2. Select your preferred AI provider from the dropdown
+3. Choose a model from the available options
+4. Type your question or request in the input field
+5. Press **Enter** or click **Send** to submit
+
+#### Attaching Files
+- Click the **attachment** icon to add files for context
+- Drag and drop files directly into the chat dialog
+- Toggle context documents on/off without removing them
+
+### AI Edit Mode
+
+AI Edit Mode allows you to make AI-powered edits directly to your document with a visual diff review system.
+
+#### Enabling Edit Mode
+1. Open the AI Chat dialog
+2. Click the **pencil icon** next to the model selector to toggle Edit Mode
+3. The button turns green when Edit Mode is active
+
+> **Note:** Edit Mode is only available with Claude and OpenAI providers. xAI shows an "Edit N/A" badge indicating it doesn't support structured output required for edit mode.
+
+#### Making Edits
+1. With Edit Mode enabled, describe the changes you want in natural language
+2. Examples:
+   - "Add a table of contents at the beginning"
+   - "Fix the grammar in paragraph 3"
+   - "Convert the bullet list to a numbered list"
+   - "Add code examples for each function"
+3. Press **Enter** to submit the edit request
+
+#### Reviewing Changes
+When the AI returns edits, a visual diff view appears in the editor:
+
+- **Green highlights** - New content being added
+- **Red strikethrough** - Content being removed/replaced
+- **Navigation toolbar** - Appears in the bottom-right corner
+
+#### Diff Navigation Controls
+| Control | Description |
+|---------|-------------|
+| **< >** arrows | Navigate between changes |
+| **Accept** (checkmark) | Accept the current change |
+| **Reject** (X) | Reject the current change |
+| **Accept All** | Accept all pending changes |
+| **Cancel** | Discard all changes and exit diff mode |
+
+#### Diff Keyboard Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| `J` or `↓` | Navigate to next change |
+| `K` or `↑` | Navigate to previous change |
+| `Enter` or `Y` | Accept current change |
+| `Backspace` or `N` | Reject current change |
+| `Ctrl+Shift+A` | Accept all changes |
+| `Escape` | Cancel and discard all changes |
+
+### AI Provider Configuration
+
+Configure your AI providers by setting up API keys in the environment or settings.
+
+#### Supported Providers
+
+| Provider | Models | Edit Mode Support |
+|----------|--------|-------------------|
+| **Claude** (Anthropic) | Claude 3.5 Sonnet, Claude 3 Opus, etc. | Yes |
+| **OpenAI** | GPT-4, GPT-4 Turbo, GPT-3.5, etc. | Yes |
+| **xAI** | Grok models | Chat only |
+
+#### Setting Up API Keys
+
+API keys can be configured through environment variables:
+
+```bash
+# Claude (Anthropic)
+ANTHROPIC_API_KEY=your-api-key-here
+
+# OpenAI
+OPENAI_API_KEY=your-api-key-here
+
+# xAI
+XAI_API_KEY=your-api-key-here
+```
+
+Or through the Settings dialog:
+1. Click the **Settings** (gear) icon in the toolbar
+2. Navigate to the AI configuration section
+3. Enter your API keys for each provider
+
+#### Provider Status Indicators
+
+The AI Chat dialog shows the status of each provider:
+- **Green indicator** - Provider is configured and available
+- **Red indicator** - Provider is not configured (missing API key)
+
+---
+
 ## Keyboard Shortcuts
 
 ### File Operations
@@ -372,6 +492,16 @@ When editing lists, pressing `Enter` automatically continues the list:
 - **Numbered lists:** Increments the number (`1. → 2. → 3.`)
 - **Bulleted lists:** Continues with same bullet (`- → -`)
 - **Task lists:** Creates new unchecked task (`- [ ] → - [ ]`)
+
+### AI Edit Mode Navigation
+| Shortcut | Action |
+|----------|--------|
+| `J` or `↓` | Navigate to next change |
+| `K` or `↑` | Navigate to previous change |
+| `Enter` or `Y` | Accept current change |
+| `Backspace` or `N` | Reject current change |
+| `Ctrl+Shift+A` | Accept all changes |
+| `Escape` | Cancel diff session |
 
 ---
 
@@ -420,6 +550,8 @@ These formats can be opened but may not render correctly in preview:
 | **Markdown Rendering** | react-markdown with remark-gfm |
 | **RST Rendering** | Custom parser with React components |
 | **Diagrams** | Mermaid |
+| **Diff Engine** | diff (npm package) |
+| **AI Providers** | Claude API, OpenAI API, xAI API |
 | **Language** | TypeScript |
 | **Build Tool** | Webpack |
 | **Package Manager** | npm |
@@ -431,7 +563,12 @@ src/
 ├── main/                    # Electron main process
 │   ├── main.ts             # Application entry, IPC handlers
 │   ├── preload.ts          # Context bridge API
-│   └── logger.ts           # Debug logging system
+│   ├── logger.ts           # Debug logging system
+│   ├── aiIpcHandlers.ts    # AI-related IPC handlers
+│   └── services/           # Backend services
+│       ├── claudeApi.ts    # Anthropic Claude API integration
+│       ├── openaiApi.ts    # OpenAI API integration
+│       └── xaiApi.ts       # xAI API integration
 │
 ├── renderer/               # React application
 │   ├── App.tsx            # Root component
@@ -443,7 +580,11 @@ src/
 │   │   ├── RstToolbar.tsx      # RST formatting toolbar
 │   │   ├── RstRenderer.tsx     # reStructuredText parser/renderer
 │   │   ├── MermaidDiagram.tsx  # Mermaid diagram renderer
+│   │   ├── AIChatDialog.tsx    # AI chat interface
+│   │   ├── DiffNavigationToolbar.tsx  # Diff review controls
+│   │   ├── DiffHunkControl.tsx # Per-hunk accept/reject controls
 │   │   ├── FindReplaceDialog.tsx
+│   │   ├── SettingsDialog.tsx  # Settings configuration
 │   │   ├── EmptyState.tsx
 │   │   └── NotificationSnackbar.tsx
 │   │
@@ -453,9 +594,14 @@ src/
 │   │
 │   ├── hooks/             # Custom React hooks
 │   │   ├── useFileOperations.ts
-│   │   └── useWindowTitle.ts
+│   │   ├── useWindowTitle.ts
+│   │   ├── useAIChat.ts        # AI chat state management
+│   │   └── useAIDiffEdit.ts    # AI diff editing logic
 │   │
 │   └── types/             # TypeScript type definitions
+│       ├── index.ts
+│       ├── global.d.ts         # Global type declarations
+│       └── diffTypes.ts        # Diff-related types
 │
 └── styles/                # CSS styles
     └── index.css
@@ -473,12 +619,18 @@ The application uses React Context with a reducer pattern for state management:
 The main and renderer processes communicate through a secure IPC bridge:
 
 ```typescript
-// Renderer → Main
+// File Operations
 window.electronAPI.openFile()
 window.electronAPI.saveFile(path, content)
 window.electronAPI.loadConfig()
 
-// Main → Renderer (events)
+// AI Operations
+window.electronAPI.aiChatRequest(messages, model, provider)
+window.electronAPI.aiEditRequest(messages, model, provider)
+window.electronAPI.getAvailableModels(provider)
+window.electronAPI.getAIProviderStatus()
+
+// Events (Main → Renderer)
 onExternalFileChange(callback)
 onOpenFilesFromArgs(callback)
 ```

@@ -8,6 +8,9 @@ import { RstToolbar } from './RstToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
 import { MermaidDiagram } from './MermaidDiagram';
 import { RstRenderer } from './RstRenderer';
+import { DiffNavigationToolbar } from './DiffNavigationToolbar';
+import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
+import type { DiffSession } from '../types/diffTypes';
 
 const EditorContainer = styled(Box)({
     display: 'flex',
@@ -51,6 +54,60 @@ const ContentEditableDiv = styled('div')(({ theme }) => ({
     '& .current-line-highlight': {
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.1)',
         display: 'block',
+    },
+    // Diff highlight styles
+    '& .diff-added': {
+        backgroundColor: theme.palette.mode === 'dark'
+            ? 'rgba(46, 160, 67, 0.25)'
+            : 'rgba(46, 160, 67, 0.15)',
+        display: 'block',
+        marginLeft: -16,
+        marginRight: -16,
+        paddingLeft: 16,
+        paddingRight: 16,
+        borderLeft: '3px solid #2ea043',
+    },
+    '& .diff-removed': {
+        backgroundColor: theme.palette.mode === 'dark'
+            ? 'rgba(248, 81, 73, 0.25)'
+            : 'rgba(248, 81, 73, 0.15)',
+        display: 'block',
+        marginLeft: -16,
+        marginRight: -16,
+        paddingLeft: 16,
+        paddingRight: 16,
+        borderLeft: '3px solid #f85149',
+        textDecoration: 'line-through',
+        opacity: 0.7,
+    },
+    '& .diff-modified-old': {
+        backgroundColor: theme.palette.mode === 'dark'
+            ? 'rgba(248, 81, 73, 0.25)'
+            : 'rgba(248, 81, 73, 0.15)',
+        display: 'block',
+        marginLeft: -16,
+        marginRight: -16,
+        paddingLeft: 16,
+        paddingRight: 16,
+        borderLeft: '3px solid #f85149',
+        textDecoration: 'line-through',
+        opacity: 0.7,
+    },
+    '& .diff-modified-new': {
+        backgroundColor: theme.palette.mode === 'dark'
+            ? 'rgba(46, 160, 67, 0.25)'
+            : 'rgba(46, 160, 67, 0.15)',
+        display: 'block',
+        marginLeft: -16,
+        marginRight: -16,
+        paddingLeft: 16,
+        paddingRight: 16,
+        borderLeft: '3px solid #2ea043',
+    },
+    '& .diff-current': {
+        outline: '2px solid',
+        outlineColor: theme.palette.primary.main,
+        outlineOffset: 2,
     },
 }));
 
@@ -394,6 +451,84 @@ function highlightTextRange(element: HTMLElement, start: number, end: number, cl
     }
 }
 
+// Render diff content as HTML string with highlighted changes
+function renderDiffContent(diffSession: DiffSession): string {
+    const originalLines = diffSession.originalContent.split('\n');
+    const hunks = diffSession.hunks;
+
+    // If no hunks or all resolved, just show the current content
+    if (hunks.length === 0 || hunks.every(h => h.status !== 'pending')) {
+        return originalLines.map(line => escapeHtml(line)).join('\n');
+    }
+
+    // Build the diff view by processing hunks
+    const result: string[] = [];
+    let origIdx = 0;
+
+    // Sort hunks by start line
+    const sortedHunks = [...hunks].sort((a, b) => a.startLine - b.startLine);
+
+    for (const hunk of sortedHunks) {
+        // Add unchanged lines before this hunk
+        while (origIdx < hunk.startLine && origIdx < originalLines.length) {
+            result.push(escapeHtml(originalLines[origIdx]));
+            origIdx++;
+        }
+
+        const isCurrent = hunk.id === diffSession.hunks[diffSession.currentHunkIndex]?.id;
+        const currentClass = isCurrent ? ' diff-current' : '';
+
+        if (hunk.status === 'pending') {
+            // Show both removed and added lines for pending hunks
+            if (hunk.type === 'remove' || hunk.type === 'modify') {
+                // Show original lines as removed
+                for (const line of hunk.originalLines) {
+                    result.push(`<span class="diff-removed${currentClass}">${escapeHtml(line)}</span>`);
+                }
+            }
+            if (hunk.type === 'add' || hunk.type === 'modify') {
+                // Show new lines as added
+                for (const line of hunk.newLines) {
+                    result.push(`<span class="diff-added${currentClass}">${escapeHtml(line)}</span>`);
+                }
+            }
+        } else if (hunk.status === 'accepted') {
+            // Show only the new lines (accepted change)
+            for (const line of hunk.newLines) {
+                result.push(escapeHtml(line));
+            }
+        } else {
+            // Show only the original lines (rejected change)
+            for (const line of hunk.originalLines) {
+                result.push(escapeHtml(line));
+            }
+        }
+
+        // Skip the original lines that were part of this hunk
+        if (hunk.type === 'remove' || hunk.type === 'modify') {
+            origIdx = hunk.endLine + 1;
+        }
+    }
+
+    // Add remaining unchanged lines
+    while (origIdx < originalLines.length) {
+        result.push(escapeHtml(originalLines[origIdx]));
+        origIdx++;
+    }
+
+    return result.join('\n');
+}
+
+// Escape HTML special characters
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 export function EditorPane() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
@@ -406,6 +541,18 @@ export function EditorPane() {
     const highlightedMatchesRef = useRef<Array<{ start: number; end: number }>>([]);
     const [highlightedMatches, setHighlightedMatches] = useState<Array<{ start: number; end: number }>>([]);
     const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
+
+    // AI Diff Edit state
+    const {
+        diffSession,
+        currentHunk,
+        pendingCount,
+        acceptHunk,
+        rejectHunk,
+        acceptAll,
+        navigateToHunk,
+        cancelSession,
+    } = useAIDiffEdit();
 
     // Find dialog state
     const [findDialogOpen, setFindDialogOpen] = useState(false);
@@ -1379,6 +1526,72 @@ export function EditorPane() {
         }
     }, [activeFile?.id, activeFile?.viewMode]);
 
+    // Keyboard shortcuts for diff navigation
+    React.useEffect(() => {
+        if (!diffSession?.isActive) return;
+
+        const handleDiffKeyDown = (e: KeyboardEvent) => {
+            // Don't handle if user is in an input field
+            const target = e.target as HTMLElement;
+            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+                return;
+            }
+
+            // J or ArrowDown - Next hunk
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (diffSession.currentHunkIndex < diffSession.hunks.length - 1) {
+                    navigateToHunk(diffSession.currentHunkIndex + 1);
+                }
+                return;
+            }
+
+            // K or ArrowUp - Previous hunk
+            if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (diffSession.currentHunkIndex > 0) {
+                    navigateToHunk(diffSession.currentHunkIndex - 1);
+                }
+                return;
+            }
+
+            // Enter or Y - Accept current hunk
+            if ((e.key === 'Enter' || e.key === 'y') && !e.ctrlKey && !e.shiftKey) {
+                e.preventDefault();
+                if (currentHunk && currentHunk.status === 'pending') {
+                    acceptHunk(currentHunk.id);
+                }
+                return;
+            }
+
+            // Backspace or N - Reject current hunk
+            if ((e.key === 'Backspace' || e.key === 'n') && !e.ctrlKey && !e.shiftKey) {
+                e.preventDefault();
+                if (currentHunk && currentHunk.status === 'pending') {
+                    rejectHunk(currentHunk.id);
+                }
+                return;
+            }
+
+            // Escape - Cancel session
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelSession();
+                return;
+            }
+
+            // Ctrl+Shift+A - Accept all
+            if (e.key === 'a' && e.ctrlKey && e.shiftKey) {
+                e.preventDefault();
+                acceptAll();
+                return;
+            }
+        };
+
+        window.addEventListener('keydown', handleDiffKeyDown);
+        return () => window.removeEventListener('keydown', handleDiffKeyDown);
+    }, [diffSession, currentHunk, navigateToHunk, acceptHunk, rejectHunk, cancelSession, acceptAll]);
+
     if (!activeFile) {
         return null;
     }
@@ -1389,32 +1602,52 @@ export function EditorPane() {
         const EditToolbar = isRstFileEdit ? RstToolbar : MarkdownToolbar;
         const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing markdown...';
 
+        // Check if diff session is active for this file
+        const isDiffActive = diffSession?.isActive && diffSession.fileId === activeFile.id;
+
         return (
             <EditorContainer>
                 <EditToolbar
                     mode="edit"
-                    onInsert={handleMarkdownInsert}
-                    onUndo={handleUndo}
-                    onRedo={handleRedo}
+                    onInsert={isDiffActive ? undefined : handleMarkdownInsert}
+                    onUndo={isDiffActive ? undefined : handleUndo}
+                    onRedo={isDiffActive ? undefined : handleRedo}
                     onFind={handleOpenFind}
                 />
                 <EditorWrapper>
-                    <ContentEditableDiv
-                        ref={contentEditableRef}
-                        contentEditable
-                        suppressContentEditableWarning
-                        data-placeholder={placeholder}
-                        onInput={handleContentChange}
-                        onKeyDown={handleKeyDown}
-                        onClick={handleClick}
-                        onDoubleClick={handleDoubleClick}
-                        onPaste={handlePaste}
-                        spellCheck={false}
-                        onScroll={(e) => {
-                            const target = e.target as HTMLDivElement;
-                            handleScrollThrottled(target.scrollTop);
-                        }}
-                    />
+                    {isDiffActive ? (
+                        // Show diff view when diff session is active
+                        <ContentEditableDiv
+                            ref={contentEditableRef}
+                            contentEditable={false}
+                            suppressContentEditableWarning
+                            spellCheck={false}
+                            dangerouslySetInnerHTML={{ __html: renderDiffContent(diffSession) }}
+                            onScroll={(e) => {
+                                const target = e.target as HTMLDivElement;
+                                handleScrollThrottled(target.scrollTop);
+                            }}
+                            style={{ cursor: 'default' }}
+                        />
+                    ) : (
+                        // Normal edit mode
+                        <ContentEditableDiv
+                            ref={contentEditableRef}
+                            contentEditable
+                            suppressContentEditableWarning
+                            data-placeholder={placeholder}
+                            onInput={handleContentChange}
+                            onKeyDown={handleKeyDown}
+                            onClick={handleClick}
+                            onDoubleClick={handleDoubleClick}
+                            onPaste={handlePaste}
+                            spellCheck={false}
+                            onScroll={(e) => {
+                                const target = e.target as HTMLDivElement;
+                                handleScrollThrottled(target.scrollTop);
+                            }}
+                        />
+                    )}
                     <FindReplaceDialog
                         open={findDialogOpen}
                         mode="edit"
@@ -1437,6 +1670,29 @@ export function EditorPane() {
                         onReplaceAll={handleReplaceAll}
                         onClose={handleCloseFind}
                     />
+                    {/* AI Diff Navigation Toolbar */}
+                    {diffSession?.isActive && diffSession.fileId === activeFile.id && (
+                        <DiffNavigationToolbar
+                            currentIndex={diffSession.currentHunkIndex}
+                            totalCount={diffSession.hunks.length}
+                            pendingCount={pendingCount}
+                            summary={diffSession.summary}
+                            onPrevious={() => navigateToHunk(diffSession.currentHunkIndex - 1)}
+                            onNext={() => navigateToHunk(diffSession.currentHunkIndex + 1)}
+                            onAcceptCurrent={() => {
+                                if (currentHunk) {
+                                    acceptHunk(currentHunk.id);
+                                }
+                            }}
+                            onRejectCurrent={() => {
+                                if (currentHunk) {
+                                    rejectHunk(currentHunk.id);
+                                }
+                            }}
+                            onAcceptAll={acceptAll}
+                            onCancel={cancelSession}
+                        />
+                    )}
                 </EditorWrapper>
             </EditorContainer>
         );

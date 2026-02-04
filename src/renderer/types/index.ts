@@ -1,5 +1,6 @@
 // Re-export all types
 export * from './global.d';
+export * from './diffTypes';
 
 // File type for different document formats
 export type FileType = 'markdown' | 'rst' | 'text' | 'unknown';
@@ -28,6 +29,7 @@ export interface EditorState {
   untitledCounter: number;
   config: IConfig;
   notifications: Notification[];
+  diffSession: import('./diffTypes').DiffSession | null;
 }
 
 // Notification interface

@@ -12,6 +12,8 @@ import {
     InputLabel,
     CircularProgress,
     Chip,
+    Tooltip,
+    ToggleButton,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
@@ -20,8 +22,11 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import EditIcon from '@mui/icons-material/Edit';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat, AIProvider } from '../hooks';
+import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useEditorState } from '../contexts/EditorContext';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -218,6 +223,14 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
+    // Edit mode state
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [editModeError, setEditModeError] = useState<string | null>(null);
+    const [isEditLoading, setIsEditLoading] = useState(false);
+
+    // AI Diff Edit hook
+    const { requestEdit, diffSession } = useAIDiffEdit();
+
     const {
         provider,
         setProvider,
@@ -308,6 +321,13 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Reset edit mode when switching to xAI (not supported)
+    useEffect(() => {
+        if (provider === 'xai' && isEditMode) {
+            setIsEditMode(false);
+        }
+    }, [provider, isEditMode]);
 
     // Handle focus/blur events to change opacity
     useEffect(() => {
@@ -466,7 +486,26 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     };
 
     const handleSendMessage = async () => {
-        // Only send enabled files
+        setEditModeError(null);
+
+        // If in edit mode and provider supports it, use the edit request
+        if (isEditMode && (provider === 'claude' || provider === 'openai')) {
+            setIsEditLoading(true);
+            try {
+                const result = await requestEdit(inputValue, provider, selectedModel);
+                // Clear input after successful edit request
+                setInputValue('');
+                // Show success message in chat
+                // The diff will be shown in the editor
+            } catch (err) {
+                setEditModeError(err instanceof Error ? err.message : 'Edit request failed');
+            } finally {
+                setIsEditLoading(false);
+            }
+            return;
+        }
+
+        // Regular chat mode
         const enabledFiles = attachedFiles.filter(file =>
             !file.isContextDoc || file.enabled !== false
         );
@@ -564,6 +603,54 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                                 ))}
                             </Select>
                         </FormControl>
+
+                        {/* Edit mode toggle or xAI warning */}
+                        {provider === 'xai' ? (
+                            <Tooltip title="xAI does not support structured output required for edit mode. Switch to Claude or OpenAI to use edit mode.">
+                                <Chip
+                                    icon={<WarningAmberIcon fontSize="small" />}
+                                    label="Edit N/A"
+                                    size="small"
+                                    color="warning"
+                                    variant="outlined"
+                                    sx={{
+                                        fontSize: '0.7rem',
+                                        height: 32,
+                                        alignSelf: 'center',
+                                    }}
+                                />
+                            </Tooltip>
+                        ) : (
+                            <Tooltip title={isEditMode ? "Edit mode: AI will modify your document" : "Chat mode: Have a conversation with AI"}>
+                                <ToggleButton
+                                    value="edit"
+                                    selected={isEditMode}
+                                    onChange={() => setIsEditMode(!isEditMode)}
+                                    size="small"
+                                    disabled={diffSession?.isActive}
+                                    sx={{
+                                        height: 32,
+                                        minWidth: 32,
+                                        alignSelf: 'center',
+                                        borderColor: isEditMode ? 'primary.main' : 'divider',
+                                        backgroundColor: isEditMode ? 'primary.main' : 'transparent',
+                                        color: isEditMode ? 'primary.contrastText' : 'text.secondary',
+                                        '&:hover': {
+                                            backgroundColor: isEditMode ? 'primary.dark' : 'action.hover',
+                                        },
+                                        '&.Mui-selected': {
+                                            backgroundColor: 'primary.main',
+                                            color: 'primary.contrastText',
+                                            '&:hover': {
+                                                backgroundColor: 'primary.dark',
+                                            },
+                                        },
+                                    }}
+                                >
+                                    <EditIcon fontSize="small" />
+                                </ToggleButton>
+                            </Tooltip>
+                        )}
                     </SelectorsContainer>
 
                     <MessagesContainer>
@@ -589,10 +676,43 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                                 <CircularProgress size={24} />
                             </Box>
                         )}
+                        {isEditLoading && (
+                            <Box sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                py: 2,
+                                gap: 1,
+                            }}>
+                                <CircularProgress size={24} color="success" />
+                                <Typography variant="body2" color="text.secondary">
+                                    AI is editing your document...
+                                </Typography>
+                            </Box>
+                        )}
                         {error && (
                             <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
                                 {error}
                             </Typography>
+                        )}
+                        {editModeError && (
+                            <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
+                                {editModeError}
+                            </Typography>
+                        )}
+                        {diffSession?.isActive && (
+                            <Box sx={{
+                                textAlign: 'center',
+                                py: 1,
+                                px: 2,
+                                backgroundColor: 'success.main',
+                                color: 'success.contrastText',
+                                borderRadius: 1,
+                            }}>
+                                <Typography variant="body2">
+                                    Edit in progress - {diffSession.hunks.filter(h => h.status === 'pending').length} changes pending
+                                </Typography>
+                            </Box>
                         )}
                         <div ref={messagesEndRef} />
                     </MessagesContainer>
@@ -652,12 +772,15 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                             multiline
                             maxRows={4}
                             size="small"
-                            placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+                            placeholder={isEditMode
+                                ? "Describe the changes you want... (e.g., 'Add a table of contents')"
+                                : "Type a message... (Enter to send, Shift+Enter for newline)"
+                            }
                             value={inputValue}
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyDown}
                             fullWidth
-                            disabled={isLoading}
+                            disabled={isLoading || isEditLoading || diffSession?.isActive}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
                                     fontSize: '0.875rem',
@@ -668,10 +791,17 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                             variant="contained"
                             size="small"
                             onClick={handleSendMessage}
-                            disabled={!inputValue.trim() || isLoading}
+                            disabled={!inputValue.trim() || isLoading || isEditLoading || diffSession?.isActive}
+                            color={isEditMode ? 'success' : 'primary'}
                             sx={{ minWidth: 'auto', px: 2 }}
                         >
-                            <SendIcon fontSize="small" />
+                            {isEditLoading ? (
+                                <CircularProgress size={18} color="inherit" />
+                            ) : isEditMode ? (
+                                <EditIcon fontSize="small" />
+                            ) : (
+                                <SendIcon fontSize="small" />
+                            )}
                         </Button>
                     </InputContainer>
                 </>
