@@ -1015,26 +1015,108 @@ export function EditorPane() {
 
     const markdownPlugins = useMemo(() => [remarkGfm], []);
 
-    // Custom components for ReactMarkdown to handle Mermaid diagrams
+    // Handle anchor link clicks
+    const handleAnchorClick = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string | undefined) => {
+        if (!href) return;
+
+        // Handle internal anchor links
+        if (href.startsWith('#')) {
+            e.preventDefault();
+            const targetId = href.substring(1);
+            const targetElement = previewRef.current?.querySelector(`[id="${targetId}"]`);
+
+            if (targetElement && previewRef.current) {
+                const elementTop = (targetElement as HTMLElement).offsetTop;
+                previewRef.current.scrollTo({
+                    top: elementTop - 10,
+                    behavior: 'smooth'
+                });
+            }
+        } else if (href.startsWith('http://') || href.startsWith('https://')) {
+            // Handle external links - open in default browser
+            e.preventDefault();
+            window.electronAPI?.openExternal?.(href);
+        }
+    }, []);
+
+    // Helper to extract text from React children for generating heading IDs
+    const getTextFromChildren = (children: React.ReactNode): string => {
+        if (typeof children === 'string') return children;
+        if (typeof children === 'number') return String(children);
+        if (Array.isArray(children)) {
+            return children.map(c => getTextFromChildren(c)).join('');
+        }
+        if (React.isValidElement(children)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const childProps = children.props as any;
+            return getTextFromChildren(childProps.children);
+        }
+        return '';
+    };
+
+    // Generate slug ID from text (GitHub-style)
+    const textToSlug = (text: string): string => {
+        return text
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-');
+    };
+
+    // Custom components for ReactMarkdown to handle Mermaid diagrams, headings, and links
     const markdownComponents: Components = useMemo(() => ({
         code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
-            
-            // Check if this is a mermaid code block
+
             if (language === 'mermaid') {
                 const chartCode = String(children).replace(/\n$/, '');
                 return <MermaidDiagram chart={chartCode} />;
             }
-            
-            // For other code blocks, render normally
+
             return (
                 <code className={className} {...props}>
                     {children}
                 </code>
             );
         },
-    }), []);
+        h1({ children, ...props }) {
+            const id = textToSlug(getTextFromChildren(children));
+            return <h1 id={id} {...props}>{children}</h1>;
+        },
+        h2({ children, ...props }) {
+            const id = textToSlug(getTextFromChildren(children));
+            return <h2 id={id} {...props}>{children}</h2>;
+        },
+        h3({ children, ...props }) {
+            const id = textToSlug(getTextFromChildren(children));
+            return <h3 id={id} {...props}>{children}</h3>;
+        },
+        h4({ children, ...props }) {
+            const id = textToSlug(getTextFromChildren(children));
+            return <h4 id={id} {...props}>{children}</h4>;
+        },
+        h5({ children, ...props }) {
+            const id = textToSlug(getTextFromChildren(children));
+            return <h5 id={id} {...props}>{children}</h5>;
+        },
+        h6({ children, ...props }) {
+            const id = textToSlug(getTextFromChildren(children));
+            return <h6 id={id} {...props}>{children}</h6>;
+        },
+        a({ node, href, children, ...props }) {
+            return (
+                <a
+                    href={href}
+                    onClick={(e) => handleAnchorClick(e, href)}
+                    {...props}
+                >
+                    {children}
+                </a>
+            );
+        },
+    }), [handleAnchorClick]);
 
     // Throttled scroll position update to reduce dispatch calls
     const handleScrollThrottled = useCallback((scrollTop: number) => {

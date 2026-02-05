@@ -133,7 +133,8 @@ export interface ElectronAPI {
   closeWindow: () => Promise<void>;  
   // Shell operations
   showInFolder: (filePath: string) => Promise<void>;
-  
+  openExternal: (url: string) => Promise<void>;
+
   // DevTools operations
   toggleDevTools: () => Promise<boolean>;
   getDevToolsState: () => Promise<boolean>;

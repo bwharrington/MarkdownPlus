@@ -39,7 +39,8 @@ const electronAPI = {
   
   // Shell operations
   showInFolder: (filePath: string) => ipcRenderer.invoke('shell:show-in-folder', filePath),
-  
+  openExternal: (url: string) => ipcRenderer.invoke('shell:open-external', url),
+
   // DevTools operations
   toggleDevTools: () => ipcRenderer.invoke('devtools:toggle'),
   getDevToolsState: () => ipcRenderer.invoke('devtools:get-state'),

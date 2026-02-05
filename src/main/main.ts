@@ -559,6 +559,11 @@ function registerIpcHandlers() {
         shell.showItemInFolder(filePath);
     });
 
+    // Shell: Open external URL
+    ipcMain.handle('shell:open-external', async (_event, url: string) => {
+        await shell.openExternal(url);
+    });
+
     // File watching
     ipcMain.handle('file:watch', async (_event, filePath: string) => {
         watchFile(filePath);
