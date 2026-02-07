@@ -19,12 +19,14 @@ MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, Reac
    - [Markdown Formatting Toolbar](#markdown-formatting-toolbar)
    - [reStructuredText Support](#restructuredtext-support)
    - [Mermaid Diagrams](#mermaid-diagrams)
+   - [Link Navigation](#link-navigation)
    - [Theme Support](#theme-support)
-   - [Configuration](#configuration)
+   - [Visual Configuration Menu](#visual-configuration-menu)
    - [Logging](#logging)
 4. [AI Features](#ai-features)
    - [AI Chat Assistant](#ai-chat-assistant)
    - [AI Edit Mode](#ai-edit-mode)
+   - [AI Inline Edit Window](#ai-inline-edit-window)
    - [AI Provider Configuration](#ai-provider-configuration)
 5. [Keyboard Shortcuts](#keyboard-shortcuts)
 6. [Supported File Formats](#supported-file-formats)
@@ -278,6 +280,31 @@ Use the `code-block` directive with `mermaid` as the language:
 | Pie Chart | `pie` - Pie charts |
 | Git Graph | `gitGraph` - Git branch visualization |
 
+### Link Navigation
+
+MarkdownPlus supports clickable link navigation in Preview mode, allowing you to follow both internal and external links directly from the rendered document.
+
+#### Supported Link Types
+
+| Link Type | Example | Behavior |
+|-----------|---------|----------|
+| **Internal anchors** | `[Section](#section-name)` | Smooth scrolls to the target heading |
+| **External URLs** | `[Website](https://example.com)` | Opens in your default browser |
+
+#### Internal Anchor Links
+
+Clicking a link that starts with `#` navigates to the matching heading within the document:
+
+- Headings automatically generate anchor IDs using a GitHub-style slug format (lowercase, spaces become hyphens, special characters removed)
+- Example: A heading `## My Section Title` generates the ID `my-section-title`
+- Clicking `[Go to section](#my-section-title)` smoothly scrolls the preview to that heading
+
+#### External URLs
+
+Clicking a link that starts with `http://` or `https://` opens the URL in your system's default web browser. The link opens externally so you stay in MarkdownPlus without interruption.
+
+> **Note:** Link navigation is available in Preview mode only. In Edit mode, links are displayed as raw Markdown syntax.
+
 ### Theme Support
 
 MarkdownPlus supports both light and dark themes:
@@ -286,7 +313,61 @@ MarkdownPlus supports both light and dark themes:
 - **Persistent preference** - Theme choice is remembered across sessions
 - **Full UI theming** - All UI elements adapt to the selected theme
 
-### Configuration
+### Visual Configuration Menu
+
+MarkdownPlus provides a visual Settings dialog for configuring the application without manually editing files.
+
+#### Opening the Settings Dialog
+
+- Click the **Settings** (gear) icon in the toolbar
+- Use the keyboard shortcut `Ctrl+,` (Ctrl+Comma)
+
+#### Dialog Interface
+
+The Settings dialog is a draggable modal window with the following characteristics:
+
+- **Draggable header** - Reposition the dialog by dragging the title bar
+- **Scrollable content** - All settings are accessible within a scrollable area
+- **Auto-save** - Changes are saved automatically with a brief "Saving..." indicator
+- **Close options** - Close via the X button, `Escape` key, or clicking outside the dialog
+
+#### Settings Sections
+
+##### Basic Settings
+
+| Setting | Control | Description |
+|---------|---------|-------------|
+| **Default Line Ending** | Dropdown | Choose between `CRLF` (Windows) or `LF` (Unix/Mac) for new files |
+| **Developer Tools** | Toggle switch | Enable or disable DevTools on application launch |
+
+##### AI API Keys
+
+Securely manage API keys for AI providers:
+
+| Provider | Features |
+|----------|----------|
+| **xAI (Grok)** | Set or clear API key |
+| **Anthropic Claude** | Set or clear API key |
+| **OpenAI** | Set or clear API key |
+
+- API keys are stored securely using the operating system's credential storage
+- Password-masked input fields protect key visibility
+- A green **"Set"** chip indicates when a key is configured
+- Use the **Set** button to save a key or the **Clear** button to remove it
+
+##### AI Models
+
+- Displays available models for each configured provider in collapsible accordion sections
+- Enable or disable individual models with checkboxes
+- Only providers with configured API keys are shown
+- Model names are formatted for readability (e.g., `grok-beta` displays as "Grok Beta")
+
+##### Reference Information
+
+- **Recent Files** - Table showing recently opened files and their view modes
+- **Open Files** - Table showing currently open files and their view modes
+
+#### Configuration Storage
 
 MarkdownPlus stores its configuration in `config.json` located in the user data directory:
 
@@ -294,31 +375,7 @@ MarkdownPlus stores its configuration in `config.json` located in the user data 
 - **macOS:** `~/Library/Application Support/markdownplus/config.json`
 - **Linux:** `~/.config/markdownplus/config.json`
 
-This location ensures your settings are preserved across application updates and reinstalls.
-
-#### Configuration Options
-
-```json
-{
-  "recentFiles": [],
-  "openFiles": [],
-  "defaultLineEnding": "CRLF",
-  "devToolsOpen": false
-}
-```
-
-| Option | Description |
-|--------|-------------|
-| `recentFiles` | List of recently opened files with their view modes |
-| `openFiles` | Files to restore on next launch |
-| `defaultLineEnding` | Default line ending for new files (`CRLF` or `LF`) |
-| `devToolsOpen` | Whether DevTools should open on launch |
-
-#### Editing Configuration
-1. Click the **Settings** (gear) icon in the toolbar
-2. The `config.json` file opens in the editor
-3. Make changes and save
-4. Changes take effect immediately for applicable settings
+Settings are preserved across application updates and reinstalls. While direct editing of `config.json` is still supported, the visual Settings dialog is the recommended approach.
 
 ### Logging
 
@@ -416,6 +473,49 @@ When the AI returns edits, a visual diff view appears in the editor:
 | `Ctrl+Shift+A` | Accept all changes |
 | `Escape` | Cancel and discard all changes |
 
+### AI Inline Edit Window
+
+The AI Inline Edit Window provides a streamlined interface for making AI-powered edits directly within your document. It combines the AI Chat dialog with an inline editing workflow, allowing you to describe changes in natural language and review them visually in the editor.
+
+#### Opening the Inline Edit Window
+
+1. Press `Ctrl+Shift+A` or click the **AI** button (robot icon) in the toolbar
+2. The AI dialog opens as a floating, draggable window overlaying the editor
+3. Click the **pencil icon** next to the model selector to activate Edit Mode
+4. The button turns green, and the input placeholder changes to "Describe the changes you want..."
+
+#### Window Behavior
+
+| Feature | Description |
+|---------|-------------|
+| **Draggable** | Reposition the window by dragging the header |
+| **Resizable** | Drag the bottom-right corner to resize |
+| **Collapsible** | Minimize the window when not actively editing |
+| **Focus opacity** | Window is fully opaque when focused, semi-transparent when not |
+| **Persistent position** | Window maintains its position while you work |
+
+#### Inline Edit Workflow
+
+1. **Select context** - The current document is automatically attached as context
+2. **Describe changes** - Type a natural language description of the edits you want
+3. **Submit** - Press `Enter` or click the green **Edit** button to submit
+4. **Review** - A visual diff appears directly in the editor with:
+   - **Green highlights** for new content being added
+   - **Red strikethrough** for content being removed or replaced
+5. **Navigate and decide** - Use the diff navigation toolbar to accept or reject individual changes
+
+#### Edit Mode vs. Chat Mode
+
+| Aspect | Chat Mode | Edit Mode |
+|--------|-----------|-----------|
+| **Purpose** | Ask questions, get suggestions | Apply changes directly to document |
+| **Input prompt** | "Type a message..." | "Describe the changes you want..." |
+| **Send button** | Blue with send icon | Green with edit icon |
+| **Result** | Chat response in dialog | Visual diff in the editor |
+| **Provider support** | All providers | Claude and OpenAI only |
+
+> **Note:** Edit Mode is only available with Claude and OpenAI providers. xAI displays an "Edit N/A" badge as it does not support the structured output required for inline edits.
+
 ### AI Provider Configuration
 
 Configure your AI providers by setting up API keys in the environment or settings.
@@ -426,7 +526,7 @@ Configure your AI providers by setting up API keys in the environment or setting
 |----------|--------|-------------------|
 | **Claude** (Anthropic) | Claude 3.5 Sonnet, Claude 3 Opus, etc. | Yes |
 | **OpenAI** | GPT-4, GPT-4 Turbo, GPT-3.5, etc. | Yes |
-| **xAI** | Grok models | Chat only |
+<!-- | **xAI** | Grok models | Chat only | -->
 
 #### Setting Up API Keys
 
@@ -439,8 +539,8 @@ ANTHROPIC_API_KEY=your-api-key-here
 # OpenAI
 OPENAI_API_KEY=your-api-key-here
 
-# xAI
-XAI_API_KEY=your-api-key-here
+# xAI (coming soon)
+# XAI_API_KEY=your-api-key-here
 ```
 
 Or through the Settings dialog:
@@ -483,6 +583,7 @@ The AI Chat dialog shows the status of each provider:
 | `Ctrl+E` | Toggle Edit/Preview mode |
 | `Ctrl+F` | Open Find dialog |
 | `Ctrl+H` | Open Find and Replace dialog |
+| `Ctrl+,` | Open Settings dialog |
 | `Enter` | In Find dialog: Find Next |
 | `Escape` | Close Find dialog |
 
@@ -492,6 +593,13 @@ When editing lists, pressing `Enter` automatically continues the list:
 - **Numbered lists:** Increments the number (`1. → 2. → 3.`)
 - **Bulleted lists:** Continues with same bullet (`- → -`)
 - **Task lists:** Creates new unchecked task (`- [ ] → - [ ]`)
+
+### AI Shortcuts
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+A` | Open/close AI Chat dialog |
+| `Enter` | Send message or submit edit (in AI dialog) |
+| `Shift+Enter` | New line in AI dialog input |
 
 ### AI Edit Mode Navigation
 | Shortcut | Action |
