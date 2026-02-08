@@ -562,11 +562,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         No AI providers configured
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Add API keys to .env file:
-                    </Typography>
-                    <Typography variant="body2" component="pre" sx={{ mt: 1, textAlign: 'left', bgcolor: 'action.hover', p: 1, borderRadius: 1 }}>
-                        XAI_API_KEY=your_key{'\n'}
-                        ANTHROPIC_API_KEY=your_key
+                        Add API keys in Settings (Ctrl+,) under the "AI API Keys" section.
                     </Typography>
                 </Box>
             ) : (

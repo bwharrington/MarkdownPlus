@@ -518,7 +518,7 @@ The AI Inline Edit Window provides a streamlined interface for making AI-powered
 
 ### AI Provider Configuration
 
-Configure your AI providers by setting up API keys in the environment or settings.
+Configure your AI providers by setting up API keys through the Settings dialog.
 
 #### Supported Providers
 
@@ -526,27 +526,24 @@ Configure your AI providers by setting up API keys in the environment or setting
 |----------|--------|-------------------|
 | **Claude** (Anthropic) | Claude 3.5 Sonnet, Claude 3 Opus, etc. | Yes |
 | **OpenAI** | GPT-4, GPT-4 Turbo, GPT-3.5, etc. | Yes |
-<!-- | **xAI** | Grok models | Chat only | -->
+| **xAI** | Grok models | Chat only |
 
 #### Setting Up API Keys
 
-API keys can be configured through environment variables:
+API keys are managed through the Settings dialog:
 
-```bash
-# Claude (Anthropic)
-ANTHROPIC_API_KEY=your-api-key-here
+1. Click the **Settings** (gear) icon in the toolbar or press `Ctrl+,`
+2. Navigate to the **AI API Keys** section
+3. Enter your API keys for each provider:
+   - **xAI (Grok)** - For Grok models
+   - **Anthropic Claude** - For Claude models
+   - **OpenAI** - For GPT models
+4. Click **Set** to save each key securely
 
-# OpenAI
-OPENAI_API_KEY=your-api-key-here
-
-# xAI (coming soon)
-# XAI_API_KEY=your-api-key-here
-```
-
-Or through the Settings dialog:
-1. Click the **Settings** (gear) icon in the toolbar
-2. Navigate to the AI configuration section
-3. Enter your API keys for each provider
+API keys are encrypted and stored securely using your operating system's credential storage:
+- **Windows**: DPAPI (Data Protection API)
+- **macOS**: Keychain
+- **Linux**: libsecret
 
 #### Provider Status Indicators
 

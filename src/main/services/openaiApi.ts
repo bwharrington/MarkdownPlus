@@ -43,7 +43,7 @@ export const DEFAULT_OPENAI_MODELS = [
 
 export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o-mini-latest'): Promise<string> {
     // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY;
+    const apiKey = getApiKeyForService('openai');
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY not found. Please set it in Settings');
     }
@@ -163,7 +163,7 @@ export async function callOpenAIApiWithJsonMode(
 
 export async function listOpenAIModels(): Promise<OpenAIModel[]> {
     // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY;
+    const apiKey = getApiKeyForService('openai');
     if (!apiKey) {
         throw new Error('OPENAI_API_KEY not found. Please set it in Settings');
     }
@@ -198,7 +198,7 @@ export async function listOpenAIModels(): Promise<OpenAIModel[]> {
 
 export function hasApiKey(): boolean {
     // Only check secure storage (no .env fallback)
-    return !!getApiKeyForService('openai'); // || process.env.OPENAI_API_KEY);
+    return !!getApiKeyForService('openai');
 }
 
 /**

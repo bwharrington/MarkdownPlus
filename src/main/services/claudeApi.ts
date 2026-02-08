@@ -54,7 +54,7 @@ export const DEFAULT_CLAUDE_MODELS = [
 
 export async function callClaudeApi(messages: Message[], model: string = 'claude-sonnet-4-5-20250514'): Promise<string> {
     // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY;
+    const apiKey = getApiKeyForService('claude');
     if (!apiKey) {
         throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
     }
@@ -211,7 +211,7 @@ export async function callClaudeApiWithSystemPrompt(
 
 export async function listClaudeModels(): Promise<ClaudeModel[]> {
     // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY;
+    const apiKey = getApiKeyForService('claude');
     if (!apiKey) {
         throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
     }
@@ -244,7 +244,7 @@ export async function listClaudeModels(): Promise<ClaudeModel[]> {
 
 export function hasApiKey(): boolean {
     // Only check secure storage (no .env fallback)
-    return !!getApiKeyForService('claude'); // || process.env.ANTHROPIC_API_KEY);
+    return !!getApiKeyForService('claude');
 }
 
 /**

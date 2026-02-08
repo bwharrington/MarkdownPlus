@@ -591,41 +591,45 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     onClear={() => handleClearApiKey('openai')}
                 />
 
-                {/* AI Models Section */}
-                <SectionHeader>AI Models</SectionHeader>
+                {/* AI Models Section - Only show if at least one provider has an API key */}
+                {(providerStatuses?.xai.enabled || providerStatuses?.claude.enabled || providerStatuses?.openai.enabled) && (
+                    <>
+                        <SectionHeader>AI Models</SectionHeader>
 
-                {/* AI Provider Sections - Render only for enabled providers */}
-                {providerStatuses?.xai.enabled && (
-                    <AIProviderSection
-                        title="xAI (Grok)"
-                        provider="xai"
-                        config={config}
-                        onModelToggle={handleModelToggle}
-                        expanded={expandedSections.xai}
-                        onToggle={() => handleSectionToggle('xai')}
-                    />
-                )}
+                        {/* AI Provider Sections - Render only for enabled providers */}
+                        {providerStatuses?.xai.enabled && (
+                            <AIProviderSection
+                                title="xAI (Grok)"
+                                provider="xai"
+                                config={config}
+                                onModelToggle={handleModelToggle}
+                                expanded={expandedSections.xai}
+                                onToggle={() => handleSectionToggle('xai')}
+                            />
+                        )}
 
-                {providerStatuses?.claude.enabled && (
-                    <AIProviderSection
-                        title="Anthropic Claude"
-                        provider="claude"
-                        config={config}
-                        onModelToggle={handleModelToggle}
-                        expanded={expandedSections.claude}
-                        onToggle={() => handleSectionToggle('claude')}
-                    />
-                )}
+                        {providerStatuses?.claude.enabled && (
+                            <AIProviderSection
+                                title="Anthropic Claude"
+                                provider="claude"
+                                config={config}
+                                onModelToggle={handleModelToggle}
+                                expanded={expandedSections.claude}
+                                onToggle={() => handleSectionToggle('claude')}
+                            />
+                        )}
 
-                {providerStatuses?.openai.enabled && (
-                    <AIProviderSection
-                        title="OpenAI"
-                        provider="openai"
-                        config={config}
-                        onModelToggle={handleModelToggle}
-                        expanded={expandedSections.openai}
-                        onToggle={() => handleSectionToggle('openai')}
-                    />
+                        {providerStatuses?.openai.enabled && (
+                            <AIProviderSection
+                                title="OpenAI"
+                                provider="openai"
+                                config={config}
+                                onModelToggle={handleModelToggle}
+                                expanded={expandedSections.openai}
+                                onToggle={() => handleSectionToggle('openai')}
+                            />
+                        )}
+                    </>
                 )}
 
                 {/* Recent Files Table (Readonly) */}

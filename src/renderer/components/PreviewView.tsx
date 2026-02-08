@@ -1,0 +1,208 @@
+import React, { useCallback, useRef } from 'react';
+import { Box } from '@mui/material';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { useActiveFile, useEditorDispatch } from '../contexts';
+import { useFindReplace } from '../hooks/useFindReplace';
+import { useMarkdownComponents } from '../utils/markdownComponents';
+import { highlightWordInElement } from '../utils/domUtils';
+import { EditorContainer, EditorWrapper } from '../styles/editor.styles';
+import { PreviewContainer } from '../styles/preview.styles';
+import { MarkdownToolbar } from './MarkdownToolbar';
+import { RstToolbar } from './RstToolbar';
+import { FindReplaceDialog } from './FindReplaceDialog';
+import { RstRenderer } from './RstRenderer';
+
+const markdownPlugins = [remarkGfm];
+
+export function PreviewView() {
+    const activeFile = useActiveFile();
+    const dispatch = useEditorDispatch();
+    const previewRef = useRef<HTMLDivElement>(null);
+    const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
+
+    // A dummy contentEditableRef for useFindReplace (not used in preview mode but needed by the hook)
+    const contentEditableRef = useRef<HTMLDivElement>(null);
+
+    const markdownComponents = useMarkdownComponents(previewRef);
+
+    const {
+        findDialogOpen,
+        searchQuery,
+        searchMatches,
+        currentSearchIndex,
+        matchCount,
+        replaceQuery,
+        activeDialogTab,
+        setActiveDialogTab,
+        setReplaceQuery,
+        handleSearchQueryChange,
+        handleFindNext,
+        handleCount,
+        handleReplace,
+        handleReplaceAll,
+        handleOpenFind,
+        handleCloseFind,
+    } = useFindReplace(contentEditableRef, previewRef);
+
+    // Throttled scroll position update
+    const handleScrollThrottled = useCallback((scrollTop: number) => {
+        if (!activeFile) return;
+        if (scrollThrottleRef.current) {
+            clearTimeout(scrollThrottleRef.current);
+        }
+        scrollThrottleRef.current = setTimeout(() => {
+            dispatch({
+                type: 'UPDATE_SCROLL_POSITION',
+                payload: { id: activeFile.id, scrollPosition: scrollTop }
+            });
+        }, 100);
+    }, [activeFile, dispatch]);
+
+    const handlePreviewDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        if (!activeFile || !previewRef.current) return;
+
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const word = selection.toString().trim();
+        if (!word || !/^[a-zA-Z0-9]+$/.test(word)) return;
+
+        // Remove existing highlights
+        const previewElement = previewRef.current;
+        previewElement.querySelectorAll('.word-highlight').forEach(el => {
+            const parent = el.parentNode;
+            if (parent) {
+                parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+                parent.normalize();
+            }
+        });
+
+        // Find and highlight all matching words in the preview
+        highlightWordInElement(previewElement, word);
+
+        // Re-select the first highlighted word after highlighting
+        requestAnimationFrame(() => {
+            const highlightedElements = previewElement.querySelectorAll('.word-highlight');
+            if (highlightedElements.length > 0) {
+                const clickX = e.clientX;
+                const clickY = e.clientY;
+                let closestElement: Element | null = null;
+                let minDistance = Infinity;
+
+                highlightedElements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    const distance = Math.sqrt(Math.pow(clickX - centerX, 2) + Math.pow(clickY - centerY, 2));
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestElement = el;
+                    }
+                });
+
+                if (closestElement) {
+                    const range = document.createRange();
+                    range.selectNodeContents(closestElement);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                }
+            }
+        });
+    }, [activeFile]);
+
+    const handlePreviewClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        if (!previewRef.current) return;
+
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('word-highlight')) {
+            return;
+        }
+
+        const previewElement = previewRef.current;
+        previewElement.querySelectorAll('.word-highlight').forEach(el => {
+            const parent = el.parentNode;
+            if (parent) {
+                parent.replaceChild(document.createTextNode(el.textContent || ''), el);
+                parent.normalize();
+            }
+        });
+    }, []);
+
+    // Restore scroll position
+    React.useEffect(() => {
+        if (!activeFile) return;
+        const element = previewRef.current;
+        if (element && activeFile.scrollPosition > 0) {
+            requestAnimationFrame(() => {
+                element.scrollTop = activeFile.scrollPosition;
+            });
+        }
+    }, [activeFile?.id, activeFile?.viewMode, activeFile]);
+
+    if (!activeFile) return null;
+
+    const isRstFile = activeFile.fileType === 'rst';
+    const PreviewToolbar = isRstFile ? RstToolbar : MarkdownToolbar;
+
+    return (
+        <EditorContainer>
+            <PreviewToolbar
+                mode="preview"
+                onFind={handleOpenFind}
+            />
+            <EditorWrapper>
+                {isRstFile ? (
+                    <Box
+                        ref={previewRef}
+                        onClick={handlePreviewClick}
+                        onDoubleClick={handlePreviewDoubleClick}
+                        onScroll={(e) => {
+                            const target = e.target as HTMLDivElement;
+                            handleScrollThrottled(target.scrollTop);
+                        }}
+                        sx={{ flex: 1, overflow: 'auto' }}
+                    >
+                        <RstRenderer content={activeFile.content || ''} documentPath={activeFile.path} />
+                    </Box>
+                ) : (
+                    <PreviewContainer
+                        ref={previewRef}
+                        onClick={handlePreviewClick}
+                        onDoubleClick={handlePreviewDoubleClick}
+                        onScroll={(e) => {
+                            const target = e.target as HTMLDivElement;
+                            handleScrollThrottled(target.scrollTop);
+                        }}
+                    >
+                        <ReactMarkdown
+                            remarkPlugins={markdownPlugins}
+                            components={markdownComponents}
+                        >
+                            {activeFile.content || '*No content*'}
+                        </ReactMarkdown>
+                    </PreviewContainer>
+                )}
+                <FindReplaceDialog
+                    open={findDialogOpen}
+                    mode="preview"
+                    activeTab={activeDialogTab}
+                    searchQuery={searchQuery}
+                    replaceQuery={replaceQuery}
+                    matchCount={matchCount}
+                    currentMatchIndex={currentSearchIndex}
+                    totalMatches={searchMatches.length}
+                    onTabChange={setActiveDialogTab}
+                    onSearchQueryChange={handleSearchQueryChange}
+                    onReplaceQueryChange={setReplaceQuery}
+                    onFindNext={handleFindNext}
+                    onCount={handleCount}
+                    onReplace={handleReplace}
+                    onReplaceAll={handleReplaceAll}
+                    onClose={handleCloseFind}
+                />
+            </EditorWrapper>
+        </EditorContainer>
+    );
+}

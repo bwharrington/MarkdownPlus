@@ -2,7 +2,6 @@ import { app, BrowserWindow, dialog, Menu, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
-import * as dotenv from 'dotenv';
 import { initLogger, log, logError, flushLogsSync, getLogFilePath } from './logger';
 import { registerAIIpcHandlers } from './aiIpcHandlers';
 import { registerSecureStorageIpcHandlers } from './secureStorageIpcHandlers';
@@ -10,9 +9,6 @@ import { loadEncryptedKeys } from './services/secureStorage';
 import { listModels as listXAIModels, hasApiKey as hasXaiApiKey } from './services/xaiApi';
 import { listClaudeModels, hasApiKey as hasClaudeApiKey } from './services/claudeApi';
 import { listOpenAIModels, hasApiKey as hasOpenAIApiKey } from './services/openaiApi';
-
-// Load environment variables from .env file
-dotenv.config();
 
 let mainWindow: BrowserWindow | null;
 let pendingFilesToOpen: string[] = [];
