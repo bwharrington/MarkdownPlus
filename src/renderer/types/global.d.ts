@@ -50,6 +50,7 @@ export interface IConfig {
   defaultLineEnding: LineEnding;
   devToolsOpen?: boolean;
   aiModels?: AIModelsConfig;
+  imageSaveFolder?: string;
 }
 
 export interface ConfirmCloseResult {
@@ -97,6 +98,12 @@ export interface AIEditResponse {
   error?: string;
 }
 
+export interface ImageSaveResult {
+  success: boolean;
+  relativePath?: string;
+  error?: string;
+}
+
 export interface ElectronAPI {
   // File operations
   newFile: () => Promise<void>;
@@ -107,7 +114,10 @@ export interface ElectronAPI {
   saveFileAs: (content: string, defaultName?: string) => Promise<FileSaveResult | null>;
   renameFile: (oldPath: string, newPath: string) => Promise<{ success: boolean }>;
   watchFile: (filePath: string) => Promise<void>;
-  unwatchFile: (filePath: string) => Promise<void>;  
+  unwatchFile: (filePath: string) => Promise<void>;
+  saveClipboardImage: (base64Data: string, documentDir: string) => Promise<ImageSaveResult>;
+  saveDroppedImage: (sourcePath: string, documentDir: string) => Promise<ImageSaveResult>;
+  
   // Config operations
   loadConfig: () => Promise<IConfig>;
   saveConfig: (config: IConfig) => Promise<void>;
