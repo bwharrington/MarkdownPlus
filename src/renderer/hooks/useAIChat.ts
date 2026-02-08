@@ -34,7 +34,7 @@ export interface AIProviderStatuses {
 
 export function useAIChat() {
     // Provider state
-    const [provider, setProvider] = useState<AIProvider>('xai');
+    const [provider, setProvider] = useState<AIProvider>('claude');
     const [providerStatuses, setProviderStatuses] = useState<AIProviderStatuses>({
         xai: { enabled: false, status: 'unchecked' },
         claude: { enabled: false, status: 'unchecked' },
@@ -65,14 +65,16 @@ export function useAIChat() {
                 const statuses = await window.electronAPI.getAIProviderStatuses();
                 setProviderStatuses(statuses);
 
-                // Set initial provider to first enabled one
-                if (statuses.xai.enabled) {
-                    setProvider('xai');
-                } else if (statuses.claude.enabled) {
+                // Set initial provider to first enabled one (skip xAI for now)
+                if (statuses.claude.enabled) {
                     setProvider('claude');
                 } else if (statuses.openai.enabled) {
                     setProvider('openai');
                 }
+                // xAI temporarily disabled
+                // else if (statuses.xai.enabled) {
+                //     setProvider('xai');
+                // }
             } catch (err) {
                 console.error('Failed to check provider statuses:', err);
             }
@@ -197,14 +199,15 @@ export function useAIChat() {
     const getProviderOptions = useCallback(() => {
         const options: Array<{ value: AIProvider; label: string; disabled: boolean; status: string }> = [];
 
-        if (providerStatuses.xai.enabled) {
-            options.push({
-                value: 'xai',
-                label: 'xAI (Grok)',
-                disabled: false,
-                status: providerStatuses.xai.status,
-            });
-        }
+        // xAI temporarily disabled
+        // if (providerStatuses.xai.enabled) {
+        //     options.push({
+        //         value: 'xai',
+        //         label: 'xAI (Grok)',
+        //         disabled: false,
+        //         status: providerStatuses.xai.status,
+        //     });
+        // }
 
         if (providerStatuses.claude.enabled) {
             options.push({

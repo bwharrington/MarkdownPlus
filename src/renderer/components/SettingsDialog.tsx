@@ -561,7 +561,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     API keys are stored securely using your system's credential storage.
                 </Typography>
 
-                <APIKeyInput
+                {/* xAI temporarily disabled */}
+                {/* <APIKeyInput
                     provider="xai"
                     label="xAI (Grok)"
                     hasKey={apiKeyStatus.xai}
@@ -569,7 +570,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, xai: value }))}
                     onSet={() => handleSetApiKey('xai')}
                     onClear={() => handleClearApiKey('xai')}
-                />
+                /> */}
 
                 <APIKeyInput
                     provider="claude"
@@ -592,12 +593,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 />
 
                 {/* AI Models Section - Only show if at least one provider has an API key */}
-                {(providerStatuses?.xai.enabled || providerStatuses?.claude.enabled || providerStatuses?.openai.enabled) && (
+                {(providerStatuses?.claude.enabled || providerStatuses?.openai.enabled) && (
                     <>
                         <SectionHeader>AI Models</SectionHeader>
 
                         {/* AI Provider Sections - Render only for enabled providers */}
-                        {providerStatuses?.xai.enabled && (
+                        {/* xAI temporarily disabled */}
+                        {/* {providerStatuses?.xai.enabled && (
                             <AIProviderSection
                                 title="xAI (Grok)"
                                 provider="xai"
@@ -606,7 +608,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                 expanded={expandedSections.xai}
                                 onToggle={() => handleSectionToggle('xai')}
                             />
-                        )}
+                        )} */}
 
                         {providerStatuses?.claude.enabled && (
                             <AIProviderSection
