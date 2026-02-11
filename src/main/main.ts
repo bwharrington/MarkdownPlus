@@ -11,7 +11,8 @@ import { listModels as listXAIModels, hasApiKey as hasXaiApiKey } from './servic
 import { listClaudeModels, hasApiKey as hasClaudeApiKey } from './services/claudeApi';
 import { listOpenAIModels, hasApiKey as hasOpenAIApiKey } from './services/openaiApi';
 
-// Load environment variables from .env file
+// Load .env file for development (optional - will be ignored if not present)
+// In production builds, this file typically won't exist, and secure storage will be used
 dotenv.config();
 
 let mainWindow: BrowserWindow | null;

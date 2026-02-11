@@ -43,7 +43,7 @@ export const DEFAULT_XAI_MODELS = [
 
 export async function callXAiApi(messages: Message[], model: string = 'grok-3-fast'): Promise<string> {
     // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('xai'); // || process.env.XAI_API_KEY;
+    const apiKey = getApiKeyForService('xai');
     if (!apiKey) {
         throw new Error('XAI_API_KEY not found. Please set it in Settings');
     }
@@ -115,7 +115,7 @@ export async function callXAiApi(messages: Message[], model: string = 'grok-3-fa
 
 export async function listModels(): Promise<Model[]> {
     // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('xai'); // || process.env.XAI_API_KEY;
+    const apiKey = getApiKeyForService('xai');
     if (!apiKey) {
         throw new Error('XAI_API_KEY not found. Please set it in Settings');
     }
@@ -147,7 +147,7 @@ export async function listModels(): Promise<Model[]> {
 
 export function hasApiKey(): boolean {
     // Only check secure storage (no .env fallback)
-    return !!getApiKeyForService('xai'); // || process.env.XAI_API_KEY);
+    return !!getApiKeyForService('xai');
 }
 
 /**

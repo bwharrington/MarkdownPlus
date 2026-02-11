@@ -11,11 +11,22 @@ import { log, logError } from '../logger';
  * - Linux: libsecret
  *
  * Encrypted keys are persisted to disk in userData directory
+ * 
+ * Development Override:
+ * In development, .env file values take precedence over secure storage.
+ * This allows developers to use .env files without storing keys in the system.
  */
 
 const API_KEY_PREFIX = 'markdownplus_api_key_';
 
 export type ApiProvider = 'xai' | 'claude' | 'openai';
+
+// Map provider names to environment variable names
+const ENV_VAR_MAP: Record<ApiProvider, string> = {
+    xai: 'XAI_API_KEY',
+    claude: 'ANTHROPIC_API_KEY',
+    openai: 'OPENAI_API_KEY',
+};
 
 // In-memory cache of encrypted keys
 const keyCache = new Map<string, Buffer>();
@@ -102,9 +113,19 @@ export function setApiKey(provider: ApiProvider, key: string): void {
 
 /**
  * Get an API key (decrypted)
+ * In development, checks .env first as an override
  */
 export function getApiKey(provider: ApiProvider): string | null {
     try {
+        // Development override: Check .env file first
+        const envVarName = ENV_VAR_MAP[provider];
+        const envValue = process.env[envVarName];
+        if (envValue && envValue.trim() !== '') {
+            log('Secure Storage: Using API key from .env (development override)', { provider });
+            return envValue.trim();
+        }
+
+        // Fall back to secure storage
         const cacheKey = `${API_KEY_PREFIX}${provider}`;
         const encrypted = keyCache.get(cacheKey);
 
@@ -123,8 +144,17 @@ export function getApiKey(provider: ApiProvider): string | null {
 
 /**
  * Check if an API key exists
+ * In development, checks .env first as an override
  */
 export function hasApiKey(provider: ApiProvider): boolean {
+    // Development override: Check .env file first
+    const envVarName = ENV_VAR_MAP[provider];
+    const envValue = process.env[envVarName];
+    if (envValue && envValue.trim() !== '') {
+        return true;
+    }
+
+    // Fall back to secure storage
     const cacheKey = `${API_KEY_PREFIX}${provider}`;
     return keyCache.has(cacheKey);
 }

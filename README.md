@@ -26,12 +26,31 @@ MarkdownPlus includes integrated AI capabilities:
 # Install dependencies
 npm install
 
+# (Optional) Configure AI API keys for development
+# Copy .env.example to .env and add your API keys
+cp .env.example .env
+# Edit .env with your keys
+
 # Start in development mode
 npm run dev
 
 # Or build and run
 npm start
 ```
+
+### Development API Keys
+
+For development, you can use a `.env` file to configure AI API keys:
+
+1. Copy `.env.example` to `.env`
+2. Add your API keys:
+   ```
+   ANTHROPIC_API_KEY=your_key_here
+   OPENAI_API_KEY=your_key_here
+   ```
+3. Restart the application
+
+**Note**: In production builds, API keys are stored securely using the system's credential storage (DPAPI/Keychain/libsecret) via the Settings dialog. The `.env` file is only for development convenience.
 
 ## Building
 

@@ -519,7 +519,7 @@ The AI Inline Edit Window provides a streamlined interface for making AI-powered
 
 ### AI Provider Configuration
 
-Configure your AI providers by setting up API keys in the environment or settings.
+Configure your AI providers by setting up API keys through the Settings dialog.
 
 #### Supported Providers
 
@@ -531,23 +531,34 @@ Configure your AI providers by setting up API keys in the environment or setting
 
 #### Setting Up API Keys
 
-API keys can be configured through environment variables:
+API keys are managed through the Settings dialog:
 
-```bash
-# Claude (Anthropic)
-ANTHROPIC_API_KEY=your-api-key-here
+1. Click the **Settings** (gear) icon in the toolbar or press `Ctrl+,`
+2. Navigate to the **AI API Keys** section
+3. Enter your API keys for each provider:
+   - **Anthropic Claude** - For Claude models
+   - **OpenAI** - For GPT models
+4. Click **Set** to save each key securely
 
-# OpenAI
-OPENAI_API_KEY=your-api-key-here
+API keys are encrypted and stored securely using your operating system's credential storage:
+- **Windows**: DPAPI (Data Protection API)
+- **macOS**: Keychain
+- **Linux**: libsecret
 
-# xAI (coming soon)
-# XAI_API_KEY=your-api-key-here
-```
+#### Development Override (.env file)
 
-Or through the Settings dialog:
-1. Click the **Settings** (gear) icon in the toolbar
-2. Navigate to the AI configuration section
-3. Enter your API keys for each provider
+For development purposes, you can use a `.env` file to override secure storage:
+
+1. Copy `.env.example` to `.env` in the project root
+2. Add your API keys:
+   ```
+   ANTHROPIC_API_KEY=your_key_here
+   OPENAI_API_KEY=your_key_here
+   XAI_API_KEY=your_key_here
+   ```
+3. Restart the application
+
+> **Note**: The `.env` file is for development only and takes precedence over secure storage when present. In production builds (installers), secure storage is always used.
 
 #### Provider Status Indicators
 
