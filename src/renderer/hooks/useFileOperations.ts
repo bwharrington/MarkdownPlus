@@ -194,7 +194,14 @@ export function useFileOperations() {
             return saveFileAs(file.id);
         }
 
+        // Unwatch file before saving to prevent file watcher from detecting our own save
+        await window.electronAPI.unwatchFile(file.path);
+
         const result = await window.electronAPI.saveFile(file.path, file.content);
+        
+        // Re-watch file after saving
+        await window.electronAPI.watchFile(file.path);
+
         if (result.success) {
             dispatch({ type: 'SET_DIRTY', payload: { id: file.id, isDirty: false } });
             dispatch({
@@ -218,9 +225,18 @@ export function useFileOperations() {
         
         if (!file) return false;
 
+        // Unwatch old file path if it exists (not an untitled file)
+        if (file.path !== null) {
+            await window.electronAPI.unwatchFile(file.path);
+        }
+
         const result = await window.electronAPI.saveFileAs(file.content, file.name);
         if (result && result.success) {
             const newName = result.filePath.split(/[\\/]/).pop() || file.name;
+            
+            // Watch the new file path
+            await window.electronAPI.watchFile(result.filePath);
+
             dispatch({
                 type: 'UPDATE_FILE_PATH',
                 payload: { id: file.id, path: result.filePath, name: newName },
@@ -249,8 +265,13 @@ export function useFileOperations() {
             await saveConfigAndUpdateEditor(newConfig);
 
             return true;
+        } else {
+            // Save was cancelled or failed - re-watch the old file if it existed
+            if (file.path !== null) {
+                await window.electronAPI.watchFile(file.path);
+            }
+            return false;
         }
-        return false;
     }, [activeFile, state.openFiles, state.config, dispatch]);
 
     const saveAllFiles = useCallback(async () => {

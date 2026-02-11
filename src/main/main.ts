@@ -44,6 +44,7 @@ const defaultConfig = {
     defaultLineEnding: 'CRLF' as const,
     devToolsOpen: false,
     aiModels: {} as Record<string, Record<string, { enabled: boolean }>>,
+    silentFileUpdates: true,
 };
 
 // Detect line ending in content
@@ -506,11 +507,11 @@ function registerIpcHandlers() {
     ipcMain.handle('dialog:external-change', async (_event, fileName: string) => {
         const result = await dialog.showMessageBox(mainWindow!, {
             type: 'question',
-            buttons: ['Reload', 'Keep Current'],
+            buttons: ['Yes', 'No'],
             defaultId: 0,
-            title: 'File Changed',
-            message: `"${fileName}" has been modified externally.`,
-            detail: 'Do you want to reload the file or keep your current version?',
+            title: 'File Changed Externally',
+            message: `"${fileName}" has been changed externally.`,
+            detail: 'Would you like to refresh it with the latest changes?',
         });
 
         return result.response === 0 ? 'reload' : 'keep';

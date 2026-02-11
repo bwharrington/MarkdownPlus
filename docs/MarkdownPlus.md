@@ -339,6 +339,7 @@ The Settings dialog is a draggable modal window with the following characteristi
 |---------|---------|-------------|
 | **Default Line Ending** | Dropdown | Choose between `CRLF` (Windows) or `LF` (Unix/Mac) for new files |
 | **Developer Tools** | Toggle switch | Enable or disable DevTools on application launch |
+| **Silent File Updates** | Toggle switch | When enabled, externally modified files are reloaded automatically in place. When disabled, you are prompted before refreshing |
 
 ##### AI API Keys
 
@@ -703,6 +704,7 @@ src/
 │   ├── hooks/             # Custom React hooks
 │   │   ├── useFileOperations.ts
 │   │   ├── useWindowTitle.ts
+│   │   ├── useExternalFileWatcher.ts  # External file change handling
 │   │   ├── useAIChat.ts        # AI chat state management
 │   │   └── useAIDiffEdit.ts    # AI diff editing logic
 │   │
@@ -803,10 +805,17 @@ Double-click any word in the editor to highlight all occurrences:
 
 ### External File Change Detection
 
-When a file is modified outside of MarkdownPlus:
-- The application detects the change via file system watching
-- For clean files, changes are automatically reloaded
-- The `config.json` file is always auto-reloaded
+When a file is modified outside of MarkdownPlus, the application detects the change in real-time via file system watching. The behavior depends on the **Silent File Updates** setting in Settings:
+
+#### Silent File Updates ON (default)
+- All externally modified files are automatically reloaded in place with no user interaction
+- The `config.json` file is always auto-reloaded silently
+
+#### Silent File Updates OFF
+- A prompt dialog appears asking: *"Would you like to refresh it with the latest changes?"*
+  - **Yes** - Refresh the file with the latest changes from disk
+  - **No** - Keep your current content; saving will overwrite the external changes on disk
+- The `config.json` file is always auto-reloaded regardless of this setting
 
 ### Line Ending Support
 

@@ -412,6 +412,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         updateConfig({ devToolsOpen: enabled });
     };
 
+    const handleSilentFileUpdatesToggle = (enabled: boolean) => {
+        updateConfig({ silentFileUpdates: enabled });
+    };
+
     const handleModelToggle = (provider: 'xai' | 'claude' | 'openai', modelId: string, enabled: boolean) => {
         const newAiModels = {
             ...config?.aiModels,
@@ -554,6 +558,23 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="Developer Tools"
                     sx={{ mb: 2 }}
                 />
+
+                {/* Silent File Updates Toggle */}
+                <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={config?.silentFileUpdates !== false}
+                                onChange={(e) => handleSilentFileUpdatesToggle(e.target.checked)}
+                                size="small"
+                            />
+                        }
+                        label="Silent File Updates"
+                    />
+                    <FormHelperText>
+                        When enabled, externally modified files are reloaded automatically in place. When disabled, you will be prompted before refreshing.
+                    </FormHelperText>
+                </FormControl>
 
                 {/* API Keys Section */}
                 <SectionHeader>AI API Keys</SectionHeader>

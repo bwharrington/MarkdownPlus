@@ -50,6 +50,7 @@ export interface IConfig {
   defaultLineEnding: LineEnding;
   devToolsOpen?: boolean;
   aiModels?: AIModelsConfig;
+  silentFileUpdates?: boolean;
 }
 
 export interface ConfirmCloseResult {

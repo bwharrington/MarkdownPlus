@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog } from './components';
-import { useWindowTitle, useFileOperations, getFileType } from './hooks';
+import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType } from './hooks';
 
 // Intercept console methods and send to main process
 const originalConsole = {
@@ -228,52 +228,8 @@ function AppContent() {
         };
     }, [saveFile, saveFileAs, saveAllFiles, closeFile, closeAllFiles, showInFolder]);
 
-    // Handle external file changes (for real-time config updates)
-    useEffect(() => {
-        const cleanup = window.electronAPI.onExternalFileChange(async (filePath) => {
-            console.log('[App] External file change detected:', filePath);
-            
-            // Find if this file is open
-            const openFile = state.openFiles.find(f => f.path === filePath);
-            if (!openFile) {
-                return;
-            }
-
-            // For config file, automatically reload without prompting
-            if (filePath.endsWith('config.json')) {
-                console.log('[App] Auto-reloading config file');
-                const fileData = await window.electronAPI.readFile(filePath);
-                if (fileData) {
-                    dispatch({
-                        type: 'UPDATE_FILE_CONTENT',
-                        payload: {
-                            id: openFile.id,
-                            content: fileData.content,
-                            lineEnding: fileData.lineEnding,
-                        },
-                    });
-                }
-            } else {
-                // For other files, only reload if not dirty
-                if (!openFile.isDirty) {
-                    console.log('[App] Auto-reloading clean file');
-                    const fileData = await window.electronAPI.readFile(filePath);
-                    if (fileData) {
-                        dispatch({
-                            type: 'UPDATE_FILE_CONTENT',
-                            payload: {
-                                id: openFile.id,
-                                content: fileData.content,
-                                lineEnding: fileData.lineEnding,
-                            },
-                        });
-                    }
-                }
-            }
-        });
-
-        return cleanup;
-    }, [state.openFiles, dispatch]);
+    // Handle external file changes (silent reload or prompt based on config)
+    useExternalFileWatcher({ openFiles: state.openFiles, dispatch });
 
     // Set up file opening from command line arguments (file associations)
     useEffect(() => {
