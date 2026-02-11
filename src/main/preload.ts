@@ -11,6 +11,10 @@ const electronAPI = {
   renameFile: (oldPath: string, newPath: string) => ipcRenderer.invoke('file:rename', oldPath, newPath),
   watchFile: (filePath: string) => ipcRenderer.invoke('file:watch', filePath),
   unwatchFile: (filePath: string) => ipcRenderer.invoke('file:unwatch', filePath),
+  saveClipboardImage: (base64Data: string, documentDir: string) =>
+    ipcRenderer.invoke('file:save-image', base64Data, documentDir),
+  saveDroppedImage: (sourcePath: string, documentDir: string) =>
+    ipcRenderer.invoke('file:save-dropped-image', sourcePath, documentDir),
   
   // Config operations
   loadConfig: () => ipcRenderer.invoke('config:load'),

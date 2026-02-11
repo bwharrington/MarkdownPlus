@@ -114,6 +114,7 @@ const RstPreview = styled(Box)(({ theme }) => ({
 
 interface RstRendererProps {
     content: string;
+    documentPath?: string | null;
 }
 
 // Types for parsed RST elements
@@ -517,7 +518,7 @@ function parseRst(content: string): ParsedElement[] {
 }
 
 // Render parsed elements to React components
-function renderElement(element: ParsedElement, index: number): React.ReactNode {
+function renderElement(element: ParsedElement, index: number, documentPath?: string | null): React.ReactNode {
     switch (element.type) {
         case 'heading': {
             const level = Math.min(Math.max(element.level || 1, 1), 6);
@@ -578,9 +579,23 @@ function renderElement(element: ParsedElement, index: number): React.ReactNode {
             );
 
         case 'image':
+            // Convert relative image paths to absolute file:// URLs for local images
+            let imageSrc = element.url;
+            if (element.url && element.url.startsWith('./') && documentPath) {
+                // Get the directory of the current file
+                const lastSep = Math.max(documentPath.lastIndexOf('\\'), documentPath.lastIndexOf('/'));
+                if (lastSep >= 0) {
+                    const documentDir = documentPath.substring(0, lastSep);
+                    // Build absolute path
+                    const relativePath = element.url.substring(2); // Remove './'
+                    const absolutePath = `${documentDir}/${relativePath}`.replace(/\\/g, '/');
+                    // Convert to file:// URL
+                    imageSrc = `file:///${absolutePath}`;
+                }
+            }
             return (
                 <p key={index}>
-                    <img src={element.url} alt={element.title || ''} />
+                    <img src={imageSrc} alt={element.title || ''} />
                 </p>
             );
 
@@ -603,7 +618,7 @@ function renderElement(element: ParsedElement, index: number): React.ReactNode {
     }
 }
 
-export function RstRenderer({ content }: RstRendererProps) {
+export function RstRenderer({ content, documentPath }: RstRendererProps) {
     const elements = useMemo(() => parseRst(content), [content]);
 
     if (!content || content.trim() === '') {
@@ -616,7 +631,7 @@ export function RstRenderer({ content }: RstRendererProps) {
 
     return (
         <RstPreview>
-            {elements.map((element, index) => renderElement(element, index))}
+            {elements.map((element, index) => renderElement(element, index, documentPath))}
         </RstPreview>
     );
 }

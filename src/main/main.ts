@@ -37,6 +37,9 @@ const getConfigPath = () => {
     return path.join(userDataPath, 'config.json');
 };
 
+// Supported image extensions
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'];
+
 // Default config
 const defaultConfig = {
     recentFiles: [] as { fileName: string; mode: 'edit' | 'preview' }[],
@@ -45,6 +48,7 @@ const defaultConfig = {
     devToolsOpen: false,
     aiModels: {} as Record<string, Record<string, { enabled: boolean }>>,
     silentFileUpdates: true,
+    imageSaveFolder: 'images' as string,
 };
 
 // Detect line ending in content
@@ -572,6 +576,109 @@ function registerIpcHandlers() {
 
     ipcMain.handle('file:unwatch', async (_event, filePath: string) => {
         unwatchFile(filePath);
+    });
+
+    // File: Save clipboard image to disk
+    ipcMain.handle('file:save-image', async (_event, base64Data: string, documentDir: string) => {
+        log('IPC: file:save-image called', { documentDir });
+        try {
+            // Load config to get image save folder name
+            const config = await loadConfig();
+            const folderName = config.imageSaveFolder || 'images';
+            const imageDir = path.join(documentDir, folderName);
+
+            // Create images folder if it doesn't exist
+            await fs.mkdir(imageDir, { recursive: true });
+
+            // Generate unique filename with timestamp
+            const now = new Date();
+            const timestamp = now.getFullYear().toString() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') + '-' +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0') + '-' +
+                String(now.getMilliseconds()).padStart(3, '0');
+            let fileName = `image-${timestamp}.png`;
+            let filePath = path.join(imageDir, fileName);
+
+            // Handle unlikely collision by appending random suffix
+            try {
+                await fs.access(filePath);
+                // File exists, add random suffix
+                const suffix = Math.random().toString(36).substring(2, 6);
+                fileName = `image-${timestamp}-${suffix}.png`;
+                filePath = path.join(imageDir, fileName);
+            } catch {
+                // File doesn't exist, good to go
+            }
+
+            // Decode base64 and write to disk
+            const buffer = Buffer.from(base64Data, 'base64');
+            await fs.writeFile(filePath, buffer);
+
+            // Build relative path with forward slashes
+            const relativePath = `./${folderName}/${fileName}`.replace(/\\/g, '/');
+
+            log('IPC: file:save-image success', { filePath, relativePath, size: buffer.length });
+            return { success: true, relativePath };
+        } catch (error) {
+            logError('IPC: file:save-image failed', error as Error);
+            return { success: false, error: error instanceof Error ? error.message : 'Failed to save image' };
+        }
+    });
+
+    // File: Save dropped image (copy existing file to images folder)
+    ipcMain.handle('file:save-dropped-image', async (_event, sourcePath: string, documentDir: string) => {
+        log('IPC: file:save-dropped-image called', { sourcePath, documentDir });
+        try {
+            const ext = path.extname(sourcePath).toLowerCase();
+            if (!IMAGE_EXTENSIONS.includes(ext)) {
+                return { success: false, error: `Unsupported image format: ${ext}` };
+            }
+
+            // Load config to get image save folder name
+            const config = await loadConfig();
+            const folderName = config.imageSaveFolder || 'images';
+            const imageDir = path.join(documentDir, folderName);
+
+            // Create images folder if it doesn't exist
+            await fs.mkdir(imageDir, { recursive: true });
+
+            // Generate unique filename preserving original extension
+            const now = new Date();
+            const timestamp = now.getFullYear().toString() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') + '-' +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0') +
+                String(now.getSeconds()).padStart(2, '0') + '-' +
+                String(now.getMilliseconds()).padStart(3, '0');
+            let fileName = `image-${timestamp}${ext}`;
+            let filePath = path.join(imageDir, fileName);
+
+            // Handle unlikely collision
+            try {
+                await fs.access(filePath);
+                const suffix = Math.random().toString(36).substring(2, 6);
+                fileName = `image-${timestamp}-${suffix}${ext}`;
+                filePath = path.join(imageDir, fileName);
+            } catch {
+                // File doesn't exist, good to go
+            }
+
+            // Copy the source image to the images folder
+            await fs.copyFile(sourcePath, filePath);
+
+            // Build relative path with forward slashes
+            const relativePath = `./${folderName}/${fileName}`.replace(/\\/g, '/');
+
+            log('IPC: file:save-dropped-image success', { filePath, relativePath });
+            return { success: true, relativePath };
+        } catch (error) {
+            logError('IPC: file:save-dropped-image failed', error as Error);
+            return { success: false, error: error instanceof Error ? error.message : 'Failed to save image' };
+        }
     });
 }
 

@@ -1064,6 +1064,14 @@ export function EditorPane() {
             .replace(/-+/g, '-');
     };
 
+    // Helper to get the document directory from the active file path
+    const getDocumentDir = useCallback((): string | null => {
+        if (!activeFile?.path) return null;
+        // Extract directory from file path (works on both Windows and Unix)
+        const lastSep = Math.max(activeFile.path.lastIndexOf('\\'), activeFile.path.lastIndexOf('/'));
+        return lastSep >= 0 ? activeFile.path.substring(0, lastSep) : null;
+    }, [activeFile?.path]);
+
     // Custom components for ReactMarkdown to handle Mermaid diagrams, headings, and links
     const markdownComponents: Components = useMemo(() => ({
         code({ node, className, children, ...props }) {
@@ -1116,7 +1124,23 @@ export function EditorPane() {
                 </a>
             );
         },
-    }), [handleAnchorClick]);
+        img({ node, src, ...props }) {
+            // Convert relative image paths to absolute file:// URLs for local images
+            let imageSrc = src;
+            if (src && src.startsWith('./') && activeFile?.path) {
+                // Get the directory of the current file
+                const documentDir = getDocumentDir();
+                if (documentDir) {
+                    // Build absolute path
+                    const relativePath = src.substring(2); // Remove './'
+                    const absolutePath = `${documentDir}/${relativePath}`.replace(/\\/g, '/');
+                    // Convert to file:// URL
+                    imageSrc = `file:///${absolutePath}`;
+                }
+            }
+            return <img src={imageSrc} {...props} />;
+        },
+    }), [handleAnchorClick, activeFile?.path, getDocumentDir]);
 
     // Throttled scroll position update to reduce dispatch calls
     const handleScrollThrottled = useCallback((scrollTop: number) => {
@@ -1134,14 +1158,11 @@ export function EditorPane() {
         }, 100);
     }, [dispatch]);
 
-    // Handle paste to strip rich text formatting
-    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
-        e.preventDefault();
+    // Helper to insert text at cursor and update state
+    const insertTextAtCursor = useCallback((text: string) => {
+        const fileId = activeFileIdRef.current;
+        if (!fileId || !contentEditableRef.current) return;
 
-        // Get plain text from clipboard
-        const text = e.clipboardData.getData('text/plain');
-
-        // Insert as plain text using execCommand or Range API
         const selection = window.getSelection();
         if (selection && selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
@@ -1152,16 +1173,114 @@ export function EditorPane() {
             selection.addRange(range);
         }
 
-        // Update content
-        const fileId = activeFileIdRef.current;
-        if (fileId && contentEditableRef.current) {
-            const newContent = getPlainText(contentEditableRef.current);
+        const newContent = getPlainText(contentEditableRef.current);
+        dispatch({
+            type: 'UPDATE_CONTENT',
+            payload: { id: fileId, content: newContent },
+        });
+        dispatch({
+            type: 'PUSH_UNDO',
+            payload: { id: fileId, content: newContent },
+        });
+    }, [dispatch]);
+
+    // Helper to save and insert image
+    const saveAndInsertImage = useCallback(async (
+        imageData: { type: 'clipboard'; base64: string } | { type: 'file'; path: string }
+    ) => {
+        const documentDir = getDocumentDir();
+        if (!documentDir) {
             dispatch({
-                type: 'UPDATE_CONTENT',
-                payload: { id: fileId, content: newContent },
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: 'Please save the file first before adding images.',
+                    severity: 'warning',
+                },
+            });
+            return;
+        }
+
+        const result = imageData.type === 'clipboard'
+            ? await window.electronAPI.saveClipboardImage(imageData.base64, documentDir)
+            : await window.electronAPI.saveDroppedImage(imageData.path, documentDir);
+
+        if (result.success && result.relativePath) {
+            insertTextAtCursor(`![image](${result.relativePath})`);
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `Image saved to ${result.relativePath}`,
+                    severity: 'success',
+                },
+            });
+        } else {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: result.error || 'Failed to save image',
+                    severity: 'error',
+                },
             });
         }
-    }, [dispatch]);
+    }, [dispatch, getDocumentDir, insertTextAtCursor]);
+
+    // Handle paste - supports both plain text and clipboard images
+    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+        e.preventDefault();
+
+        // Check for image data in clipboard
+        const items = e.clipboardData?.items;
+        if (items) {
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                if (item.type.startsWith('image/')) {
+                    const blob = item.getAsFile();
+                    if (!blob) continue;
+
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const base64Data = (reader.result as string).split(',')[1];
+                        if (base64Data) {
+                            saveAndInsertImage({ type: 'clipboard', base64: base64Data });
+                        }
+                    };
+                    reader.readAsDataURL(blob);
+                    return;
+                }
+            }
+        }
+
+        // No image - insert plain text
+        insertTextAtCursor(e.clipboardData.getData('text/plain'));
+    }, [insertTextAtCursor, saveAndInsertImage]);
+
+    // Handle drag over to allow image drop
+    const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        if (e.dataTransfer?.types?.includes('Files')) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        }
+    }, []);
+
+    // Handle image file drop
+    const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+        const files = e.dataTransfer?.files;
+        if (!files?.length) return;
+
+        const imageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/bmp', 'image/webp'];
+        const imageFiles = Array.from(files).filter(f => imageTypes.includes(f.type));
+        
+        if (!imageFiles.length) return;
+        e.preventDefault();
+
+        // Process each dropped image
+        imageFiles.forEach(async (file) => {
+            const filePath = (file as any).path;
+            if (filePath) {
+                await saveAndInsertImage({ type: 'file', path: filePath });
+            }
+        });
+    }, [saveAndInsertImage]);
 
     // Find all matches of search query in text (case-insensitive)
     const findAllMatches = useCallback((text: string, query: string): Array<{ start: number; end: number }> => {
@@ -1723,6 +1842,8 @@ export function EditorPane() {
                             onClick={handleClick}
                             onDoubleClick={handleDoubleClick}
                             onPaste={handlePaste}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
                             spellCheck={false}
                             onScroll={(e) => {
                                 const target = e.target as HTMLDivElement;
@@ -1802,7 +1923,7 @@ export function EditorPane() {
                         }}
                         sx={{ flex: 1, overflow: 'auto' }}
                     >
-                        <RstRenderer content={activeFile.content || ''} />
+                        <RstRenderer content={activeFile.content || ''} documentPath={activeFile.path} />
                     </Box>
                 ) : (
                     <MarkdownPreview
