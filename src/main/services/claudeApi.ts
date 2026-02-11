@@ -173,7 +173,7 @@ export async function callClaudeApiWithSystemPrompt(
     const requestBody = {
         messages: formattedMessages,
         model,
-        max_tokens: 8192,
+        max_tokens: 16384, // Increased for large document edits
         system: systemPrompt,
     };
 

@@ -227,28 +227,54 @@ export function registerAIIpcHandlers() {
             }
 
             // Parse JSON response
+            // Declare jsonStr outside try-catch so it's accessible in catch block for debugging
+            let jsonStr = '';
+            
             try {
+                // Log the raw response for debugging
+                log('AI IPC: Raw edit response received', { 
+                    provider: data.provider,
+                    responseLength: response.length,
+                    responsePreview: response.substring(0, 500) + (response.length > 500 ? '...' : '')
+                });
+
                 // Handle potential markdown code fences
-                let jsonStr = response.trim();
+                jsonStr = response.trim();
+                
+                // Strip opening fence (```json or just ```)
                 if (jsonStr.startsWith('```json')) {
-                    jsonStr = jsonStr.slice(7);
+                    jsonStr = jsonStr.slice(7); // Remove ```json
+                } else if (jsonStr.startsWith('```')) {
+                    jsonStr = jsonStr.slice(3); // Remove ```
                 }
-                if (jsonStr.startsWith('```')) {
-                    jsonStr = jsonStr.slice(3);
-                }
+                
+                // Strip closing fence
                 if (jsonStr.endsWith('```')) {
                     jsonStr = jsonStr.slice(0, -3);
                 }
+                
                 jsonStr = jsonStr.trim();
+
+                log('AI IPC: Cleaned JSON string for parsing', {
+                    cleanedLength: jsonStr.length,
+                    cleanedPreview: jsonStr.substring(0, 500) + (jsonStr.length > 500 ? '...' : '')
+                });
 
                 const parsed = JSON.parse(jsonStr);
 
                 if (!parsed.modifiedContent) {
+                    log('AI IPC: Parsed JSON missing modifiedContent field', { parsedKeys: Object.keys(parsed) });
                     return {
                         success: false,
                         error: 'AI response missing modifiedContent field'
                     };
                 }
+
+                log('AI IPC: Successfully parsed edit response', {
+                    hasModifiedContent: !!parsed.modifiedContent,
+                    hasSummary: !!parsed.summary,
+                    modifiedContentLength: parsed.modifiedContent?.length || 0
+                });
 
                 return {
                     success: true,
@@ -256,10 +282,21 @@ export function registerAIIpcHandlers() {
                     summary: parsed.summary || 'Changes applied'
                 };
             } catch (parseError) {
+                // Write the full response to a separate file for debugging
+                const fs = require('fs');
+                const path = require('path');
+                const debugPath = path.join(app.getPath('userData'), 'ai-response-debug.txt');
+                try {
+                    fs.writeFileSync(debugPath, `=== Failed AI Edit Response ===\nTimestamp: ${new Date().toISOString()}\nProvider: ${data.provider}\nModel: ${data.model}\nResponse Length: ${response.length}\nCleaned Length: ${jsonStr.length}\n\n=== RAW RESPONSE ===\n${response}\n\n=== CLEANED JSON STRING ===\n${jsonStr}\n\n=== PARSE ERROR ===\n${parseError}\n`, 'utf-8');
+                    log('AI IPC: Full response written to debug file', { debugPath, responseLength: response.length, cleanedLength: jsonStr.length });
+                } catch (writeError) {
+                    logError('Failed to write debug file', writeError as Error);
+                }
+                
                 logError('AI IPC: Failed to parse edit response as JSON', parseError as Error);
                 return {
                     success: false,
-                    error: 'Failed to parse AI response as JSON. The AI may not have returned valid JSON.'
+                    error: `Failed to parse AI response as JSON. The AI may not have returned valid JSON. Debug file: ${debugPath}`
                 };
             }
         } catch (error) {

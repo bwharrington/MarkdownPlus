@@ -37,11 +37,34 @@ export function useExternalFileWatcher({ openFiles, dispatch }: UseExternalFileW
     const openFilesRef = useRef(openFiles);
     openFilesRef.current = openFiles;
 
+    // Debounce map to prevent multiple prompts for the same file.
+    // File saves often trigger multiple fs.watch events (write, metadata, close).
+    // Key: file path, Value: timeout ID
+    const debounceTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
     // Subscribe to the IPC event once on mount, clean up on unmount.
     // The callback reads from the ref so it never goes stale.
     useEffect(() => {
         const cleanup = window.electronAPI.onExternalFileChange(async (filePath: string) => {
             console.log('[useExternalFileWatcher] External file change detected:', filePath);
+
+            // Clear any existing debounce timer for this file
+            const existingTimer = debounceTimersRef.current.get(filePath);
+            if (existingTimer) {
+                clearTimeout(existingTimer);
+            }
+
+            // Set a new debounce timer (300ms is enough to coalesce multiple fs events)
+            const timer = setTimeout(async () => {
+                debounceTimersRef.current.delete(filePath);
+                await handleFileChange(filePath);
+            }, 300);
+
+            debounceTimersRef.current.set(filePath, timer);
+        });
+
+        // Helper function that does the actual file change handling
+        const handleFileChange = async (filePath: string) => {
 
             // Find if this file is open (read from ref for latest state)
             const openFile = openFilesRef.current.find(f => f.path === filePath);
@@ -92,9 +115,14 @@ export function useExternalFileWatcher({ openFiles, dispatch }: UseExternalFileW
                 // If 'keep', do nothing - the user's current content is preserved.
                 // Saving will overwrite the external changes on disk.
             }
-        });
+        };
 
-        return cleanup;
+        return () => {
+            // Clear all pending debounce timers on unmount
+            debounceTimersRef.current.forEach(timer => clearTimeout(timer));
+            debounceTimersRef.current.clear();
+            cleanup();
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []); // Runs once on mount. dispatch is stable; openFiles read via ref.
 }
