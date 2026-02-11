@@ -28,11 +28,13 @@ import {
     Button,
     styled,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import DeleteIcon from '@mui/icons-material/Delete';
+import {
+    CloseIcon,
+    DragIndicatorIcon,
+    ExpandMoreIcon,
+    CheckCircleIcon,
+    DeleteIcon,
+} from './AppIcons';
 
 import { useSettingsConfig } from '../hooks/useSettingsConfig';
 import { useEditorDispatch } from '../contexts/EditorContext';

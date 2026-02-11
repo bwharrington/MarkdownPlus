@@ -1,22 +1,24 @@
 import React from 'react';
 import { AppBar, Toolbar as MuiToolbar, IconButton, Tooltip, Divider, Box, Typography, styled, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import SaveIcon from '@mui/icons-material/Save';
-import SaveAsIcon from '@mui/icons-material/SaveAs';
-import CloseIcon from '@mui/icons-material/Close';
-import TabUnselectedIcon from '@mui/icons-material/TabUnselected';
-import SettingsIcon from '@mui/icons-material/Settings';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import Brightness7Icon from '@mui/icons-material/Brightness7';
-import MinimizeIcon from '@mui/icons-material/Minimize';
-import CropSquareIcon from '@mui/icons-material/CropSquare';
-import BugReportIcon from '@mui/icons-material/BugReport';
-import DescriptionIcon from '@mui/icons-material/Description';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+import {
+    NoteAddIcon,
+    FolderOpenIcon,
+    SaveIcon,
+    SaveAsIcon,
+    CloseIcon,
+    TabUnselectedIcon,
+    SettingsIcon,
+    Brightness4Icon,
+    Brightness7Icon,
+    MinimizeIcon,
+    CropSquareIcon,
+    BugReportIcon,
+    DescriptionIcon,
+    SmartToyIcon,
+} from './AppIcons';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile, useTheme, useEditorDispatch } from '../contexts';
-import AppIcon from '../../../assets/MarkdownPlus.svg';
+import AppIcon from '../../../assets/brand-mark.svg';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
@@ -127,7 +129,7 @@ export function Toolbar() {
         <StyledAppBar position="static">
             <StyledToolbar variant="dense">
                 <AppLogo>
-                    <img src={AppIcon} alt="MarkdownPlus" width={24} height={24} />
+                    <img src={AppIcon} alt="MarkdownPlus" width={28} height={28} />
                     <Typography variant="subtitle1" fontWeight={600}>
                         MarkdownPlus
                     </Typography>

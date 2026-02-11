@@ -1,8 +1,6 @@
 import React from 'react';
 import { Box, Typography, Button, List, ListItem, ListItemButton, ListItemText, styled } from '@mui/material';
-import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import HistoryIcon from '@mui/icons-material/History';
+import { NoteAddIcon, FolderOpenIcon, HistoryIcon } from './AppIcons';
 import { useFileOperations } from '../hooks';
 import { useEditorState } from '../contexts';
 

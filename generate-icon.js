@@ -1,63 +1,98 @@
-const { Jimp } = require('jimp');
-const path = require('path');
+const sharp = require('sharp');
 const fs = require('fs');
 
 // ICO file format constants
 const ICO_HEADER_SIZE = 6;
 const ICO_DIR_ENTRY_SIZE = 16;
+const OUTPUT_DIR = 'assets';
+const SOURCE_SVG = `${OUTPUT_DIR}/brand-mark.svg`;
+const BRAND_PNG = `${OUTPUT_DIR}/brand-mark.png`;
+const APP_ICON_PNG = `${OUTPUT_DIR}/icon.png`;
+const PADDED_ICON_PNG = `${OUTPUT_DIR}/icon-padded.png`;
+const ICO_OUTPUT = `${OUTPUT_DIR}/icon.ico`;
+const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
+
+async function assertImageSize(filePath, expectedWidth, expectedHeight) {
+  const metadata = await sharp(filePath).metadata();
+  if (metadata.width !== expectedWidth || metadata.height !== expectedHeight) {
+    throw new Error(
+      `Invalid dimensions for ${filePath}. ` +
+      `Expected ${expectedWidth}x${expectedHeight}, got ${metadata.width}x${metadata.height}.`
+    );
+  }
+}
 
 async function generateIcon() {
   try {
-    // Read the original PNG
-    const img = await Jimp.read('assets/MarkdownPlus.png');
-    console.log('Original dimensions:', img.bitmap.width, 'x', img.bitmap.height);
-    
-    // Create a new image with padding (256x256 is a good size for Windows icons)
-    const size = 256;
-    const padding = 48; // Add generous padding around the icon
-    
-    // Create a transparent background
-    const paddedImg = new Jimp({width: size, height: size, color: 0x00000000});
-    
-    // Calculate the size for the inner image (with padding)
-    const innerSize = size - (padding * 2);
-    
-    // Resize the original image to fit within the padded area
-    const resized = await img.clone().scaleToFit({w: innerSize, h: innerSize});
-    
-    // Center the image
-    const x = Math.floor((size - resized.bitmap.width) / 2);
-    const y = Math.floor((size - resized.bitmap.height) / 2);
-    
-    // Composite the resized image onto the padded background
-    paddedImg.composite(resized, x, y);
-    
-    // Save the padded version
-    await paddedImg.write('assets/MarkdownPlus-padded.png');
-    console.log('Created padded icon: assets/MarkdownPlus-padded.png');
-    console.log('New dimensions: 256x256 with padding');
+    if (!fs.existsSync(SOURCE_SVG)) {
+      throw new Error(`Source SVG not found at ${SOURCE_SVG}`);
+    }
 
-    // Generate multiple sizes for ICO file
-    const icoSizes = [16, 24, 32, 48, 64, 128, 256];
+    const svgBuffer = fs.readFileSync(SOURCE_SVG);
+    console.log(`Using source SVG: ${SOURCE_SVG}`);
+
+    // Generate high-res brand PNG for docs/marketing and renderer usage fallback.
+    await sharp(svgBuffer)
+      .resize(1024, 1024)
+      .png()
+      .toFile(BRAND_PNG);
+    console.log(`Created ${BRAND_PNG} (1024x1024)`);
+
+    // Generate unpadded app icon (used at runtime on non-Windows).
+    await sharp(svgBuffer)
+      .resize(512, 512)
+      .png()
+      .toFile(APP_ICON_PNG);
+    console.log(`Created ${APP_ICON_PNG} (512x512)`);
+
+    // Generate padded icon for packaging/file associations.
+    const paddedCanvasSize = 256;
+    // Keep a small margin to avoid edge clipping at 16x16 while remaining bold.
+    const padding = 10;
+    const innerSize = paddedCanvasSize - (padding * 2);
+    const innerPng = await sharp(svgBuffer)
+      .resize(innerSize, innerSize)
+      .png()
+      .toBuffer();
+
+    await sharp({
+      create: {
+        width: paddedCanvasSize,
+        height: paddedCanvasSize,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      },
+    })
+      .composite([{ input: innerPng, left: padding, top: padding }])
+      .png()
+      .toFile(PADDED_ICON_PNG);
+    console.log(`Created ${PADDED_ICON_PNG} (256x256 with ${padding}px padding)`);
+
+    // Generate multiple sizes for ICO file from padded icon.
     const pngBuffers = [];
-
-    console.log('Generating ICO file with multiple resolutions...');
-    
-    for (const icoSize of icoSizes) {
-      const scaledImg = paddedImg.clone().resize({w: icoSize, h: icoSize});
-      const pngBuffer = await scaledImg.getBuffer('image/png');
+    console.log(`Generating ICO file with sizes: ${ICO_SIZES.join(', ')}`);
+    for (const icoSize of ICO_SIZES) {
+      const pngBuffer = await sharp(PADDED_ICON_PNG)
+        .resize(icoSize, icoSize)
+        .png()
+        .toBuffer();
       pngBuffers.push({ size: icoSize, buffer: pngBuffer });
       console.log(`  Generated ${icoSize}x${icoSize} icon`);
     }
 
-    // Build ICO file
     const icoBuffer = buildIcoFile(pngBuffers);
-    fs.writeFileSync('assets/icon.ico', icoBuffer);
-    console.log('Created ICO file: assets/icon.ico');
-    
+    fs.writeFileSync(ICO_OUTPUT, icoBuffer);
+    console.log(`Created ${ICO_OUTPUT}`);
+
+    // Validate core output dimensions before packaging.
+    await assertImageSize(BRAND_PNG, 1024, 1024);
+    await assertImageSize(APP_ICON_PNG, 512, 512);
+    await assertImageSize(PADDED_ICON_PNG, 256, 256);
+    console.log('Icon output validation passed.');
   } catch (error) {
     console.error('Error generating icon:');
     console.error(error.message || error);
+    process.exitCode = 1;
   }
 }
 

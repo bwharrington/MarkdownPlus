@@ -1,11 +1,13 @@
 import React from 'react';
 import { Box, IconButton, Button, Typography, Divider, styled, Tooltip } from '@mui/material';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import CheckIcon from '@mui/icons-material/Check';
-import UndoIcon from '@mui/icons-material/Undo';
-import CloseIcon from '@mui/icons-material/Close';
-import DoneAllIcon from '@mui/icons-material/DoneAll';
+import {
+    KeyboardArrowUpIcon,
+    KeyboardArrowDownIcon,
+    CheckIcon,
+    UndoIcon,
+    CloseIcon,
+    DoneAllIcon,
+} from './AppIcons';
 
 interface DiffNavigationToolbarProps {
     currentIndex: number;

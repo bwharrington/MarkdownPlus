@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, IconButton, styled } from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
-import UndoIcon from '@mui/icons-material/Undo';
+import { CheckIcon, UndoIcon } from './AppIcons';
 
 interface DiffHunkControlProps {
     hunkId: string;

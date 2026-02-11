@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
+import { CloseIcon, DragIndicatorIcon } from './AppIcons';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',

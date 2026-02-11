@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "main": "dist/main.js",
   "scripts": {
-    "build": "webpack --config webpack.config.js",
+    "generate:icons": "node generate-icon.js",
+    "build": "npm run generate:icons && webpack --config webpack.config.js",
     "start": "npm run build && electron .",
     "watch": "webpack --config webpack.config.js --watch",
     "dev": "concurrently \"npm run watch\" \"electron .\"",
-    "package": "webpack --config webpack.config.js --mode production && electron-builder build --win && node zip-executables.js",
-    "package-mac": "webpack --config webpack.config.js --mode production && electron-builder build --mac",
-    "package-linux": "webpack --config webpack.config.js --mode production && electron-builder build --linux",
+    "package": "npm run generate:icons && webpack --config webpack.config.js --mode production && electron-builder build --win && node zip-executables.js",
+    "package-mac": "npm run generate:icons && webpack --config webpack.config.js --mode production && electron-builder build --mac",
+    "package-linux": "npm run generate:icons && webpack --config webpack.config.js --mode production && electron-builder build --linux",
     "dist": "npm run build && electron-builder build --win"
   },
   "keywords": [
@@ -32,7 +33,7 @@
     "electron-builder": "^26.0.12",
     "electron-icon-builder": "^2.0.1",
     "html-webpack-plugin": "^5.6.3",
-    "jimp": "^1.6.0",
+    "sharp": "^0.34.5",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
@@ -44,10 +45,10 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
     "diff": "^8.0.3",
     "dotenv": "^17.2.4",
+    "lucide-react": "^0.542.0",
     "mermaid": "^11.12.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -71,63 +72,63 @@
         "ext": "md",
         "name": "Markdown",
         "description": "Markdown document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "markdown",
         "name": "Markdown",
         "description": "Markdown document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "mdown",
         "name": "Markdown",
         "description": "Markdown document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "mkd",
         "name": "Markdown",
         "description": "Markdown document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "mkdn",
         "name": "Markdown",
         "description": "Markdown document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "mdx",
         "name": "MDX",
         "description": "MDX document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "mdwn",
         "name": "Markdown",
         "description": "Markdown document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "rst",
         "name": "reStructuredText",
         "description": "reStructuredText document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       },
       {
         "ext": "rest",
         "name": "reStructuredText",
         "description": "reStructuredText document",
-        "icon": "assets/MarkdownPlus-padded.png",
+        "icon": "assets/icon-padded.png",
         "role": "Editor"
       }
     ],
@@ -159,14 +160,14 @@
       "target": [
         "dmg"
       ],
-      "icon": "assets/MarkdownPlus-padded.png"
+      "icon": "assets/icon-padded.png"
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "icon": "assets/MarkdownPlus-padded.png"
+      "icon": "assets/icon-padded.png"
     }
   }
 }

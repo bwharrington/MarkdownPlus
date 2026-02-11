@@ -1,11 +1,13 @@
 import React from 'react';
 import { Tabs, Tab, Box, IconButton, Tooltip, styled, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import SaveIcon from '@mui/icons-material/Save';
-import CodeIcon from '@mui/icons-material/Code';
-import DescriptionIcon from '@mui/icons-material/Description';
-import EditIcon from '@mui/icons-material/Edit';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import {
+    CloseIcon,
+    SaveIcon,
+    CodeIcon,
+    DescriptionIcon,
+    EditIcon,
+    FolderOpenIcon,
+} from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
 import type { IFile } from '../types';
@@ -62,8 +64,8 @@ function FileTab({ file, isActive }: FileTabProps) {
             {file.isDirty && (
                 <Tooltip title="Unsaved changes">
                     <SaveIcon 
+                        size={16}
                         sx={{ 
-                            fontSize: 16, 
                             opacity: 0.7,
                             color: 'warning.main',
                         }} 
@@ -81,9 +83,9 @@ function FileTab({ file, isActive }: FileTabProps) {
                     sx={{ padding: 0.5 }}
                 >
                     {file.viewMode === 'edit' ? (
-                        <CodeIcon sx={{ fontSize: 16 }} />
+                        <CodeIcon size={16} />
                     ) : (
-                        <DescriptionIcon sx={{ fontSize: 16 }} />
+                        <DescriptionIcon size={16} />
                     )}
                 </IconButton>
             </Tooltip>
@@ -94,7 +96,7 @@ function FileTab({ file, isActive }: FileTabProps) {
                     onClick={handleClose}
                     sx={{ padding: 0.5 }}
                 >
-                    <CloseIcon sx={{ fontSize: 16 }} />
+                    <CloseIcon size={16} />
                 </IconButton>
             </Tooltip>
         </TabContent>
@@ -222,14 +224,14 @@ export function TabBar() {
                 }
             >
                 <MenuItem onClick={handleRenameClick}>
-                    <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+                    <EditIcon size={18} sx={{ mr: 1 }} />
                     Rename
                 </MenuItem>
                 <MenuItem 
                     onClick={handleOpenLocationClick}
                     disabled={!state.openFiles.find(f => f.id === contextMenu?.fileId)?.path}
                 >
-                    <FolderOpenIcon sx={{ mr: 1, fontSize: 18 }} />
+                    <FolderOpenIcon size={18} sx={{ mr: 1 }} />
                     Open File Location
                 </MenuItem>
             </Menu>

@@ -1,20 +1,22 @@
 import React from 'react';
 import { Box, IconButton, Tooltip, Divider, styled } from '@mui/material';
-import FormatBoldIcon from '@mui/icons-material/FormatBold';
-import FormatItalicIcon from '@mui/icons-material/FormatItalic';
-import CodeIcon from '@mui/icons-material/Code';
-import TitleIcon from '@mui/icons-material/Title';
-import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
-import LinkIcon from '@mui/icons-material/Link';
-import ImageIcon from '@mui/icons-material/Image';
-import HorizontalRuleIcon from '@mui/icons-material/HorizontalRule';
-import UndoIcon from '@mui/icons-material/Undo';
-import RedoIcon from '@mui/icons-material/Redo';
-import SearchIcon from '@mui/icons-material/Search';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
+import {
+    FormatBoldIcon,
+    FormatItalicIcon,
+    CodeIcon,
+    TitleIcon,
+    FormatQuoteIcon,
+    FormatListBulletedIcon,
+    FormatListNumberedIcon,
+    LinkIcon,
+    ImageIcon,
+    HorizontalRuleIcon,
+    UndoIcon,
+    RedoIcon,
+    SearchIcon,
+    InfoIcon,
+    WarningIcon,
+} from './AppIcons';
 import { useActiveFile } from '../contexts';
 
 const ToolbarContainer = styled(Box)(({ theme }) => ({

@@ -15,21 +15,23 @@ import {
     Tooltip,
     ToggleButton,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
-import SendIcon from '@mui/icons-material/Send';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import AttachFileIcon from '@mui/icons-material/AttachFile';
-import EditIcon from '@mui/icons-material/Edit';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import {
+    CloseIcon,
+    DragIndicatorIcon,
+    SendIcon,
+    DeleteOutlineIcon,
+    ExpandLessIcon,
+    ExpandMoreIcon,
+    AttachFileIcon,
+    EditIcon,
+    WarningAmberIcon,
+    VisibilityIcon,
+    VisibilityOffIcon,
+} from './AppIcons';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useEditorState } from '../contexts/EditorContext';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',

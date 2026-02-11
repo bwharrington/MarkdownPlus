@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, IconButton, styled, Tooltip, useTheme as useMuiTheme } from '@mui/material';
-import { Add as ZoomInIcon, Remove as ZoomOutIcon, CenterFocusStrong as ResetIcon, OpenWith as PanIcon } from '@mui/icons-material';
+import { ZoomInIcon, ZoomOutIcon, ResetIcon, PanIcon } from './AppIcons';
 import mermaid from 'mermaid';
 
 const DiagramWrapper = styled(Box)(({ theme }) => ({
@@ -190,7 +190,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
         <DiagramWrapper>
             <ControlsBar>
                 <Tooltip title="Drag to pan, Ctrl+Scroll to zoom" placement="left">
-                    <PanIcon sx={{ fontSize: 16, color: 'text.secondary', mr: 1 }} />
+                    <PanIcon size={16} sx={{ color: 'text.secondary', mr: 1 }} />
                 </Tooltip>
                 <ZoomLabel>{zoomPercent}%</ZoomLabel>
                 <Tooltip title="Zoom Out">
