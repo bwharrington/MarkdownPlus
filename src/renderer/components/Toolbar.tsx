@@ -62,7 +62,6 @@ export function Toolbar() {
         openFile,
         saveFile,
         saveAllFiles,
-        closeFile,
         closeAllFiles,
         openConfigFile,
         hasDirtyFiles,
@@ -177,18 +176,6 @@ export function Toolbar() {
 
                 <ToolbarDivider orientation="vertical" flexItem />
 
-                <Tooltip title="Close (Ctrl+W)">
-                    <span>
-                        <IconButton 
-                            onClick={() => closeFile()} 
-                            color="inherit"
-                            disabled={!hasOpenFiles}
-                            sx={{ WebkitAppRegion: 'no-drag' }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
-                    </span>
-                </Tooltip>
                 <Tooltip title="Close All">
                     <span>
                         <IconButton

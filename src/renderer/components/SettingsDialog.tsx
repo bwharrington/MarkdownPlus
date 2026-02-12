@@ -410,10 +410,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         updateConfig({ defaultLineEnding: value });
     };
 
-    const handleDevToolsToggle = (enabled: boolean) => {
-        updateConfig({ devToolsOpen: enabled });
-    };
-
     const handleSilentFileUpdatesToggle = (enabled: boolean) => {
         updateConfig({ silentFileUpdates: enabled });
     };
@@ -547,19 +543,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     </Select>
                     <FormHelperText>Line ending format for new files</FormHelperText>
                 </FormControl>
-
-                {/* DevTools Toggle */}
-                <FormControlLabel
-                    control={
-                        <Switch
-                            checked={config?.devToolsOpen || false}
-                            onChange={(e) => handleDevToolsToggle(e.target.checked)}
-                            size="small"
-                        />
-                    }
-                    label="Developer Tools"
-                    sx={{ mb: 2 }}
-                />
 
                 {/* Silent File Updates Toggle */}
                 <FormControl size="small" fullWidth sx={{ mb: 2 }}>

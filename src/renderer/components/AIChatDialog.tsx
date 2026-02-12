@@ -14,6 +14,11 @@ import {
     Chip,
     Tooltip,
     ToggleButton,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogContentText,
+    DialogActions,
 } from '@mui/material';
 import {
     CloseIcon,
@@ -148,20 +153,19 @@ const StatusDot = styled('span')<{ status: string }>(({ status }) => ({
 const ResizeHandle = styled(Box)(({ theme }) => ({
     position: 'absolute',
     bottom: 0,
-    right: 0,
+    left: 0,
     width: 16,
     height: 16,
-    cursor: 'nwse-resize',
+    cursor: 'nesw-resize',
     '&::after': {
         content: '""',
         position: 'absolute',
         bottom: 2,
-        right: 2,
-        width: 0,
-        height: 0,
-        borderStyle: 'solid',
-        borderWidth: '0 0 10px 10px',
-        borderColor: `transparent transparent ${theme.palette.divider} transparent`,
+        left: 2,
+        width: 10,
+        height: 10,
+        backgroundColor: theme.palette.divider,
+        clipPath: 'polygon(0 100%, 0 0, 100% 100%)',
     },
 }));
 
@@ -219,7 +223,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     // Resize state
     const [size, setSize] = useState({ width: 450, height: 550 });
     const [isResizing, setIsResizing] = useState(false);
-    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 });
+    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, left: 0, rightEdge: 0 });
 
     // File attachments state
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -229,6 +233,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const [isEditMode, setIsEditMode] = useState(false);
     const [editModeError, setEditModeError] = useState<string | null>(null);
     const [isEditLoading, setIsEditLoading] = useState(false);
+    const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
     // AI Diff Edit hook
     const { requestEdit, diffSession } = useAIDiffEdit();
@@ -420,6 +425,8 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             y: e.clientY,
             width: size.width,
             height: size.height,
+            left: position.x,
+            rightEdge: position.x + size.width,
         });
     };
 
@@ -428,10 +435,16 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             if (isResizing) {
                 const deltaX = e.clientX - resizeStart.x;
                 const deltaY = e.clientY - resizeStart.y;
-
-                const newWidth = Math.max(350, resizeStart.width + deltaX);
                 const newHeight = Math.max(200, resizeStart.height + deltaY);
+                const minWidth = 350;
 
+                // Bottom-left handle: move left edge while keeping right edge anchored.
+                const proposedLeft = resizeStart.left + deltaX;
+                const maxLeft = resizeStart.rightEdge - minWidth;
+                const newLeft = Math.max(0, Math.min(proposedLeft, maxLeft));
+                const newWidth = resizeStart.rightEdge - newLeft;
+
+                setPosition(prev => ({ ...prev, x: newLeft }));
                 setSize({ width: newWidth, height: newHeight });
             }
         };
@@ -516,6 +529,19 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
     };
 
+    const handleClearChatClick = () => {
+        setClearConfirmOpen(true);
+    };
+
+    const handleClearChatCancel = () => {
+        setClearConfirmOpen(false);
+    };
+
+    const handleClearChatConfirm = () => {
+        clearChat();
+        setClearConfirmOpen(false);
+    };
+
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -549,9 +575,11 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                     <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} title={isCollapsed ? "Expand" : "Collapse"}>
                         {isCollapsed ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
                     </IconButton>
-                    <IconButton size="small" onClick={clearChat} title="Clear chat">
-                        <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                    {!isCollapsed && (
+                        <IconButton size="small" onClick={handleClearChatClick} title="Clear chat">
+                            <DeleteOutlineIcon fontSize="small" />
+                        </IconButton>
+                    )}
                     <IconButton size="small" onClick={onClose}>
                         <CloseIcon fontSize="small" />
                     </IconButton>
@@ -806,6 +834,23 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             ))}
 
             {!isCollapsed && <ResizeHandle onMouseDown={handleResizeMouseDown} />}
+            <Dialog
+                open={clearConfirmOpen}
+                onClose={handleClearChatCancel}
+            >
+                <DialogTitle>Clear Chat?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        This will permanently remove all messages in this chat session. Are you sure you want to continue?
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClearChatCancel}>Cancel</Button>
+                    <Button onClick={handleClearChatConfirm} variant="contained" color="error">
+                        Clear Chat
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </DialogContainer>
     );
 }
