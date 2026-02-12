@@ -51,6 +51,8 @@ import {
     Move,
     History,
     FileDown,
+    PanelRightOpen,
+    PanelRightClose,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -172,3 +174,5 @@ export const ResetIcon = createIcon(LocateFixed);
 export const PanIcon = createIcon(Move);
 export const HistoryIcon = createIcon(History);
 export const PictureAsPdfIcon = createIcon(FileDown);
+export const DockRightIcon = createIcon(PanelRightOpen);
+export const UndockIcon = createIcon(PanelRightClose);

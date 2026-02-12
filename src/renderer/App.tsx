@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog } from './components';
 import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType } from './hooks';
+import { SplitDivider } from './styles/editor.styles';
 
 // Intercept console methods and send to main process
 const originalConsole = {
@@ -43,16 +44,53 @@ const MainContent = styled(Box)({
     display: 'flex',
     flex: 1,
     overflow: 'hidden',
+    position: 'relative',
+});
+
+const EditorArea = styled(Box)({
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+    overflow: 'hidden',
+});
+
+const DockedAIPanel = styled(Box)({
+    display: 'flex',
+    flexDirection: 'column',
+    flexShrink: 0,
+    overflow: 'hidden',
+    minWidth: 320,
 });
 
 // Inner app component that uses context
 function AppContent() {
+    const DEFAULT_AI_DOCK_WIDTH = 420;
+    const MIN_AI_DOCK_WIDTH = 320;
+    const MIN_EDITOR_WIDTH = 320;
+
     const state = useEditorState();
     const dispatch = useEditorDispatch();
     const { saveFile, saveFileAs, saveAllFiles, openFile, closeFile, closeAllFiles, showInFolder, createNewFile } = useFileOperations();
 
     // AI Chat dialog state
     const [aiChatOpen, setAiChatOpen] = useState(false);
+    const [isAiDocked, setIsAiDocked] = useState(false);
+    const [aiDockWidth, setAiDockWidth] = useState(DEFAULT_AI_DOCK_WIDTH);
+    const [isResizingAiDock, setIsResizingAiDock] = useState(false);
+    const mainContentRef = useRef<HTMLDivElement | null>(null);
+    const aiDockResizeStartRef = useRef({ x: 0, width: DEFAULT_AI_DOCK_WIDTH });
+
+    const persistAiChatLayout = useCallback((updates: { aiChatDocked?: boolean; aiChatDockWidth?: number }) => {
+        const nextConfig = {
+            ...state.config,
+            ...updates,
+        };
+        dispatch({ type: 'SET_CONFIG', payload: nextConfig });
+        void window.electronAPI.saveConfig(nextConfig).catch((error) => {
+            console.error('Failed to save AI panel layout config:', error);
+        });
+    }, [dispatch, state.config]);
 
     const handleOpenAIChat = useCallback(() => {
         setAiChatOpen(true);
@@ -61,6 +99,12 @@ function AppContent() {
     const handleCloseAIChat = useCallback(() => {
         setAiChatOpen(false);
     }, []);
+
+    const handleAiDockChange = useCallback((nextDocked: boolean) => {
+        setIsAiDocked(nextDocked);
+        setAiChatOpen(true);
+        persistAiChatLayout({ aiChatDocked: nextDocked });
+    }, [persistAiChatLayout]);
 
     // Settings dialog state
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -231,6 +275,49 @@ function AppContent() {
     // Handle external file changes (silent reload or prompt based on config)
     useExternalFileWatcher({ openFiles: state.openFiles, dispatch });
 
+    // Sync AI dock state from config once loaded.
+    useEffect(() => {
+        setIsAiDocked(state.config.aiChatDocked ?? false);
+        setAiDockWidth(Math.max(MIN_AI_DOCK_WIDTH, state.config.aiChatDockWidth ?? DEFAULT_AI_DOCK_WIDTH));
+    }, [state.config.aiChatDocked, state.config.aiChatDockWidth]);
+
+    const handleAiDockResizeStart = useCallback((e: React.MouseEvent) => {
+        if (!aiChatOpen || !isAiDocked) {
+            return;
+        }
+
+        aiDockResizeStartRef.current = { x: e.clientX, width: aiDockWidth };
+        setIsResizingAiDock(true);
+        e.preventDefault();
+    }, [aiChatOpen, isAiDocked, aiDockWidth]);
+
+    useEffect(() => {
+        if (!isResizingAiDock) {
+            return;
+        }
+
+        const handleMouseMove = (e: MouseEvent) => {
+            const containerWidth = mainContentRef.current?.getBoundingClientRect().width ?? 0;
+            const maxDockWidth = Math.max(MIN_AI_DOCK_WIDTH, containerWidth - MIN_EDITOR_WIDTH);
+            const deltaX = e.clientX - aiDockResizeStartRef.current.x;
+            const proposedWidth = aiDockResizeStartRef.current.width - deltaX;
+            const clampedWidth = Math.max(MIN_AI_DOCK_WIDTH, Math.min(proposedWidth, maxDockWidth));
+            setAiDockWidth(clampedWidth);
+        };
+
+        const handleMouseUp = () => {
+            setIsResizingAiDock(false);
+            persistAiChatLayout({ aiChatDockWidth: aiDockWidth });
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [aiDockWidth, isResizingAiDock, persistAiChatLayout]);
+
     // Set up file opening from command line arguments (file associations)
     useEffect(() => {
         console.log('[App] Setting up file opening from command line');
@@ -382,9 +469,34 @@ function AppContent() {
         <AppContainer>
             <Toolbar />
             <TabBar />
-            <MainContent>
-                {hasOpenFiles ? <EditorPane /> : <EmptyState />}
-                <AIChatDialog open={aiChatOpen} onClose={handleCloseAIChat} />
+            <MainContent ref={mainContentRef}>
+                <EditorArea>
+                    {hasOpenFiles ? <EditorPane /> : <EmptyState />}
+                </EditorArea>
+                {aiChatOpen && isAiDocked && (
+                    <>
+                        <SplitDivider
+                            onMouseDown={handleAiDockResizeStart}
+                            sx={{ flexShrink: 0, zIndex: 2 }}
+                        />
+                        <DockedAIPanel sx={{ width: aiDockWidth }}>
+                            <AIChatDialog
+                                open={aiChatOpen}
+                                onClose={handleCloseAIChat}
+                                isDocked={true}
+                                onDockChange={handleAiDockChange}
+                            />
+                        </DockedAIPanel>
+                    </>
+                )}
+                {aiChatOpen && !isAiDocked && (
+                    <AIChatDialog
+                        open={aiChatOpen}
+                        onClose={handleCloseAIChat}
+                        isDocked={false}
+                        onDockChange={handleAiDockChange}
+                    />
+                )}
                 <SettingsDialog open={settingsOpen} onClose={handleCloseSettings} />
             </MainContent>
             <NotificationSnackbar />

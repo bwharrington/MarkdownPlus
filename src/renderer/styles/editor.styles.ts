@@ -43,54 +43,49 @@ export const ContentEditableDiv = styled('div')(({ theme }) => ({
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(33, 150, 243, 0.15)' : 'rgba(33, 150, 243, 0.1)',
         display: 'block',
     },
-    // Diff highlight styles
+    // Diff highlight styles (div-based block elements)
+    '& .diff-line': {
+        minHeight: '1.6em',
+    },
     '& .diff-added': {
         backgroundColor: theme.palette.mode === 'dark'
             ? 'rgba(46, 160, 67, 0.25)'
             : 'rgba(46, 160, 67, 0.15)',
-        display: 'block',
-        marginLeft: -16,
-        marginRight: -16,
         paddingLeft: 16,
         paddingRight: 16,
         borderLeft: '3px solid #2ea043',
+        minHeight: '1.6em',
     },
     '& .diff-removed': {
         backgroundColor: theme.palette.mode === 'dark'
             ? 'rgba(248, 81, 73, 0.25)'
             : 'rgba(248, 81, 73, 0.15)',
-        display: 'block',
-        marginLeft: -16,
-        marginRight: -16,
         paddingLeft: 16,
         paddingRight: 16,
         borderLeft: '3px solid #f85149',
         textDecoration: 'line-through',
         opacity: 0.7,
+        minHeight: '1.6em',
     },
     '& .diff-modified-old': {
         backgroundColor: theme.palette.mode === 'dark'
             ? 'rgba(248, 81, 73, 0.25)'
             : 'rgba(248, 81, 73, 0.15)',
-        display: 'block',
-        marginLeft: -16,
-        marginRight: -16,
         paddingLeft: 16,
         paddingRight: 16,
         borderLeft: '3px solid #f85149',
         textDecoration: 'line-through',
         opacity: 0.7,
+        minHeight: '1.6em',
     },
     '& .diff-modified-new': {
         backgroundColor: theme.palette.mode === 'dark'
             ? 'rgba(46, 160, 67, 0.25)'
             : 'rgba(46, 160, 67, 0.15)',
-        display: 'block',
-        marginLeft: -16,
-        marginRight: -16,
         paddingLeft: 16,
         paddingRight: 16,
         borderLeft: '3px solid #2ea043',
+        minHeight: '1.6em',
     },
     '& .diff-current': {
         outline: '2px solid',

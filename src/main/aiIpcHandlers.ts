@@ -9,6 +9,7 @@ import { callOpenAIApi, callOpenAIApiWithJsonMode, listOpenAIModels, hasApiKey a
 export interface AIChatRequestData {
     messages: Message[];
     model: string;
+    requestId?: string;
 }
 
 export interface AIChatResponse {
@@ -43,6 +44,7 @@ export interface AIEditRequestData {
     messages: Array<{ role: string; content: string }>;
     model: string;
     provider: 'claude' | 'openai';
+    requestId?: string;
 }
 
 export interface AIEditResponse {
@@ -55,13 +57,15 @@ export interface AIEditResponse {
 // System prompt for AI edit mode - instructs AI to return JSON
 const DIFF_EDIT_SYSTEM_PROMPT = `You are helping edit a markdown document. The user will provide the current document content and request specific changes.
 
+CRITICAL: Your ENTIRE response must be a single, raw JSON object. Do NOT include any text, explanation, or commentary before or after the JSON. Do NOT wrap the JSON in markdown code fences (\`\`\`). Output ONLY the JSON object.
+
 RULES:
 1. Return a JSON object with "modifiedContent" (the complete modified document) and "summary" (brief description of changes)
 2. Preserve all content that the user did not ask to change
 3. Maintain the exact formatting, indentation, and line endings of unchanged sections
 4. Make ONLY the changes the user explicitly requested
 5. The modifiedContent must be the complete document, not a partial diff
-6. Your response MUST be valid JSON and nothing else
+6. Your response MUST be valid JSON and nothing else - no preamble, no explanation, no code fences
 
 Example response format:
 {
@@ -99,28 +103,50 @@ async function getEnabledModels(provider: 'xai' | 'claude' | 'openai', allModels
 
 export function registerAIIpcHandlers() {
     log('Registering AI IPC handlers');
+    const activeChatRequests = new Map<string, AbortController>();
+
+    const getControllerForRequest = (requestId?: string): AbortController | undefined => {
+        if (!requestId) {
+            return undefined;
+        }
+        const controller = new AbortController();
+        activeChatRequests.set(requestId, controller);
+        return controller;
+    };
+
+    const finalizeRequest = (requestId?: string) => {
+        if (requestId) {
+            activeChatRequests.delete(requestId);
+        }
+    };
 
     // xAI Chat Request
     ipcMain.handle('ai:chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
         log('AI IPC: chat-request', { model: data.model, messageCount: data.messages.length });
+        const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callXAiApi(data.messages, data.model);
+            const response = await callXAiApi(data.messages, data.model, controller?.signal);
             return { success: true, response };
         } catch (error) {
             logError('AI IPC: chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
+        } finally {
+            finalizeRequest(data.requestId);
         }
     });
 
     // Claude Chat Request
     ipcMain.handle('ai:claude-chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
         log('AI IPC: claude-chat-request', { model: data.model, messageCount: data.messages.length });
+        const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callClaudeApi(data.messages, data.model);
+            const response = await callClaudeApi(data.messages, data.model, controller?.signal);
             return { success: true, response };
         } catch (error) {
             logError('AI IPC: claude-chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
+        } finally {
+            finalizeRequest(data.requestId);
         }
     });
 
@@ -165,13 +191,38 @@ export function registerAIIpcHandlers() {
     // OpenAI Chat Request
     ipcMain.handle('ai:openai-chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
         log('AI IPC: openai-chat-request', { model: data.model, messageCount: data.messages.length });
+        const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callOpenAIApi(data.messages, data.model);
+            const response = await callOpenAIApi(data.messages, data.model, controller?.signal);
             return { success: true, response };
         } catch (error) {
             logError('AI IPC: openai-chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
+        } finally {
+            finalizeRequest(data.requestId);
         }
+    });
+
+    // Cancel in-flight chat request
+    ipcMain.handle('ai:cancel-request', async (_event, requestId: string) => {
+        const controller = activeChatRequests.get(requestId);
+        if (!controller) {
+            return { success: true, cancelled: false };
+        }
+        controller.abort();
+        activeChatRequests.delete(requestId);
+        return { success: true, cancelled: true };
+    });
+
+    // Cancel in-flight edit request
+    ipcMain.handle('ai:cancel-edit-request', async (_event, requestId: string) => {
+        const controller = activeChatRequests.get(requestId);
+        if (!controller) {
+            return { success: true, cancelled: false };
+        }
+        controller.abort();
+        activeChatRequests.delete(requestId);
+        return { success: true, cancelled: true };
     });
 
     // List OpenAI Models
@@ -196,6 +247,7 @@ export function registerAIIpcHandlers() {
     // AI Edit Request (structured output for Claude and OpenAI only)
     ipcMain.handle('ai:edit-request', async (_event, data: AIEditRequestData): Promise<AIEditResponse> => {
         log('AI IPC: edit-request', { provider: data.provider, model: data.model, messageCount: data.messages.length });
+        const controller = getControllerForRequest(data.requestId);
 
         // xAI not supported for edit mode
         if ((data.provider as string) === 'xai') {
@@ -214,20 +266,19 @@ export function registerAIIpcHandlers() {
                     role: m.role as 'user' | 'assistant',
                     content: m.content,
                 }));
-                response = await callClaudeApiWithSystemPrompt(claudeMessages, DIFF_EDIT_SYSTEM_PROMPT, data.model);
+                response = await callClaudeApiWithSystemPrompt(claudeMessages, DIFF_EDIT_SYSTEM_PROMPT, data.model, controller?.signal);
             } else if (data.provider === 'openai') {
                 // OpenAI with JSON mode
                 const openaiMessages = [
                     { role: 'system', content: DIFF_EDIT_SYSTEM_PROMPT },
                     ...data.messages
                 ];
-                response = await callOpenAIApiWithJsonMode(openaiMessages, data.model);
+                response = await callOpenAIApiWithJsonMode(openaiMessages, data.model, controller?.signal);
             } else {
                 return { success: false, error: `Unknown provider: ${data.provider}` };
             }
 
-            // Parse JSON response
-            // Declare jsonStr outside try-catch so it's accessible in catch block for debugging
+            // Parse JSON response - robust extraction that handles preamble text and code fences
             let jsonStr = '';
             
             try {
@@ -238,29 +289,60 @@ export function registerAIIpcHandlers() {
                     responsePreview: response.substring(0, 500) + (response.length > 500 ? '...' : '')
                 });
 
-                // Handle potential markdown code fences
                 jsonStr = response.trim();
-                
-                // Strip opening fence (```json or just ```)
-                if (jsonStr.startsWith('```json')) {
-                    jsonStr = jsonStr.slice(7); // Remove ```json
-                } else if (jsonStr.startsWith('```')) {
-                    jsonStr = jsonStr.slice(3); // Remove ```
+
+                // Strategy 1: Try parsing as-is first (ideal case: pure JSON)
+                let parsed: { modifiedContent?: string; summary?: string } | null = null;
+                try {
+                    parsed = JSON.parse(jsonStr);
+                } catch {
+                    // Not pure JSON, try extraction strategies
                 }
-                
-                // Strip closing fence
-                if (jsonStr.endsWith('```')) {
-                    jsonStr = jsonStr.slice(0, -3);
+
+                // Strategy 2: Strip markdown code fences (```json ... ``` or ``` ... ```)
+                if (!parsed) {
+                    let stripped = jsonStr;
+                    if (stripped.startsWith('```json')) {
+                        stripped = stripped.slice(7);
+                    } else if (stripped.startsWith('```')) {
+                        stripped = stripped.slice(3);
+                    }
+                    if (stripped.endsWith('```')) {
+                        stripped = stripped.slice(0, -3);
+                    }
+                    stripped = stripped.trim();
+                    try {
+                        parsed = JSON.parse(stripped);
+                        jsonStr = stripped;
+                    } catch {
+                        // Still not valid, try next strategy
+                    }
                 }
-                
-                jsonStr = jsonStr.trim();
+
+                // Strategy 3: Extract JSON object from anywhere in the response
+                // (handles preamble text, code fences mid-response, etc.)
+                if (!parsed) {
+                    const firstBrace = response.indexOf('{');
+                    const lastBrace = response.lastIndexOf('}');
+                    if (firstBrace !== -1 && lastBrace > firstBrace) {
+                        const extracted = response.substring(firstBrace, lastBrace + 1);
+                        try {
+                            parsed = JSON.parse(extracted);
+                            jsonStr = extracted;
+                        } catch {
+                            // Extraction failed too
+                        }
+                    }
+                }
+
+                if (!parsed) {
+                    throw new SyntaxError('Could not extract valid JSON from AI response');
+                }
 
                 log('AI IPC: Cleaned JSON string for parsing', {
                     cleanedLength: jsonStr.length,
                     cleanedPreview: jsonStr.substring(0, 500) + (jsonStr.length > 500 ? '...' : '')
                 });
-
-                const parsed = JSON.parse(jsonStr);
 
                 if (!parsed.modifiedContent) {
                     log('AI IPC: Parsed JSON missing modifiedContent field', { parsedKeys: Object.keys(parsed) });
@@ -283,11 +365,11 @@ export function registerAIIpcHandlers() {
                 };
             } catch (parseError) {
                 // Write the full response to a separate file for debugging
-                const fs = require('fs');
-                const path = require('path');
-                const debugPath = path.join(app.getPath('userData'), 'ai-response-debug.txt');
+                const fsSync = require('fs');
+                const pathMod = require('path');
+                const debugPath = pathMod.join(app.getPath('userData'), 'ai-response-debug.txt');
                 try {
-                    fs.writeFileSync(debugPath, `=== Failed AI Edit Response ===\nTimestamp: ${new Date().toISOString()}\nProvider: ${data.provider}\nModel: ${data.model}\nResponse Length: ${response.length}\nCleaned Length: ${jsonStr.length}\n\n=== RAW RESPONSE ===\n${response}\n\n=== CLEANED JSON STRING ===\n${jsonStr}\n\n=== PARSE ERROR ===\n${parseError}\n`, 'utf-8');
+                    fsSync.writeFileSync(debugPath, `=== Failed AI Edit Response ===\nTimestamp: ${new Date().toISOString()}\nProvider: ${data.provider}\nModel: ${data.model}\nResponse Length: ${response.length}\nCleaned Length: ${jsonStr.length}\n\n=== RAW RESPONSE ===\n${response}\n\n=== CLEANED JSON STRING ===\n${jsonStr}\n\n=== PARSE ERROR ===\n${parseError}\n`, 'utf-8');
                     log('AI IPC: Full response written to debug file', { debugPath, responseLength: response.length, cleanedLength: jsonStr.length });
                 } catch (writeError) {
                     logError('Failed to write debug file', writeError as Error);
@@ -302,6 +384,8 @@ export function registerAIIpcHandlers() {
         } catch (error) {
             logError('AI IPC: edit-request failed', error as Error);
             return { success: false, error: (error as Error).message };
+        } finally {
+            finalizeRequest(data.requestId);
         }
     });
 

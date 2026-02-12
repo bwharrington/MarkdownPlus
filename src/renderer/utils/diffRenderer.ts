@@ -10,10 +10,11 @@ export function renderDiffContent(diffSession: DiffSession): string {
 
     // If no hunks or all resolved, just show the current content
     if (hunks.length === 0 || hunks.every(h => h.status !== 'pending')) {
-        return originalLines.map(line => escapeHtml(line)).join('\n');
+        return originalLines.map(line => `<div class="diff-line">${escapeHtml(line) || '&nbsp;'}</div>`).join('');
     }
 
     // Build the diff view by processing hunks
+    // Use <div> elements for each line to ensure proper block-level rendering
     const result: string[] = [];
     let origIdx = 0;
 
@@ -23,7 +24,7 @@ export function renderDiffContent(diffSession: DiffSession): string {
     for (const hunk of sortedHunks) {
         // Add unchanged lines before this hunk
         while (origIdx < hunk.startLine && origIdx < originalLines.length) {
-            result.push(escapeHtml(originalLines[origIdx]));
+            result.push(`<div class="diff-line">${escapeHtml(originalLines[origIdx]) || '&nbsp;'}</div>`);
             origIdx++;
         }
 
@@ -35,24 +36,24 @@ export function renderDiffContent(diffSession: DiffSession): string {
             if (hunk.type === 'remove' || hunk.type === 'modify') {
                 // Show original lines as removed
                 for (const line of hunk.originalLines) {
-                    result.push(`<span class="diff-removed${currentClass}">${escapeHtml(line)}</span>`);
+                    result.push(`<div class="diff-removed${currentClass}">${escapeHtml(line) || '&nbsp;'}</div>`);
                 }
             }
             if (hunk.type === 'add' || hunk.type === 'modify') {
                 // Show new lines as added
                 for (const line of hunk.newLines) {
-                    result.push(`<span class="diff-added${currentClass}">${escapeHtml(line)}</span>`);
+                    result.push(`<div class="diff-added${currentClass}">${escapeHtml(line) || '&nbsp;'}</div>`);
                 }
             }
         } else if (hunk.status === 'accepted') {
             // Show only the new lines (accepted change)
             for (const line of hunk.newLines) {
-                result.push(escapeHtml(line));
+                result.push(`<div class="diff-line">${escapeHtml(line) || '&nbsp;'}</div>`);
             }
         } else {
             // Show only the original lines (rejected change)
             for (const line of hunk.originalLines) {
-                result.push(escapeHtml(line));
+                result.push(`<div class="diff-line">${escapeHtml(line) || '&nbsp;'}</div>`);
             }
         }
 
@@ -64,9 +65,9 @@ export function renderDiffContent(diffSession: DiffSession): string {
 
     // Add remaining unchanged lines
     while (origIdx < originalLines.length) {
-        result.push(escapeHtml(originalLines[origIdx]));
+        result.push(`<div class="diff-line">${escapeHtml(originalLines[origIdx]) || '&nbsp;'}</div>`);
         origIdx++;
     }
 
-    return result.join('\n');
+    return result.join('');
 }

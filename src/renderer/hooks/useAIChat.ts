@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export type AIProvider = 'xai' | 'claude' | 'openai';
 
@@ -51,6 +51,7 @@ export function useAIChat() {
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const activeRequestIdRef = useRef<string | null>(null);
 
     // Fetch provider statuses on mount
     useEffect(() => {
@@ -156,6 +157,8 @@ export function useAIChat() {
         setInputValue('');
         setIsLoading(true);
         setError(null);
+        const requestId = `ai-chat-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        activeRequestIdRef.current = requestId;
 
         try {
             // Build messages array for API (without timestamps)
@@ -166,10 +169,15 @@ export function useAIChat() {
             }));
 
             const response = provider === 'xai'
-                ? await window.electronAPI.aiChatRequest(apiMessages, selectedModel)
+                ? await window.electronAPI.aiChatRequest(apiMessages, selectedModel, requestId)
                 : provider === 'claude'
-                    ? await window.electronAPI.claudeChatRequest(apiMessages, selectedModel)
-                    : await window.electronAPI.openaiChatRequest(apiMessages, selectedModel);
+                    ? await window.electronAPI.claudeChatRequest(apiMessages, selectedModel, requestId)
+                    : await window.electronAPI.openaiChatRequest(apiMessages, selectedModel, requestId);
+
+            // Ignore stale responses for requests that were cancelled or superseded.
+            if (activeRequestIdRef.current !== requestId) {
+                return;
+            }
 
             if (response.success && response.response) {
                 const assistantMessage: AIMessage = {
@@ -182,12 +190,35 @@ export function useAIChat() {
                 setError(response.error || 'Failed to get response');
             }
         } catch (err) {
+            if (activeRequestIdRef.current !== requestId) {
+                return;
+            }
             console.error('Failed to send message:', err);
             setError('Failed to send message');
         } finally {
-            setIsLoading(false);
+            if (activeRequestIdRef.current === requestId) {
+                activeRequestIdRef.current = null;
+                setIsLoading(false);
+            }
         }
     }, [inputValue, isLoading, messages, provider, selectedModel]);
+
+    const cancelCurrentRequest = useCallback(async () => {
+        const requestId = activeRequestIdRef.current;
+        if (!requestId) {
+            return;
+        }
+
+        activeRequestIdRef.current = null;
+        setIsLoading(false);
+        setError('Request canceled');
+
+        try {
+            await window.electronAPI.cancelAIChatRequest(requestId);
+        } catch (err) {
+            console.error('Failed to cancel AI request:', err);
+        }
+    }, []);
 
     // Clear chat
     const clearChat = useCallback(() => {
@@ -250,6 +281,7 @@ export function useAIChat() {
         isLoading,
         error,
         sendMessage,
+        cancelCurrentRequest,
         clearChat,
     };
 }

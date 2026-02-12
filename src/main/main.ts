@@ -50,6 +50,8 @@ const defaultConfig = {
     aiModels: {} as Record<string, Record<string, { enabled: boolean }>>,
     silentFileUpdates: true,
     imageSaveFolder: 'images' as string,
+    aiChatDocked: false,
+    aiChatDockWidth: 420,
 };
 
 // Detect line ending in content

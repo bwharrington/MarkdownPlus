@@ -23,12 +23,21 @@ ${fileContent}
 Return a JSON object with the complete modified document.`;
 }
 
-// Compute diff hunks between original and modified content
+/** Maximum number of unchanged lines between hunks to still merge them */
+const MERGE_GAP_THRESHOLD = 2;
+
+/**
+ * Compute diff hunks between original and modified content.
+ * Merges consecutive add/remove pairs into 'modify' hunks and
+ * post-processes to merge nearby hunks (within MERGE_GAP_THRESHOLD
+ * unchanged lines) into a single grouped hunk.
+ */
 function computeDiffHunks(original: string, modified: string): DiffHunk[] {
     const changes = diffLines(original, modified);
-    const hunks: DiffHunk[] = [];
+    const rawHunks: DiffHunk[] = [];
     let lineNumber = 0;
 
+    // --- Pass 1: Build raw hunks from diff output ---
     for (let i = 0; i < changes.length; i++) {
         const change = changes[i];
         // Split value into lines, handling the trailing newline carefully
@@ -37,14 +46,14 @@ function computeDiffHunks(original: string, modified: string): DiffHunk[] {
             : change.value.split('\n');
 
         if (change.added) {
-            // Check if previous change was a removal - this might be a modification
-            const prevHunk = hunks.length > 0 ? hunks[hunks.length - 1] : null;
+            // Check if previous change was a removal - this is a modification
+            const prevHunk = rawHunks.length > 0 ? rawHunks[rawHunks.length - 1] : null;
             if (prevHunk && prevHunk.type === 'remove' && prevHunk.endLine === lineNumber - 1) {
                 // Merge with previous removal to create a 'modify' hunk
                 prevHunk.newLines = lines;
                 prevHunk.type = 'modify';
             } else {
-                hunks.push({
+                rawHunks.push({
                     id: generateId(),
                     startLine: lineNumber,
                     endLine: lineNumber,
@@ -55,7 +64,7 @@ function computeDiffHunks(original: string, modified: string): DiffHunk[] {
                 });
             }
         } else if (change.removed) {
-            hunks.push({
+            rawHunks.push({
                 id: generateId(),
                 startLine: lineNumber,
                 endLine: lineNumber + lines.length - 1,
@@ -71,7 +80,54 @@ function computeDiffHunks(original: string, modified: string): DiffHunk[] {
         }
     }
 
-    return hunks;
+    if (rawHunks.length <= 1) {
+        return rawHunks;
+    }
+
+    // --- Pass 2: Merge nearby hunks separated by few unchanged lines ---
+    const originalLines = original.split('\n');
+    const merged: DiffHunk[] = [rawHunks[0]];
+
+    for (let i = 1; i < rawHunks.length; i++) {
+        const prev = merged[merged.length - 1];
+        const curr = rawHunks[i];
+
+        // Calculate the gap of unchanged lines between the two hunks
+        const prevEnd = prev.type === 'add' ? prev.startLine : prev.endLine + 1;
+        const gapStart = prevEnd;
+        const gapEnd = curr.startLine;
+        const gap = gapEnd - gapStart;
+
+        if (gap <= MERGE_GAP_THRESHOLD) {
+            // Merge: include the bridging unchanged lines in both original and new
+            const bridgeLines = originalLines.slice(gapStart, gapEnd);
+
+            // Combine original lines: prev original + bridge + curr original
+            const combinedOriginal = [...prev.originalLines, ...bridgeLines, ...curr.originalLines];
+            // Combine new lines: prev new + bridge + curr new
+            const combinedNew = [...prev.newLines, ...bridgeLines, ...curr.newLines];
+
+            prev.originalLines = combinedOriginal;
+            prev.newLines = combinedNew;
+            prev.startLine = Math.min(prev.startLine, curr.startLine);
+            prev.endLine = Math.max(
+                prev.type === 'add' ? prev.startLine : prev.endLine,
+                curr.type === 'add' ? curr.startLine : curr.endLine
+            );
+            // If either side has content, it's a modify; otherwise keep whichever type applies
+            if (combinedOriginal.length > 0 && combinedNew.length > 0) {
+                prev.type = 'modify';
+            } else if (combinedOriginal.length > 0) {
+                prev.type = 'remove';
+            } else {
+                prev.type = 'add';
+            }
+        } else {
+            merged.push(curr);
+        }
+    }
+
+    return merged;
 }
 
 export function useAIDiffEdit() {
@@ -82,7 +138,8 @@ export function useAIDiffEdit() {
     const requestEdit = useCallback(async (
         prompt: string,
         provider: 'claude' | 'openai',
-        model: string
+        model: string,
+        requestId?: string
     ): Promise<{ hunkCount: number; summary: string }> => {
         if (!activeFile) {
             throw new Error('No active file');
@@ -93,7 +150,7 @@ export function useAIDiffEdit() {
             content: formatEditRequest(prompt, activeFile.content, activeFile.name),
         }];
 
-        const response = await window.electronAPI.aiEditRequest(messages, model, provider);
+        const response = await window.electronAPI.aiEditRequest(messages, model, provider, requestId);
 
         if (!response.success || !response.modifiedContent) {
             throw new Error(response.error || 'Edit request failed');
@@ -109,6 +166,14 @@ export function useAIDiffEdit() {
 
         if (hunks.length === 0) {
             throw new Error('No changes detected in AI response');
+        }
+
+        // Auto-switch to edit mode if currently in preview (diff rendering only works in edit mode)
+        if (activeFile.viewMode !== 'edit') {
+            dispatch({
+                type: 'TOGGLE_VIEW_MODE',
+                payload: { id: activeFile.id },
+            });
         }
 
         // Start diff session

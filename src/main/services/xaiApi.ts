@@ -41,7 +41,11 @@ export const DEFAULT_XAI_MODELS = [
     { id: 'grok-3-mini', displayName: 'Grok 3 Mini' },
 ];
 
-export async function callXAiApi(messages: Message[], model: string = 'grok-3-fast'): Promise<string> {
+export async function callXAiApi(
+    messages: Message[],
+    model: string = 'grok-3-fast',
+    signal?: AbortSignal
+): Promise<string> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('xai');
     if (!apiKey) {
@@ -96,6 +100,7 @@ export async function callXAiApi(messages: Message[], model: string = 'grok-3-fa
                 messages: formattedMessages,
                 model,
             }),
+            signal,
         });
 
         log('xAI API Response Status', { status: response.status, statusText: response.statusText });

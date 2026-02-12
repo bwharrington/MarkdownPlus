@@ -52,7 +52,11 @@ export const DEFAULT_CLAUDE_MODELS = [
     { id: 'claude-haiku-3-5-20241022', displayName: 'Claude Haiku 3.5' },
 ];
 
-export async function callClaudeApi(messages: Message[], model: string = 'claude-sonnet-4-5-20250514'): Promise<string> {
+export async function callClaudeApi(
+    messages: Message[],
+    model: string = 'claude-sonnet-4-5-20250514',
+    signal?: AbortSignal
+): Promise<string> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('claude');
     if (!apiKey) {
@@ -113,6 +117,7 @@ export async function callClaudeApi(messages: Message[], model: string = 'claude
                 'anthropic-version': '2023-06-01',
             },
             body: JSON.stringify(requestBody),
+            signal,
         });
 
         log('Claude API Response Status', { status: response.status, statusText: response.statusText });
@@ -137,7 +142,8 @@ export async function callClaudeApi(messages: Message[], model: string = 'claude
 export async function callClaudeApiWithSystemPrompt(
     messages: Message[],
     systemPrompt: string,
-    model: string = 'claude-sonnet-4-5-20250514'
+    model: string = 'claude-sonnet-4-5-20250514',
+    signal?: AbortSignal
 ): Promise<string> {
     const apiKey = getApiKeyForService('claude');
     if (!apiKey) {
@@ -192,6 +198,7 @@ export async function callClaudeApiWithSystemPrompt(
                 'anthropic-version': '2023-06-01',
             },
             body: JSON.stringify(requestBody),
+            signal,
         });
 
         log('Claude API Response Status', { status: response.status, statusText: response.statusText });

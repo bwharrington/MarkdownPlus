@@ -32,10 +32,13 @@ import {
     WarningAmberIcon,
     VisibilityIcon,
     VisibilityOffIcon,
+    DockRightIcon,
+    UndockIcon,
 } from './AppIcons';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
+import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState } from '../contexts/EditorContext';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
@@ -195,6 +198,8 @@ const glowAnimation = `
 interface AIChatDialogProps {
     open: boolean;
     onClose: () => void;
+    isDocked?: boolean;
+    onDockChange?: (isDocked: boolean) => void;
 }
 
 interface AttachedFile {
@@ -206,7 +211,7 @@ interface AttachedFile {
     enabled?: boolean; // True if context doc is enabled (default true)
 }
 
-export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
+export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: AIChatDialogProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -233,10 +238,14 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const [isEditMode, setIsEditMode] = useState(false);
     const [editModeError, setEditModeError] = useState<string | null>(null);
     const [isEditLoading, setIsEditLoading] = useState(false);
+    const activeEditRequestIdRef = useRef<string | null>(null);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
     // AI Diff Edit hook
     const { requestEdit, diffSession } = useAIDiffEdit();
+
+    // Rotating loading messages with typewriter effect
+    const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
 
     const {
         provider,
@@ -253,12 +262,13 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         isLoading,
         error,
         sendMessage,
+        cancelCurrentRequest,
         clearChat,
     } = useAIChat();
 
     // Initialize position when dialog opens
     useEffect(() => {
-        if (open && dialogRef.current) {
+        if (open && !isDocked && dialogRef.current) {
             const rect = dialogRef.current.getBoundingClientRect();
             const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
             if (parentRect) {
@@ -269,7 +279,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                 });
             }
         }
-    }, [open]);
+    }, [open, isDocked]);
 
     // Focus input when dialog opens
     useEffect(() => {
@@ -338,6 +348,11 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     // Handle focus/blur events to change opacity
     useEffect(() => {
+        if (isDocked) {
+            setIsDialogFocused(true);
+            return;
+        }
+
         const handleFocusIn = (e: FocusEvent) => {
             if (dialogRef.current && dialogRef.current.contains(e.target as Node)) {
                 setIsDialogFocused(true);
@@ -369,10 +384,14 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                 document.removeEventListener('mousedown', handleMouseDown);
             };
         }
-    }, [open]);
+    }, [open, isDocked]);
 
     // Handle dragging
     const handleDragMouseDown = (e: React.MouseEvent) => {
+        if (isDocked) {
+            return;
+        }
+
         if (dialogRef.current) {
             setIsDragging(true);
             setDragStart({
@@ -417,6 +436,10 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     // Handle resizing
     const handleResizeMouseDown = (e: React.MouseEvent) => {
+        if (isDocked) {
+            return;
+        }
+
         e.preventDefault();
         e.stopPropagation();
         setIsResizing(true);
@@ -467,6 +490,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     const providerOptions = getProviderOptions();
     const hasProviders = providerOptions.length > 0;
+    const hasActiveRequest = isLoading || isEditLoading;
 
     // File attachment handlers
     const handleAttachFile = async () => {
@@ -506,16 +530,27 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         // If in edit mode and provider supports it, use the edit request
         if (isEditMode && (provider === 'claude' || provider === 'openai')) {
             setIsEditLoading(true);
+            const requestId = `ai-edit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            activeEditRequestIdRef.current = requestId;
             try {
-                const result = await requestEdit(inputValue, provider, selectedModel);
+                await requestEdit(inputValue, provider, selectedModel, requestId);
+                if (activeEditRequestIdRef.current !== requestId) {
+                    return;
+                }
                 // Clear input after successful edit request
                 setInputValue('');
                 // Show success message in chat
                 // The diff will be shown in the editor
             } catch (err) {
+                if (activeEditRequestIdRef.current !== requestId) {
+                    return;
+                }
                 setEditModeError(err instanceof Error ? err.message : 'Edit request failed');
             } finally {
-                setIsEditLoading(false);
+                if (activeEditRequestIdRef.current === requestId) {
+                    activeEditRequestIdRef.current = null;
+                    setIsEditLoading(false);
+                }
             }
             return;
         }
@@ -531,6 +566,30 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     const handleClearChatClick = () => {
         setClearConfirmOpen(true);
+    };
+
+    const handleCancelRequest = async () => {
+        if (isLoading) {
+            await cancelCurrentRequest();
+            return;
+        }
+
+        if (isEditLoading) {
+            const requestId = activeEditRequestIdRef.current;
+            activeEditRequestIdRef.current = null;
+            setIsEditLoading(false);
+            setEditModeError('Edit request canceled');
+
+            if (!requestId) {
+                return;
+            }
+
+            try {
+                await window.electronAPI.cancelAIEditRequest(requestId);
+            } catch (err) {
+                console.error('Failed to cancel AI edit request:', err);
+            }
+        }
     };
 
     const handleClearChatCancel = () => {
@@ -555,23 +614,40 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         <DialogContainer
             ref={dialogRef}
             sx={{
-                left: position.x,
-                top: position.y,
-                width: isCollapsed ? 'auto' : size.width,
-                height: isCollapsed ? 'auto' : size.height,
+                position: isDocked ? 'relative' : 'absolute',
+                left: isDocked ? 'auto' : position.x,
+                top: isDocked ? 'auto' : position.y,
+                width: isDocked ? '100%' : (isCollapsed ? 'auto' : size.width),
+                height: isDocked ? '100%' : (isCollapsed ? 'auto' : size.height),
+                minWidth: isDocked ? 0 : 350,
+                borderRadius: isDocked ? 0 : 4,
+                boxShadow: isDocked ? 'none' : 4,
+                borderTop: isDocked ? 'none' : undefined,
+                borderBottom: isDocked ? 'none' : undefined,
+                borderRight: isDocked ? 'none' : undefined,
                 cursor: isDragging ? 'grabbing' : (isResizing ? 'nwse-resize' : 'default'),
-                opacity: isDialogFocused ? 1 : 0.6,
-                transition: 'opacity 0.2s ease-in-out',
+                opacity: isDocked ? 1 : (isDialogFocused ? 1 : 0.6),
+                transition: isDocked ? 'none' : 'opacity 0.2s ease-in-out',
             }}
         >
-            <DragHandle onMouseDown={handleDragMouseDown}>
+            <DragHandle
+                onMouseDown={isDocked ? undefined : handleDragMouseDown}
+                sx={{ cursor: isDocked ? 'default' : 'move' }}
+            >
                 <HeaderControls>
-                    <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+                    {!isDocked && <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />}
                     <Typography variant="subtitle2" fontWeight={600}>
                         AI Chat
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>
+                    <IconButton
+                        size="small"
+                        onClick={() => onDockChange?.(!isDocked)}
+                        title={isDocked ? 'Float' : 'Dock right'}
+                    >
+                        {isDocked ? <UndockIcon fontSize="small" /> : <DockRightIcon fontSize="small" />}
+                    </IconButton>
                     <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} title={isCollapsed ? "Expand" : "Collapse"}>
                         {isCollapsed ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
                     </IconButton>
@@ -604,6 +680,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                                 value={provider}
                                 label="Provider"
                                 onChange={(e) => setProvider(e.target.value as AIProvider)}
+                                disabled={hasActiveRequest}
                             >
                                 {providerOptions.map((opt) => (
                                     <MenuItem key={opt.value} value={opt.value}>
@@ -620,7 +697,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                                 value={selectedModel}
                                 label="Model"
                                 onChange={(e) => setSelectedModel(e.target.value)}
-                                disabled={isLoadingModels}
+                                disabled={isLoadingModels || hasActiveRequest}
                             >
                                 {models.map((model) => (
                                     <MenuItem key={model.id} value={model.id}>
@@ -711,8 +788,32 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                                 gap: 1,
                             }}>
                                 <CircularProgress size={24} color="success" />
-                                <Typography variant="body2" color="text.secondary">
-                                    AI is editing your document...
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{
+                                        fontFamily: 'monospace',
+                                        minHeight: '1.5em',
+                                        textAlign: 'center',
+                                    }}
+                                >
+                                    {loadingDisplayText}
+                                    <Box
+                                        component="span"
+                                        sx={{
+                                            display: 'inline-block',
+                                            width: '2px',
+                                            height: '1em',
+                                            backgroundColor: 'text.secondary',
+                                            ml: '1px',
+                                            verticalAlign: 'text-bottom',
+                                            animation: 'blink 1s step-end infinite',
+                                            '@keyframes blink': {
+                                                '0%, 100%': { opacity: 1 },
+                                                '50%': { opacity: 0 },
+                                            },
+                                        }}
+                                    />
                                 </Typography>
                             </Box>
                         )}
@@ -814,6 +915,16 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                             }}
                         />
                         <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handleCancelRequest}
+                            disabled={!hasActiveRequest}
+                            color="warning"
+                            sx={{ minWidth: 'auto', px: 2 }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
                             variant="contained"
                             size="small"
                             onClick={handleSendMessage}
@@ -833,7 +944,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                 </>
             ))}
 
-            {!isCollapsed && <ResizeHandle onMouseDown={handleResizeMouseDown} />}
+            {!isCollapsed && !isDocked && <ResizeHandle onMouseDown={handleResizeMouseDown} />}
             <Dialog
                 open={clearConfirmOpen}
                 onClose={handleClearChatCancel}

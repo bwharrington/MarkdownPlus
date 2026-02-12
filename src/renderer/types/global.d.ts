@@ -52,6 +52,8 @@ export interface IConfig {
   aiModels?: AIModelsConfig;
   silentFileUpdates?: boolean;
   imageSaveFolder?: string;
+  aiChatDocked?: boolean;
+  aiChatDockWidth?: number;
 }
 
 export interface ConfirmCloseResult {
@@ -178,10 +180,12 @@ export interface ElectronAPI {
   onOpenFilesFromArgs: (callback: (filePaths: string[]) => void) => () => void;
 
   // AI Chat operations
-  aiChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
-  claudeChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
-  openaiChatRequest: (messages: AIMessage[], model: string) => Promise<AIChatResponse>;
-  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai') => Promise<AIEditResponse>;
+  aiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
+  claudeChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
+  openaiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
+  cancelAIChatRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
+  cancelAIEditRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
+  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai', requestId?: string) => Promise<AIEditResponse>;
   listAIModels: () => Promise<AIModelsResponse>;
   listClaudeModels: () => Promise<AIModelsResponse>;
   listOpenAIModels: () => Promise<AIModelsResponse>;

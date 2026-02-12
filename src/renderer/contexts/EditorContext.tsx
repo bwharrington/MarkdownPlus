@@ -37,10 +37,13 @@ function applyAcceptedHunks(originalContent: string, modifiedContent: string, hu
     const modifiedLines = modifiedContent.split('\n');
     const result: string[] = [];
 
+    // Sort hunks by startLine to ensure correct reconstruction order
+    const sortedHunks = [...hunks].sort((a, b) => a.startLine - b.startLine);
+
     let origIdx = 0;
     let modIdx = 0;
 
-    for (const hunk of hunks) {
+    for (const hunk of sortedHunks) {
         // Copy unchanged lines up to this hunk from the appropriate source
         while (origIdx < hunk.startLine && origIdx < originalLines.length) {
             result.push(originalLines[origIdx]);
@@ -81,6 +84,8 @@ const defaultConfig: IConfig = {
     recentFiles: [],
     openFiles: [],
     defaultLineEnding: 'CRLF',
+    aiChatDocked: false,
+    aiChatDockWidth: 420,
 };
 
 // Initial state

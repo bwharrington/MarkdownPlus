@@ -41,7 +41,11 @@ export const DEFAULT_OPENAI_MODELS = [
     { id: 'gpt-4-turbo-latest', displayName: 'GPT-4 Turbo Latest' },
 ];
 
-export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o-mini-latest'): Promise<string> {
+export async function callOpenAIApi(
+    messages: Message[],
+    model: string = 'gpt-4o-mini-latest',
+    signal?: AbortSignal
+): Promise<string> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('openai');
     if (!apiKey) {
@@ -96,6 +100,7 @@ export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o
                 messages: formattedMessages,
                 model,
             }),
+            signal,
         });
 
         log('OpenAI API Response Status', { status: response.status, statusText: response.statusText });
@@ -119,7 +124,8 @@ export async function callOpenAIApi(messages: Message[], model: string = 'gpt-4o
  */
 export async function callOpenAIApiWithJsonMode(
     messages: Array<{ role: string; content: string }>,
-    model: string = 'gpt-4o-mini-latest'
+    model: string = 'gpt-4o-mini-latest',
+    signal?: AbortSignal
 ): Promise<string> {
     const apiKey = getApiKeyForService('openai');
     if (!apiKey) {
@@ -144,6 +150,7 @@ export async function callOpenAIApiWithJsonMode(
                 model,
                 response_format: { type: 'json_object' },
             }),
+            signal,
         });
 
         log('OpenAI API Response Status (JSON mode)', { status: response.status, statusText: response.statusText });
