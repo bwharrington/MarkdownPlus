@@ -393,6 +393,52 @@ function registerIpcHandlers() {
         }
     });
 
+    // File: Export rendered content as PDF
+    ipcMain.handle('file:export-pdf', async (_event, html: string, defaultName?: string) => {
+        const result = await dialog.showSaveDialog(mainWindow!, {
+            defaultPath: defaultName || 'Untitled.pdf',
+            filters: [
+                { name: 'PDF', extensions: ['pdf'] },
+            ],
+        });
+
+        if (result.canceled || !result.filePath) {
+            return { success: false, cancelled: true };
+        }
+
+        let exportWindow: BrowserWindow | null = null;
+        try {
+            exportWindow = new BrowserWindow({
+                show: false,
+                webPreferences: {
+                    nodeIntegration: false,
+                    contextIsolation: true,
+                },
+            });
+
+            const dataUrl = `data:text/html;charset=UTF-8,${encodeURIComponent(html)}`;
+            await exportWindow.loadURL(dataUrl);
+
+            // Allow async rendering (notably Mermaid SVG generation) to settle before printing.
+            await new Promise((resolve) => setTimeout(resolve, 250));
+
+            const pdfBuffer = await exportWindow.webContents.printToPDF({
+                printBackground: true,
+                preferCSSPageSize: true,
+            });
+            await fs.writeFile(result.filePath, pdfBuffer);
+
+            return { success: true, filePath: result.filePath };
+        } catch (error) {
+            logError('IPC: file:export-pdf failed', error as Error);
+            return { success: false, filePath: result.filePath, error: String(error) };
+        } finally {
+            if (exportWindow && !exportWindow.isDestroyed()) {
+                exportWindow.destroy();
+            }
+        }
+    });
+
     // File: Rename
     ipcMain.handle('file:rename', async (_event, oldPath: string, newPath: string) => {
         try {

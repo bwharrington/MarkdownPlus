@@ -50,6 +50,7 @@ import {
     LocateFixed,
     Move,
     History,
+    FileDown,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -170,3 +171,4 @@ export const ZoomOutIcon = createIcon(Minus);
 export const ResetIcon = createIcon(LocateFixed);
 export const PanIcon = createIcon(Move);
 export const HistoryIcon = createIcon(History);
+export const PictureAsPdfIcon = createIcon(FileDown);

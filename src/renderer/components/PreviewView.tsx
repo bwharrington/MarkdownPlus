@@ -12,6 +12,7 @@ import { MarkdownToolbar } from './MarkdownToolbar';
 import { RstToolbar } from './RstToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
 import { RstRenderer } from './RstRenderer';
+import { buildPdfHtmlDocument } from '../utils/pdfExport';
 
 const markdownPlugins = [remarkGfm];
 
@@ -145,12 +146,43 @@ export function PreviewView() {
 
     const isRstFile = activeFile.fileType === 'rst';
     const PreviewToolbar = isRstFile ? RstToolbar : MarkdownToolbar;
+    const handleExportPdf = useCallback(async () => {
+        if (!activeFile) return;
+
+        const defaultName = activeFile.name.replace(/\.[^.]+$/, '') || 'Untitled';
+        const exportHtml = await buildPdfHtmlDocument({
+            fileType: activeFile.fileType,
+            content: activeFile.content || '',
+            documentPath: activeFile.path,
+            title: activeFile.name,
+            existingRenderedElement: previewRef.current,
+        });
+
+        const result = await window.electronAPI.exportPdf(exportHtml, `${defaultName}.pdf`);
+        if (!result || result.cancelled) {
+            return;
+        }
+
+        if (result.success) {
+            const outputName = result.filePath?.split(/[\\/]/).pop() || `${defaultName}.pdf`;
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: { message: `Exported "${outputName}"`, severity: 'success' },
+            });
+        } else {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: { message: `Failed to export "${activeFile.name}"`, severity: 'error' },
+            });
+        }
+    }, [activeFile, dispatch]);
 
     return (
         <EditorContainer>
             <PreviewToolbar
                 mode="preview"
                 onFind={handleOpenFind}
+                onExportPdf={handleExportPdf}
             />
             <EditorWrapper>
                 {isRstFile ? (

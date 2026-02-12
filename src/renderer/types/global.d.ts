@@ -105,6 +105,13 @@ export interface ImageSaveResult {
   error?: string;
 }
 
+export interface PdfExportResult {
+  success: boolean;
+  cancelled?: boolean;
+  filePath?: string;
+  error?: string;
+}
+
 export interface ElectronAPI {
   // File operations
   newFile: () => Promise<void>;
@@ -118,6 +125,7 @@ export interface ElectronAPI {
   unwatchFile: (filePath: string) => Promise<void>;
   saveClipboardImage: (base64Data: string, documentDir: string) => Promise<ImageSaveResult>;
   saveDroppedImage: (sourcePath: string, documentDir: string) => Promise<ImageSaveResult>;
+  exportPdf: (html: string, defaultName?: string) => Promise<PdfExportResult | null>;
   
   // Config operations
   loadConfig: () => Promise<IConfig>;

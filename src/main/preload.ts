@@ -15,6 +15,8 @@ const electronAPI = {
     ipcRenderer.invoke('file:save-image', base64Data, documentDir),
   saveDroppedImage: (sourcePath: string, documentDir: string) =>
     ipcRenderer.invoke('file:save-dropped-image', sourcePath, documentDir),
+  exportPdf: (html: string, defaultName?: string) =>
+    ipcRenderer.invoke('file:export-pdf', html, defaultName),
   
   // Config operations
   loadConfig: () => ipcRenderer.invoke('config:load'),

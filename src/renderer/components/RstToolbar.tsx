@@ -16,6 +16,7 @@ import {
     SearchIcon,
     InfoIcon,
     WarningIcon,
+    PictureAsPdfIcon,
 } from './AppIcons';
 import { useActiveFile } from '../contexts';
 
@@ -40,9 +41,10 @@ interface RstToolbarProps {
     onUndo?: () => void;
     onRedo?: () => void;
     onFind?: () => void;
+    onExportPdf?: () => void;
 }
 
-export function RstToolbar({ mode, onInsert, onUndo, onRedo, onFind }: RstToolbarProps) {
+export function RstToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExportPdf }: RstToolbarProps) {
     const activeFile = useActiveFile();
     const canUndo = activeFile ? activeFile.undoStackPointer > 0 : false;
     const canRedo = activeFile ? activeFile.redoStack.length > 0 : false;
@@ -54,6 +56,13 @@ export function RstToolbar({ mode, onInsert, onUndo, onRedo, onFind }: RstToolba
                 <Tooltip title="Find (Ctrl+F)">
                     <IconButton size="small" onClick={onFind}>
                         <SearchIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
+                <Box sx={{ flexGrow: 1 }} />
+                <ToolbarDivider orientation="vertical" flexItem />
+                <Tooltip title="Export PDF">
+                    <IconButton size="small" onClick={onExportPdf}>
+                        <PictureAsPdfIcon fontSize="small" />
                     </IconButton>
                 </Tooltip>
             </ToolbarContainer>
@@ -188,6 +197,13 @@ export function RstToolbar({ mode, onInsert, onUndo, onRedo, onFind }: RstToolba
             <Tooltip title="Find (Ctrl+F)">
                 <IconButton size="small" onClick={onFind}>
                     <SearchIcon fontSize="small" />
+                </IconButton>
+            </Tooltip>
+            <Box sx={{ flexGrow: 1 }} />
+            <ToolbarDivider orientation="vertical" flexItem />
+            <Tooltip title="Export PDF">
+                <IconButton size="small" onClick={onExportPdf}>
+                    <PictureAsPdfIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
         </ToolbarContainer>
