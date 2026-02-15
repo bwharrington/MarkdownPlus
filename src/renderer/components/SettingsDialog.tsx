@@ -34,6 +34,7 @@ import {
     ExpandMoreIcon,
     CheckCircleIcon,
     DeleteIcon,
+    RefreshIcon,
 } from './AppIcons';
 
 import { useSettingsConfig } from '../hooks/useSettingsConfig';
@@ -161,12 +162,15 @@ interface APIKeyInputProps {
     label: string;
     hasKey: boolean;
     value: string;
+    providerStatus?: 'success' | 'error' | 'unchecked';
+    isTesting: boolean;
     onChange: (value: string) => void;
     onSet: () => void;
     onClear: () => void;
+    onTest: () => void;
 }
 
-function APIKeyInput({ provider, label, hasKey, value, onChange, onSet, onClear }: APIKeyInputProps) {
+function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting, onChange, onSet, onClear, onTest }: APIKeyInputProps) {
     return (
         <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -174,9 +178,9 @@ function APIKeyInput({ provider, label, hasKey, value, onChange, onSet, onClear 
                 {hasKey && (
                     <Chip
                         icon={<CheckCircleIcon />}
-                        label="Set"
+                        label={providerStatus === 'success' ? 'Connected' : 'Set'}
                         size="small"
-                        color="success"
+                        color={providerStatus === 'success' ? 'success' : providerStatus === 'error' ? 'error' : 'success'}
                         sx={{ height: 20, fontSize: 11 }}
                     />
                 )}
@@ -197,16 +201,34 @@ function APIKeyInput({ provider, label, hasKey, value, onChange, onSet, onClear 
                     }}
                 />
                 {hasKey ? (
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        color="error"
-                        startIcon={<DeleteIcon />}
-                        onClick={onClear}
-                        sx={{ minWidth: 90 }}
-                    >
-                        Clear
-                    </Button>
+                    <>
+                        <IconButton
+                            size="small"
+                            onClick={onTest}
+                            disabled={isTesting}
+                            title="Test connection"
+                            sx={{
+                                color: 'text.secondary',
+                                animation: isTesting ? 'spin 1s linear infinite' : 'none',
+                                '@keyframes spin': {
+                                    '0%': { transform: 'rotate(0deg)' },
+                                    '100%': { transform: 'rotate(360deg)' },
+                                },
+                            }}
+                        >
+                            <RefreshIcon fontSize="small" />
+                        </IconButton>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            color="error"
+                            startIcon={<DeleteIcon />}
+                            onClick={onClear}
+                            sx={{ minWidth: 90 }}
+                        >
+                            Clear
+                        </Button>
+                    </>
                 ) : (
                     <Button
                         variant="contained"
@@ -322,7 +344,16 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         openai: '',
     });
 
+    // Testing state for individual providers
+    const [testingProvider, setTestingProvider] = useState<string | null>(null);
+
     const dispatch = useEditorDispatch();
+
+    // Refresh provider statuses (re-ping)
+    const refreshProviderStatuses = async () => {
+        const statuses = await window.electronAPI.getAIProviderStatuses();
+        setProviderStatuses(statuses);
+    };
 
     // Load provider statuses and API key status on mount
     useEffect(() => {
@@ -451,10 +482,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             // Clear input and update status
             setApiKeyInputs(prev => ({ ...prev, [provider]: '' }));
             setApiKeyStatus(prev => ({ ...prev, [provider]: true }));
+            // Re-ping provider statuses so the UI reflects the new connection
+            await refreshProviderStatuses();
             dispatch({
                 type: 'SHOW_NOTIFICATION',
                 payload: {
-                    message: `API key for ${provider} saved successfully`,
+                    message: `API key for ${provider} saved and connected successfully`,
                     severity: 'success',
                 },
             });
@@ -473,6 +506,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         const result = await window.electronAPI.deleteApiKey(provider);
         if (result.success) {
             setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
+            // Re-ping provider statuses to reflect the removed connection
+            await refreshProviderStatuses();
             dispatch({
                 type: 'SHOW_NOTIFICATION',
                 payload: {
@@ -488,6 +523,42 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     severity: 'error',
                 },
             });
+        }
+    };
+
+    const handleTestProvider = async (provider: 'xai' | 'claude' | 'openai') => {
+        setTestingProvider(provider);
+        try {
+            const statuses = await window.electronAPI.getAIProviderStatuses();
+            setProviderStatuses(statuses);
+            const status = statuses[provider];
+            if (status.enabled && status.status === 'success') {
+                dispatch({
+                    type: 'SHOW_NOTIFICATION',
+                    payload: {
+                        message: `${provider} connection successful`,
+                        severity: 'success',
+                    },
+                });
+            } else if (status.enabled && status.status === 'error') {
+                dispatch({
+                    type: 'SHOW_NOTIFICATION',
+                    payload: {
+                        message: `${provider} connection failed — API key may be invalid or the service is unavailable`,
+                        severity: 'error',
+                    },
+                });
+            }
+        } catch {
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `Failed to test ${provider} connection`,
+                    severity: 'error',
+                },
+            });
+        } finally {
+            setTestingProvider(null);
         }
     };
 
@@ -583,9 +654,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="Anthropic Claude"
                     hasKey={apiKeyStatus.claude}
                     value={apiKeyInputs.claude}
+                    providerStatus={providerStatuses?.claude.status}
+                    isTesting={testingProvider === 'claude'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, claude: value }))}
                     onSet={() => handleSetApiKey('claude')}
                     onClear={() => handleClearApiKey('claude')}
+                    onTest={() => handleTestProvider('claude')}
                 />
 
                 <APIKeyInput
@@ -593,9 +667,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="OpenAI"
                     hasKey={apiKeyStatus.openai}
                     value={apiKeyInputs.openai}
+                    providerStatus={providerStatuses?.openai.status}
+                    isTesting={testingProvider === 'openai'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, openai: value }))}
                     onSet={() => handleSetApiKey('openai')}
                     onClear={() => handleClearApiKey('openai')}
+                    onTest={() => handleTestProvider('openai')}
                 />
 
                 {/* AI Models Section - Only show if at least one provider has an API key */}

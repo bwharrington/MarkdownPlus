@@ -1,6 +1,6 @@
 # MarkdownPlus Documentation
 
-**Version:** 1.0.0  
+**Version:** 1.0.0
 **A multi-tab Markdown editor with live preview**
 
 MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, React, and Material UI (MUI). It provides a seamless editing experience with dual viewing modes, extensive keyboard shortcuts, and a clean, intuitive interface.
@@ -20,6 +20,7 @@ MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, Reac
    - [reStructuredText Support](#restructuredtext-support)
    - [Mermaid Diagrams](#mermaid-diagrams)
    - [Link Navigation](#link-navigation)
+   - [PDF Export](#pdf-export)
    - [Theme Support](#theme-support)
    - [Visual Configuration Menu](#visual-configuration-menu)
    - [Logging](#logging)
@@ -44,6 +45,7 @@ MarkdownPlus is a desktop Markdown editor designed for writers, developers, and 
 - **GitHub Flavored Markdown** - Full GFM support including tables, task lists, and strikethrough
 - **reStructuredText support** - Full RST rendering with dedicated formatting toolbar
 - **Mermaid diagrams** - Embedded diagram support in both Markdown and RST files
+- **PDF export** - Export rendered documents to PDF
 - **Modern UI** - Built with Material UI for a clean, responsive interface
 - **Cross-platform** - Available for Windows, macOS, and Linux
 
@@ -64,9 +66,11 @@ Download the appropriate installer for your platform from the releases page:
 MarkdownPlus automatically registers as the default handler for markup files:
 
 **Markdown:**
+
 - `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdx`, `.mdwn`
 
 **reStructuredText:**
+
 - `.rst`, `.rest`
 
 Double-clicking any of these file types will open them in MarkdownPlus.
@@ -80,18 +84,21 @@ Double-clicking any of these file types will open them in MarkdownPlus.
 MarkdownPlus provides two viewing modes for each document:
 
 #### Edit Mode
+
 - Raw Markdown text editing with a monospace font
 - Syntax-aware editing (list continuation, code block handling)
 - Full formatting toolbar access
 - Real-time content updates
 
 #### Preview Mode
+
 - Rendered Markdown output
 - Styled with proper typography and formatting
 - Support for all GFM elements (tables, task lists, code blocks)
 - Word highlighting on double-click
 
 **Toggle between modes:**
+
 - Click the mode icon on the tab
 - Use keyboard shortcut `Ctrl+E`
 
@@ -112,16 +119,17 @@ Work on multiple documents simultaneously with the tabbed interface:
 
 Access file operations through the toolbar or keyboard shortcuts:
 
-| Operation | Toolbar Icon | Description |
-|-----------|--------------|-------------|
-| New File | ➕ | Create a new untitled document |
-| Open File | 📁 | Open existing file(s) with multi-select support |
-| Save | 💾 | Save current file (prompts for name if untitled) |
-| Save All | 💾+ | Save all files with unsaved changes |
-| Close | ✕ | Close current tab (prompts to save if dirty) |
-| Close All | ✕✕ | Close all open tabs |
+| Operation | Toolbar Icon | Description                                      |
+| --------- | ------------ | ------------------------------------------------ |
+| New File  | ➕           | Create a new untitled document                   |
+| Open File | 📁           | Open existing file(s) with multi-select support  |
+| Save      | 💾           | Save current file (prompts for name if untitled) |
+| Save All  | 💾+          | Save all files with unsaved changes              |
+| Close     | ✕           | Close current tab (prompts to save if dirty)     |
+| Close All | ✕✕         | Close all open tabs                              |
 
 **Additional operations:**
+
 - **Save As** - Save with a new filename (via menu)
 - **Show in Folder** - Reveal file in system file explorer
 - **Rename** - Rename file from tab context menu
@@ -131,12 +139,14 @@ Access file operations through the toolbar or keyboard shortcuts:
 Powerful search functionality accessible in both Edit and Preview modes:
 
 #### Find Tab (`Ctrl+F`)
+
 - **Find Next** - Navigate to the next occurrence
 - **Count** - Display total number of matches
 - **Highlighting** - All matches highlighted in the document
 - **Current match indicator** - Active match shown in distinct color
 
 #### Replace Tab (`Ctrl+H`)
+
 - **Replace** - Replace current match and move to next
 - **Replace All** - Replace all occurrences at once
 - **Match counter** - Shows "X of Y matches" during navigation
@@ -148,50 +158,57 @@ Powerful search functionality accessible in both Edit and Preview modes:
 In Edit mode, a comprehensive formatting toolbar provides quick access to Markdown syntax:
 
 #### Text Formatting
-| Button | Markdown | Shortcut |
-|--------|----------|----------|
-| Bold | `**text**` | `Ctrl+B` |
-| Italic | `*text*` | `Ctrl+I` |
-| Strikethrough | `~~text~~` | - |
+
+| Button        | Markdown     | Shortcut   |
+| ------------- | ------------ | ---------- |
+| Bold          | `**text**` | `Ctrl+B` |
+| Italic        | `*text*`   | `Ctrl+I` |
+| Strikethrough | `~~text~~` | -          |
 
 #### Headings
-| Button | Markdown |
-|--------|----------|
-| H1 | `# Heading` |
-| H2 | `## Heading` |
-| H3 | `### Heading` |
+
+| Button | Markdown        |
+| ------ | --------------- |
+| H1     | `# Heading`   |
+| H2     | `## Heading`  |
+| H3     | `### Heading` |
 
 #### Code
-| Button | Markdown |
-|--------|----------|
-| Inline Code | `` `code` `` |
-| Code Block | ` ```code``` ` |
+
+| Button      | Markdown         |
+| ----------- | ---------------- |
+| Inline Code | `` `code` ``     |
+| Code Block  | ` ```code``` ` |
 
 #### Lists & Structure
-| Button | Markdown |
-|--------|----------|
-| Bulleted List | `- item` |
-| Numbered List | `1. item` |
-| Task List | `- [ ] task` |
-| Quote | `> quote` |
+
+| Button        | Markdown       |
+| ------------- | -------------- |
+| Bulleted List | `- item`     |
+| Numbered List | `1. item`    |
+| Task List     | `- [ ] task` |
+| Quote         | `> quote`    |
 
 #### Links & Media
-| Button | Markdown |
-|--------|----------|
-| Link | `[text](url)` |
-| Image | `![alt](url)` |
+
+| Button | Markdown        |
+| ------ | --------------- |
+| Link   | `[text](url)` |
+| Image  | `![alt](url)` |
 
 #### Other
-| Button | Markdown |
-|--------|----------|
-| Table | Inserts table template |
-| Horizontal Rule | `---` |
+
+| Button          | Markdown               |
+| --------------- | ---------------------- |
+| Table           | Inserts table template |
+| Horizontal Rule | `---`                |
 
 #### History
-| Button | Shortcut |
-|--------|----------|
-| Undo | `Ctrl+Z` |
-| Redo | `Ctrl+Y` or `Ctrl+Shift+Z` |
+
+| Button | Shortcut                       |
+| ------ | ------------------------------ |
+| Undo   | `Ctrl+Z`                     |
+| Redo   | `Ctrl+Y` or `Ctrl+Shift+Z` |
 
 ### reStructuredText Support
 
@@ -199,43 +216,43 @@ MarkdownPlus provides full support for reStructuredText (RST) files with live pr
 
 #### Supported RST Elements
 
-| Element | Syntax | Description |
-|---------|--------|-------------|
-| **Headings** | Text with underlines (`=`, `-`, `~`, `^`) | Multiple heading levels supported |
-| **Bold** | `**text**` | Strong emphasis |
-| **Italic** | `*text*` | Emphasis |
-| **Inline Code** | ``` ``code`` ``` | Monospace inline text |
-| **Code Blocks** | `.. code-block:: language` | Syntax-highlighted code |
-| **Bullet Lists** | `* item` or `- item` | Unordered lists |
-| **Numbered Lists** | `#. item` or `1. item` | Auto-numbered or explicit |
-| **Links** | ``` `text <url>`_ ``` | Inline hyperlinks |
-| **Images** | `.. image:: url` | Image embedding |
-| **Block Quotes** | Indented text | Quoted content |
-| **Literal Blocks** | `::` followed by indented text | Preformatted text |
-| **Admonitions** | `.. note::`, `.. warning::`, etc. | Callout boxes |
-| **Horizontal Rules** | `----` | Section dividers |
+| Element                    | Syntax                                            | Description                       |
+| -------------------------- | ------------------------------------------------- | --------------------------------- |
+| **Headings**         | Text with underlines (`=`, `-`, `~`, `^`) | Multiple heading levels supported |
+| **Bold**             | `**text**`                                      | Strong emphasis                   |
+| **Italic**           | `*text*`                                        | Emphasis                          |
+| **Inline Code**      | `` ``code`` ``                                    | Monospace inline text             |
+| **Code Blocks**      | `.. code-block:: language`                      | Syntax-highlighted code           |
+| **Bullet Lists**     | `* item` or `- item`                          | Unordered lists                   |
+| **Numbered Lists**   | `#. item` or `1. item`                        | Auto-numbered or explicit         |
+| **Links**            | `` `text <url>`_ ``                               | Inline hyperlinks                 |
+| **Images**           | `.. image:: url`                                | Image embedding                   |
+| **Block Quotes**     | Indented text                                     | Quoted content                    |
+| **Literal Blocks**   | `::` followed by indented text                  | Preformatted text                 |
+| **Admonitions**      | `.. note::`, `.. warning::`, etc.             | Callout boxes                     |
+| **Horizontal Rules** | `----`                                          | Section dividers                  |
 
 #### RST Formatting Toolbar
 
 When editing RST files, a specialized toolbar appears with RST-specific formatting buttons:
 
-| Button | Action | RST Syntax |
-|--------|--------|------------|
-| Bold | Insert bold text | `**text**` |
-| Italic | Insert italic text | `*text*` |
-| H1 | Heading with `=` underline | `Title` + `====` |
-| H2 | Heading with `-` underline | `Title` + `----` |
-| H3 | Heading with `~` underline | `Title` + `~~~~` |
-| Code | Inline code | ``` ``code`` ``` |
-| Code Block | Code block directive | `.. code-block::` |
-| Quote | Block quote | Indented text |
-| Bullet List | Unordered list item | `* item` |
-| Numbered List | Auto-numbered item | `#. item` |
-| Link | Inline link | ``` `text <url>`_ ``` |
-| Image | Image directive | `.. image:: url` |
-| Note | Note admonition | `.. note::` |
-| Warning | Warning admonition | `.. warning::` |
-| Horizontal Rule | Section divider | `----` |
+| Button          | Action                       | RST Syntax           |
+| --------------- | ---------------------------- | -------------------- |
+| Bold            | Insert bold text             | `**text**`         |
+| Italic          | Insert italic text           | `*text*`           |
+| H1              | Heading with `=` underline | `Title` + `====` |
+| H2              | Heading with `-` underline | `Title` + `----` |
+| H3              | Heading with `~` underline | `Title` + `~~~~` |
+| Code            | Inline code                  | `` ``code`` ``       |
+| Code Block      | Code block directive         | `.. code-block::`  |
+| Quote           | Block quote                  | Indented text        |
+| Bullet List     | Unordered list item          | `* item`           |
+| Numbered List   | Auto-numbered item           | `#. item`          |
+| Link            | Inline link                  | `` `text <url>`_ ``  |
+| Image           | Image directive              | `.. image:: url`   |
+| Note            | Note admonition              | `.. note::`        |
+| Warning         | Warning admonition           | `.. warning::`     |
+| Horizontal Rule | Section divider              | `----`             |
 
 ### Mermaid Diagrams
 
@@ -269,16 +286,16 @@ Use the `code-block` directive with `mermaid` as the language:
 
 #### Supported Diagram Types
 
-| Type | Description |
-|------|-------------|
-| Flowchart | `graph TD` or `graph LR` - Flow diagrams |
-| Sequence | `sequenceDiagram` - Interaction sequences |
-| Class | `classDiagram` - UML class diagrams |
-| State | `stateDiagram-v2` - State machines |
-| ER Diagram | `erDiagram` - Entity relationships |
-| Gantt | `gantt` - Project timelines |
-| Pie Chart | `pie` - Pie charts |
-| Git Graph | `gitGraph` - Git branch visualization |
+| Type       | Description                                  |
+| ---------- | -------------------------------------------- |
+| Flowchart  | `graph TD` or `graph LR` - Flow diagrams |
+| Sequence   | `sequenceDiagram` - Interaction sequences  |
+| Class      | `classDiagram` - UML class diagrams        |
+| State      | `stateDiagram-v2` - State machines         |
+| ER Diagram | `erDiagram` - Entity relationships         |
+| Gantt      | `gantt` - Project timelines                |
+| Pie Chart  | `pie` - Pie charts                         |
+| Git Graph  | `gitGraph` - Git branch visualization      |
 
 ### Link Navigation
 
@@ -286,10 +303,10 @@ MarkdownPlus supports clickable link navigation in Preview mode, allowing you to
 
 #### Supported Link Types
 
-| Link Type | Example | Behavior |
-|-----------|---------|----------|
-| **Internal anchors** | `[Section](#section-name)` | Smooth scrolls to the target heading |
-| **External URLs** | `[Website](https://example.com)` | Opens in your default browser |
+| Link Type                  | Example                            | Behavior                             |
+| -------------------------- | ---------------------------------- | ------------------------------------ |
+| **Internal anchors** | `[Section](#section-name)`       | Smooth scrolls to the target heading |
+| **External URLs**    | `[Website](https://example.com)` | Opens in your default browser        |
 
 #### Internal Anchor Links
 
@@ -304,6 +321,15 @@ Clicking a link that starts with `#` navigates to the matching heading within th
 Clicking a link that starts with `http://` or `https://` opens the URL in your system's default web browser. The link opens externally so you stay in MarkdownPlus without interruption.
 
 > **Note:** Link navigation is available in Preview mode only. In Edit mode, links are displayed as raw Markdown syntax.
+
+### PDF Export
+
+MarkdownPlus can export documents to PDF format:
+
+- Click the **PDF export** icon in the toolbar while viewing a document
+- The rendered preview content is exported to a PDF file
+- A save dialog prompts for the output file location
+- The export preserves the current theme styling (light or dark)
 
 ### Theme Support
 
@@ -335,26 +361,29 @@ The Settings dialog is a draggable modal window with the following characteristi
 
 ##### Basic Settings
 
-| Setting | Control | Description |
-|---------|---------|-------------|
-| **Default Line Ending** | Dropdown | Choose between `CRLF` (Windows) or `LF` (Unix/Mac) for new files |
-| **Developer Tools** | Toggle switch | Enable or disable DevTools on application launch |
+| Setting                       | Control       | Description                                                                                                                    |
+| ----------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Default Line Ending** | Dropdown      | Choose between `CRLF` (Windows) or `LF` (Unix/Mac) for new files                                                           |
 | **Silent File Updates** | Toggle switch | When enabled, externally modified files are reloaded automatically in place. When disabled, you are prompted before refreshing |
 
 ##### AI API Keys
 
 Securely manage API keys for AI providers:
 
-| Provider | Features |
-|----------|----------|
-| **xAI (Grok)** | Set or clear API key |
-| **Anthropic Claude** | Set or clear API key |
-| **OpenAI** | Set or clear API key |
+| Provider                   | Features                    |
+| -------------------------- | --------------------------- |
+| **xAI (Grok)**       | Set, clear, or test API key |
+| **Anthropic Claude** | Set, clear, or test API key |
+| **OpenAI**           | Set, clear, or test API key |
 
 - API keys are stored securely using the operating system's credential storage
 - Password-masked input fields protect key visibility
-- A green **"Set"** chip indicates when a key is configured
+- A status chip indicates the connection state:
+  - **"Connected"** (green) — Key is stored and the provider API is reachable
+  - **"Set"** (red) — Key is stored but the provider returned an error
 - Use the **Set** button to save a key or the **Clear** button to remove it
+- Click the **refresh** icon next to Clear to re-test the connection — a toast shows the result
+- Provider statuses are automatically refreshed when you set or clear an API key
 
 ##### AI Models
 
@@ -391,6 +420,7 @@ The log file is cleared on each application start to prevent excessive growth.
 #### Console Logging
 
 All console output from the renderer process is captured and written to the log file, prefixed with:
+
 - `[RENDERER LOG]`
 - `[RENDERER WARN]`
 - `[RENDERER ERROR]`
@@ -407,6 +437,7 @@ MarkdownPlus includes integrated AI capabilities to assist with writing and edit
 Access the AI Chat Assistant by clicking the **AI** button in the toolbar. The chat assistant provides a conversational interface for getting help with your documents.
 
 #### Features
+
 - **Multi-provider support** - Choose between Claude, OpenAI, or xAI
 - **Dynamic model selection** - Available models are fetched from each provider
 - **File attachments** - Attach files for context in your conversations
@@ -417,6 +448,7 @@ Access the AI Chat Assistant by clicking the **AI** button in the toolbar. The c
 - **Collapsible design** - Minimize the dialog when not in use
 
 #### Using the Chat Assistant
+
 1. Click the **AI** button in the toolbar to open the chat dialog
 2. Select your preferred AI provider from the dropdown
 3. Choose a model from the available options
@@ -424,6 +456,7 @@ Access the AI Chat Assistant by clicking the **AI** button in the toolbar. The c
 5. Press **Enter** or click **Send** to submit
 
 #### Attaching Files
+
 - Click the **attachment** icon to add files for context
 - Drag and drop files directly into the chat dialog
 - Toggle context documents on/off without removing them
@@ -433,6 +466,7 @@ Access the AI Chat Assistant by clicking the **AI** button in the toolbar. The c
 AI Edit Mode allows you to make AI-powered edits directly to your document with a visual diff review system.
 
 #### Enabling Edit Mode
+
 1. Open the AI Chat dialog
 2. Click the **pencil icon** next to the model selector to toggle Edit Mode
 3. The button turns green when Edit Mode is active
@@ -440,6 +474,7 @@ AI Edit Mode allows you to make AI-powered edits directly to your document with 
 > **Note:** Edit Mode is only available with Claude and OpenAI providers. xAI shows an "Edit N/A" badge indicating it doesn't support structured output required for edit mode.
 
 #### Making Edits
+
 1. With Edit Mode enabled, describe the changes you want in natural language
 2. Examples:
    - "Add a table of contents at the beginning"
@@ -449,30 +484,35 @@ AI Edit Mode allows you to make AI-powered edits directly to your document with 
 3. Press **Enter** to submit the edit request
 
 #### Reviewing Changes
-When the AI returns edits, a visual diff view appears in the editor:
+
+When the AI returns edits, a **dedicated diff tab** opens in the tab bar (similar to VS Code/Cursor):
 
 - **Green highlights** - New content being added
 - **Red strikethrough** - Content being removed/replaced
-- **Navigation toolbar** - Appears in the bottom-right corner
+- **Navigation toolbar** - Floating toolbar in the bottom-right corner
+- **Source file protection** - The original file becomes read-only while the diff tab is open
+- **Save reminder** - A notification toast reminds you to save after accepting changes
 
 #### Diff Navigation Controls
-| Control | Description |
-|---------|-------------|
-| **< >** arrows | Navigate between changes |
-| **Accept** (checkmark) | Accept the current change |
-| **Reject** (X) | Reject the current change |
-| **Accept All** | Accept all pending changes |
-| **Cancel** | Discard all changes and exit diff mode |
+
+| Control                      | Description                            |
+| ---------------------------- | -------------------------------------- |
+| **< >** arrows         | Navigate between changes               |
+| **Accept** (checkmark) | Accept the current change              |
+| **Reject** (X)         | Reject the current change              |
+| **Accept All**         | Accept all pending changes             |
+| **Cancel**             | Discard all changes and exit diff mode |
 
 #### Diff Keyboard Shortcuts
-| Shortcut | Action |
-|----------|--------|
-| `J` or `↓` | Navigate to next change |
-| `K` or `↑` | Navigate to previous change |
-| `Enter` or `Y` | Accept current change |
-| `Backspace` or `N` | Reject current change |
-| `Ctrl+Shift+A` | Accept all changes |
-| `Escape` | Cancel and discard all changes |
+
+| Shortcut               | Action                         |
+| ---------------------- | ------------------------------ |
+| `J` or `↓`        | Navigate to next change        |
+| `K` or `↑`        | Navigate to previous change    |
+| `Enter` or `Y`     | Accept current change          |
+| `Backspace` or `N` | Reject current change          |
+| `Ctrl+Shift+A`       | Accept all changes             |
+| `Escape`             | Cancel and discard all changes |
 
 ### AI Inline Edit Window
 
@@ -487,33 +527,33 @@ The AI Inline Edit Window provides a streamlined interface for making AI-powered
 
 #### Window Behavior
 
-| Feature | Description |
-|---------|-------------|
-| **Draggable** | Reposition the window by dragging the header |
-| **Resizable** | Drag the bottom-right corner to resize |
-| **Collapsible** | Minimize the window when not actively editing |
-| **Focus opacity** | Window is fully opaque when focused, semi-transparent when not |
-| **Persistent position** | Window maintains its position while you work |
+| Feature                       | Description                                                    |
+| ----------------------------- | -------------------------------------------------------------- |
+| **Draggable**           | Reposition the window by dragging the header                   |
+| **Resizable**           | Drag the bottom-right corner to resize                         |
+| **Collapsible**         | Minimize the window when not actively editing                  |
+| **Focus opacity**       | Window is fully opaque when focused, semi-transparent when not |
+| **Persistent position** | Window maintains its position while you work                   |
 
 #### Inline Edit Workflow
 
 1. **Select context** - The current document is automatically attached as context
 2. **Describe changes** - Type a natural language description of the edits you want
 3. **Submit** - Press `Enter` or click the green **Edit** button to submit
-4. **Review** - A visual diff appears directly in the editor with:
+4. **Review** - A dedicated diff tab opens showing changes with:
    - **Green highlights** for new content being added
    - **Red strikethrough** for content being removed or replaced
-5. **Navigate and decide** - Use the diff navigation toolbar to accept or reject individual changes
+5. **Navigate and decide** - Use the diff navigation toolbar or keyboard shortcuts to accept or reject individual changes
 
 #### Edit Mode vs. Chat Mode
 
-| Aspect | Chat Mode | Edit Mode |
-|--------|-----------|-----------|
-| **Purpose** | Ask questions, get suggestions | Apply changes directly to document |
-| **Input prompt** | "Type a message..." | "Describe the changes you want..." |
-| **Send button** | Blue with send icon | Green with edit icon |
-| **Result** | Chat response in dialog | Visual diff in the editor |
-| **Provider support** | All providers | Claude and OpenAI only |
+| Aspect                     | Chat Mode                      | Edit Mode                          |
+| -------------------------- | ------------------------------ | ---------------------------------- |
+| **Purpose**          | Ask questions, get suggestions | Apply changes directly to document |
+| **Input prompt**     | "Type a message..."            | "Describe the changes you want..." |
+| **Send button**      | Blue with send icon            | Green with edit icon               |
+| **Result**           | Chat response in dialog        | Visual diff in the editor          |
+| **Provider support** | All providers                  | Claude and OpenAI only             |
 
 > **Note:** Edit Mode is only available with Claude and OpenAI providers. xAI displays an "Edit N/A" badge as it does not support the structured output required for inline edits.
 
@@ -523,10 +563,11 @@ Configure your AI providers by setting up API keys through the Settings dialog.
 
 #### Supported Providers
 
-| Provider | Models | Edit Mode Support |
-|----------|--------|-------------------|
-| **Claude** (Anthropic) | Claude 3.5 Sonnet, Claude 3 Opus, etc. | Yes |
-| **OpenAI** | GPT-4, GPT-4 Turbo, GPT-3.5, etc. | Yes |
+| Provider                     | Models                                                     | Edit Mode Support |
+| ---------------------------- | ---------------------------------------------------------- | ----------------- |
+| **Claude** (Anthropic) | Claude Sonnet 4.5, Claude Sonnet 4, Claude Haiku 3.5, etc. | Yes               |
+| **OpenAI**             | GPT-4o, GPT-4o Mini, GPT-4 Turbo, etc.                     | Yes               |
+
 <!-- | **xAI** | Grok models | Chat only | -->
 
 #### Setting Up API Keys
@@ -541,6 +582,7 @@ API keys are managed through the Settings dialog:
 4. Click **Set** to save each key securely
 
 API keys are encrypted and stored securely using your operating system's credential storage:
+
 - **Windows**: DPAPI (Data Protection API)
 - **macOS**: Keychain
 - **Linux**: libsecret
@@ -562,44 +604,51 @@ For development purposes, you can use a `.env` file to override secure storage:
 
 #### Provider Status Indicators
 
-The AI Chat dialog shows the status of each provider:
-- **Green indicator** - Provider is configured and available
-- **Red indicator** - Provider is not configured (missing API key)
+The AI Chat dialog and Settings show the status of each provider:
+
+- **Green indicator** - Provider is configured, connected, and available
+- **Red indicator** - Provider has an error (invalid key or API issue)
+- **Orange indicator** - Provider connection is being checked
+- **Grey indicator** - Provider has not been checked yet
 
 ---
 
 ## Keyboard Shortcuts
 
 ### File Operations
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+N` | New file |
-| `Ctrl+O` | Open file |
-| `Ctrl+S` | Save file |
-| `Ctrl+Shift+S` | Save all files |
-| `Ctrl+W` | Close current file |
+
+| Shortcut         | Action             |
+| ---------------- | ------------------ |
+| `Ctrl+N`       | New file           |
+| `Ctrl+O`       | Open file          |
+| `Ctrl+S`       | Save file          |
+| `Ctrl+Shift+S` | Save all files     |
+| `Ctrl+W`       | Close current file |
 
 ### Editing
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
+
+| Shortcut         | Action             |
+| ---------------- | ------------------ |
+| `Ctrl+Z`       | Undo               |
+| `Ctrl+Y`       | Redo               |
 | `Ctrl+Shift+Z` | Redo (alternative) |
-| `Ctrl+B` | Bold |
-| `Ctrl+I` | Italic |
-| `Tab` | Insert 4 spaces |
+| `Ctrl+B`       | Bold               |
+| `Ctrl+I`       | Italic             |
+| `Tab`          | Insert 4 spaces    |
 
 ### Navigation
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+E` | Toggle Edit/Preview mode |
-| `Ctrl+F` | Open Find dialog |
+
+| Shortcut   | Action                       |
+| ---------- | ---------------------------- |
+| `Ctrl+E` | Toggle Edit/Preview mode     |
+| `Ctrl+F` | Open Find dialog             |
 | `Ctrl+H` | Open Find and Replace dialog |
-| `Ctrl+,` | Open Settings dialog |
-| `Enter` | In Find dialog: Find Next |
-| `Escape` | Close Find dialog |
+| `Ctrl+,` | Open Settings dialog         |
+| `Enter`  | In Find dialog: Find Next    |
+| `Escape` | Close Find dialog            |
 
 ### List Editing (Smart Continuation)
+
 When editing lists, pressing `Enter` automatically continues the list:
 
 - **Numbered lists:** Increments the number (`1. → 2. → 3.`)
@@ -607,52 +656,58 @@ When editing lists, pressing `Enter` automatically continues the list:
 - **Task lists:** Creates new unchecked task (`- [ ] → - [ ]`)
 
 ### AI Shortcuts
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+Shift+A` | Open/close AI Chat dialog |
-| `Enter` | Send message or submit edit (in AI dialog) |
-| `Shift+Enter` | New line in AI dialog input |
+
+| Shortcut         | Action                                     |
+| ---------------- | ------------------------------------------ |
+| `Ctrl+Shift+A` | Open/close AI Chat dialog                  |
+| `Enter`        | Send message or submit edit (in AI dialog) |
+| `Shift+Enter`  | New line in AI dialog input                |
 
 ### AI Edit Mode Navigation
-| Shortcut | Action |
-|----------|--------|
-| `J` or `↓` | Navigate to next change |
-| `K` or `↑` | Navigate to previous change |
-| `Enter` or `Y` | Accept current change |
-| `Backspace` or `N` | Reject current change |
-| `Ctrl+Shift+A` | Accept all changes |
-| `Escape` | Cancel diff session |
+
+| Shortcut               | Action                      |
+| ---------------------- | --------------------------- |
+| `J` or `↓`        | Navigate to next change     |
+| `K` or `↑`        | Navigate to previous change |
+| `Enter` or `Y`     | Accept current change       |
+| `Backspace` or `N` | Reject current change       |
+| `Ctrl+Shift+A`       | Accept all changes          |
+| `Escape`             | Cancel diff session         |
 
 ---
 
 ## Supported File Formats
 
 ### Markup Files (Full Support)
-| Extension | Type | Features |
-|-----------|------|----------|
-| `.md` | Markdown | Full GFM rendering, Mermaid diagrams |
-| `.markdown` | Markdown | Full GFM rendering, Mermaid diagrams |
-| `.mdown` | Markdown | Full GFM rendering, Mermaid diagrams |
-| `.mkd` | Markdown | Full GFM rendering, Mermaid diagrams |
-| `.mkdn` | Markdown | Full GFM rendering, Mermaid diagrams |
-| `.mdx` | MDX | Full GFM rendering, Mermaid diagrams |
-| `.mdwn` | Markdown | Full GFM rendering, Mermaid diagrams |
-| `.rst` | reStructuredText | Full RST rendering, Mermaid diagrams |
-| `.rest` | reStructuredText | Full RST rendering, Mermaid diagrams |
+
+| Extension     | Type             | Features                             |
+| ------------- | ---------------- | ------------------------------------ |
+| `.md`       | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.markdown` | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.mdown`    | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.mkd`      | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.mkdn`     | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.mdx`      | MDX              | Full GFM rendering, Mermaid diagrams |
+| `.mdwn`     | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.rst`      | reStructuredText | Full RST rendering, Mermaid diagrams |
+| `.rest`     | reStructuredText | Full RST rendering, Mermaid diagrams |
 
 ### Text Files
-| Extension | Type |
-|-----------|------|
-| `.txt` | Plain text |
+
+| Extension | Type       |
+| --------- | ---------- |
+| `.txt`  | Plain text |
 
 ### Best-Effort Support
+
 These formats can be opened but may not render correctly in preview:
-| Extension | Type |
-|-----------|------|
-| `.adoc` | AsciiDoc |
+
+| Extension     | Type     |
+| ------------- | -------- |
+| `.adoc`     | AsciiDoc |
 | `.asciidoc` | AsciiDoc |
-| `.org` | Org-mode |
-| `.textile` | Textile |
+| `.org`      | Org-mode |
+| `.textile`  | Textile  |
 
 > A warning notification appears when opening files that may not fully support preview rendering.
 
@@ -662,19 +717,19 @@ These formats can be opened but may not render correctly in preview:
 
 ### Technology Stack
 
-| Component | Technology |
-|-----------|------------|
-| **Runtime** | Electron 36.x |
-| **UI Framework** | React 19.x |
-| **Component Library** | Material UI (MUI) 7.x |
-| **Markdown Rendering** | react-markdown with remark-gfm |
-| **RST Rendering** | Custom parser with React components |
-| **Diagrams** | Mermaid |
-| **Diff Engine** | diff (npm package) |
-| **AI Providers** | Claude API, OpenAI API, xAI API |
-| **Language** | TypeScript |
-| **Build Tool** | Webpack |
-| **Package Manager** | npm |
+| Component                    | Technology                          |
+| ---------------------------- | ----------------------------------- |
+| **Runtime**            | Electron 36.x                       |
+| **UI Framework**       | React 19.x                          |
+| **Component Library**  | Material UI (MUI) 7.x               |
+| **Markdown Rendering** | react-markdown with remark-gfm      |
+| **RST Rendering**      | Custom parser with React components |
+| **Diagrams**           | Mermaid                             |
+| **Diff Engine**        | diff (npm package)                  |
+| **AI Providers**       | Claude API, OpenAI API, xAI API     |
+| **Language**           | TypeScript                          |
+| **Build Tool**         | Webpack                             |
+| **Package Manager**    | npm                                 |
 
 ### Project Structure
 
@@ -685,26 +740,36 @@ src/
 │   ├── preload.ts          # Context bridge API
 │   ├── logger.ts           # Debug logging system
 │   ├── aiIpcHandlers.ts    # AI-related IPC handlers
+│   ├── secureStorageIpcHandlers.ts  # API key storage IPC handlers
 │   └── services/           # Backend services
 │       ├── claudeApi.ts    # Anthropic Claude API integration
 │       ├── openaiApi.ts    # OpenAI API integration
-│       └── xaiApi.ts       # xAI API integration
+│       ├── xaiApi.ts       # xAI API integration
+│       └── secureStorage.ts # Encrypted API key storage
 │
 ├── renderer/               # React application
 │   ├── App.tsx            # Root component
 │   ├── components/        # UI components
-│   │   ├── EditorPane.tsx      # Main editor with edit/preview
-│   │   ├── TabBar.tsx          # Tab management
+│   │   ├── EditorPane.tsx      # Main editor with edit/preview/diff routing
+│   │   ├── EditView.tsx        # Markdown edit mode view
+│   │   ├── PreviewView.tsx     # Rendered preview mode view
+│   │   ├── TabBar.tsx          # Tab management (inc. diff tabs)
 │   │   ├── Toolbar.tsx         # Main application toolbar
 │   │   ├── MarkdownToolbar.tsx # Markdown formatting toolbar
 │   │   ├── RstToolbar.tsx      # RST formatting toolbar
 │   │   ├── RstRenderer.tsx     # reStructuredText parser/renderer
 │   │   ├── MermaidDiagram.tsx  # Mermaid diagram renderer
-│   │   ├── AIChatDialog.tsx    # AI chat interface
+│   │   ├── AIChatDialog.tsx    # AI chat dialog (orchestrator)
+│   │   ├── ChatMessages.tsx    # Chat message bubbles and rendering
+│   │   ├── ProviderSelector.tsx # Provider/model dropdowns
+│   │   ├── FileAttachmentsList.tsx # File attachment chips
+│   │   ├── MessageInput.tsx    # Chat input with send/edit controls
+│   │   ├── DiffView.tsx        # Dedicated diff tab view
 │   │   ├── DiffNavigationToolbar.tsx  # Diff review controls
 │   │   ├── DiffHunkControl.tsx # Per-hunk accept/reject controls
 │   │   ├── FindReplaceDialog.tsx
 │   │   ├── SettingsDialog.tsx  # Settings configuration
+│   │   ├── AppIcons.tsx        # Lucide icon wrappers
 │   │   ├── EmptyState.tsx
 │   │   └── NotificationSnackbar.tsx
 │   │
@@ -717,12 +782,28 @@ src/
 │   │   ├── useWindowTitle.ts
 │   │   ├── useExternalFileWatcher.ts  # External file change handling
 │   │   ├── useAIChat.ts        # AI chat state management
-│   │   └── useAIDiffEdit.ts    # AI diff editing logic
+│   │   ├── useAIDiffEdit.ts    # AI diff editing logic
+│   │   ├── useEditLoadingMessage.ts  # Typewriter loading animations
+│   │   ├── useSettingsConfig.ts     # Settings configuration hook
+│   │   ├── useContentEditable.ts    # Content editable behavior
+│   │   ├── useEditorKeyboard.ts     # Editor keyboard shortcuts
+│   │   ├── useFindReplace.ts        # Find/replace logic
+│   │   └── useImagePaste.ts         # Image paste handling
 │   │
-│   └── types/             # TypeScript type definitions
-│       ├── index.ts
-│       ├── global.d.ts         # Global type declarations
-│       └── diffTypes.ts        # Diff-related types
+│   ├── utils/             # Utility functions
+│   │   ├── diffUtils.ts        # Diff computation and normalization
+│   │   ├── fileHelpers.ts      # File operation helpers
+│   │   ├── domUtils.ts         # DOM manipulation utilities
+│   │   └── pdfExport.tsx       # PDF export functionality
+│   │
+│   ├── types/             # TypeScript type definitions
+│   │   ├── index.ts
+│   │   ├── global.d.ts         # Global type declarations
+│   │   └── diffTypes.ts        # Diff-related types
+│   │
+│   └── styles/            # Styling
+│       ├── editor.styles.ts    # Editor component styles
+│       └── preview.styles.ts   # Preview component styles
 │
 └── styles/                # CSS styles
     └── index.css
@@ -810,6 +891,7 @@ The build process is configured in `package.json` under the `build` key. Key set
 ### Word Highlighting
 
 Double-click any word in the editor to highlight all occurrences:
+
 - Works in both Edit and Preview modes
 - Highlights are cleared on single click or when typing
 - Uses distinct styling from search highlights
@@ -819,10 +901,12 @@ Double-click any word in the editor to highlight all occurrences:
 When a file is modified outside of MarkdownPlus, the application detects the change in real-time via file system watching. The behavior depends on the **Silent File Updates** setting in Settings:
 
 #### Silent File Updates ON (default)
+
 - All externally modified files are automatically reloaded in place with no user interaction
 - The `config.json` file is always auto-reloaded silently
 
 #### Silent File Updates OFF
+
 - A prompt dialog appears asking: *"Would you like to refresh it with the latest changes?"*
   - **Yes** - Refresh the file with the latest changes from disk
   - **No** - Keep your current content; saving will overwrite the external changes on disk
@@ -831,6 +915,7 @@ When a file is modified outside of MarkdownPlus, the application detects the cha
 ### Line Ending Support
 
 MarkdownPlus preserves line endings when saving files:
+
 - Detects original line ending style (CRLF or LF)
 - Maintains consistency throughout the file
 - Defaults to platform-appropriate line endings for new files
@@ -838,12 +923,14 @@ MarkdownPlus preserves line endings when saving files:
 ### Single Instance Lock
 
 Only one instance of MarkdownPlus runs at a time:
+
 - Opening files while the app is running focuses the existing window
 - New files are opened in tabs within the running instance
 
 ### Frameless Window
 
 MarkdownPlus uses a custom frameless window:
+
 - Draggable title bar area
 - Custom minimize, maximize, and close buttons
 - Consistent appearance across platforms

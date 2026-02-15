@@ -122,12 +122,13 @@ export async function callClaudeApi(
 
         log('Claude API Response Status', { status: response.status, statusText: response.statusText });
 
-        const data: ClaudeApiResponse = await response.json();
-
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+            const errorBody = await response.text();
+            logError('Claude API Error Response', { status: response.status, body: errorBody });
+            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
         }
 
+        const data: ClaudeApiResponse = await response.json();
         return data.content[0]?.text || 'No response from Claude';
     } catch (error) {
         logError('Error calling Claude API', error as Error);
@@ -203,12 +204,13 @@ export async function callClaudeApiWithSystemPrompt(
 
         log('Claude API Response Status', { status: response.status, statusText: response.statusText });
 
-        const data: ClaudeApiResponse = await response.json();
-
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+            const errorBody = await response.text();
+            logError('Claude API Error Response', { status: response.status, body: errorBody });
+            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
         }
 
+        const data: ClaudeApiResponse = await response.json();
         return data.content[0]?.text || 'No response from Claude';
     } catch (error) {
         logError('Error calling Claude API with system prompt', error as Error);
