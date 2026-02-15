@@ -1,10 +1,10 @@
-# AI Chat Feature Documentation 2.0
+# AI Chat Feature Documentation 3.0
 
 This document describes the AI Chat feature in MarkdownPlus, covering configuration, the chat dialog, edit mode, diff visualization, and the underlying architecture.
 
 ---
 
-## Table of Contents
+## Table of Contents 2.0
 
 1. [Overview](#overview)
 2. [Configuration](#configuration)

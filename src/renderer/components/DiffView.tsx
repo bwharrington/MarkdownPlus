@@ -127,6 +127,7 @@ const DiffContainer = styled(Box)(({ theme }) => ({
     flexDirection: 'column',
     flex: 1,
     overflow: 'hidden',
+    position: 'relative',
 }));
 
 const SummaryBanner = styled(Box)(({ theme }) => ({
@@ -236,21 +237,50 @@ export function DiffView({ file }: DiffViewProps) {
         [diffSession.originalContent, hunks, currentHunkIndex]
     );
 
-    // Accept a single hunk
+    // Find the next pending hunk index starting from a given index
+    const findNextPendingIndex = useCallback((fromIndex: number, updatedHunks: DiffHunk[]) => {
+        // Search forward from fromIndex
+        for (let i = fromIndex; i < updatedHunks.length; i++) {
+            if (updatedHunks[i].status === 'pending') return i;
+        }
+        // Wrap around: search from start
+        for (let i = 0; i < fromIndex; i++) {
+            if (updatedHunks[i].status === 'pending') return i;
+        }
+        return -1;
+    }, []);
+
+    // Find the previous pending hunk index
+    const findPrevPendingIndex = useCallback((fromIndex: number, hunkList: DiffHunk[]) => {
+        for (let i = fromIndex; i >= 0; i--) {
+            if (hunkList[i].status === 'pending') return i;
+        }
+        // Wrap around: search from end
+        for (let i = hunkList.length - 1; i > fromIndex; i--) {
+            if (hunkList[i].status === 'pending') return i;
+        }
+        return -1;
+    }, []);
+
+    // Accept a single hunk and auto-advance to next pending
     const handleAccept = useCallback((hunkId: string) => {
         const updatedHunks = hunks.map(h =>
             h.id === hunkId ? { ...h, status: 'accepted' as const } : h
         );
-        dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks } });
-    }, [hunks, file.id, dispatch]);
+        const resolvedIndex = hunks.findIndex(h => h.id === hunkId);
+        const nextIndex = findNextPendingIndex(resolvedIndex, updatedHunks);
+        dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks, currentHunkIndex: nextIndex >= 0 ? nextIndex : currentHunkIndex } });
+    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex]);
 
-    // Reject a single hunk
+    // Reject a single hunk and auto-advance to next pending
     const handleReject = useCallback((hunkId: string) => {
         const updatedHunks = hunks.map(h =>
             h.id === hunkId ? { ...h, status: 'rejected' as const } : h
         );
-        dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks } });
-    }, [hunks, file.id, dispatch]);
+        const resolvedIndex = hunks.findIndex(h => h.id === hunkId);
+        const nextIndex = findNextPendingIndex(resolvedIndex, updatedHunks);
+        dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks, currentHunkIndex: nextIndex >= 0 ? nextIndex : currentHunkIndex } });
+    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex]);
 
     // Accept all pending hunks
     const handleAcceptAll = useCallback(() => {
@@ -260,14 +290,27 @@ export function DiffView({ file }: DiffViewProps) {
         dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks } });
     }, [hunks, file.id, dispatch]);
 
-    // Navigate to a specific hunk
-    const navigateToHunk = useCallback((index: number) => {
-        const clampedIndex = Math.max(0, Math.min(index, hunks.length - 1));
-        dispatch({
-            type: 'UPDATE_DIFF_SESSION',
-            payload: { diffTabId: file.id, hunks, currentHunkIndex: clampedIndex },
-        });
-    }, [hunks, file.id, dispatch]);
+    // Navigate to next pending hunk
+    const navigateToNextPending = useCallback(() => {
+        const nextIndex = findNextPendingIndex(currentHunkIndex + 1, hunks);
+        if (nextIndex >= 0) {
+            dispatch({
+                type: 'UPDATE_DIFF_SESSION',
+                payload: { diffTabId: file.id, hunks, currentHunkIndex: nextIndex },
+            });
+        }
+    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex]);
+
+    // Navigate to previous pending hunk
+    const navigateToPrevPending = useCallback(() => {
+        const prevIndex = findPrevPendingIndex(currentHunkIndex - 1, hunks);
+        if (prevIndex >= 0) {
+            dispatch({
+                type: 'UPDATE_DIFF_SESSION',
+                payload: { diffTabId: file.id, hunks, currentHunkIndex: prevIndex },
+            });
+        }
+    }, [hunks, file.id, dispatch, currentHunkIndex, findPrevPendingIndex]);
 
     // Close diff tab (cancel)
     const handleCancel = useCallback(() => {
@@ -302,12 +345,12 @@ export function DiffView({ file }: DiffViewProps) {
                 case 'j':
                 case 'ArrowDown':
                     e.preventDefault();
-                    navigateToHunk(currentHunkIndex + 1);
+                    navigateToNextPending();
                     break;
                 case 'k':
                 case 'ArrowUp':
                     e.preventDefault();
-                    navigateToHunk(currentHunkIndex - 1);
+                    navigateToPrevPending();
                     break;
                 case 'Enter':
                 case 'y':
@@ -334,7 +377,7 @@ export function DiffView({ file }: DiffViewProps) {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentHunkIndex, navigateToHunk, handleAcceptCurrent, handleRejectCurrent, handleCancel, handleAcceptAll]);
+    }, [currentHunkIndex, navigateToNextPending, navigateToPrevPending, handleAcceptCurrent, handleRejectCurrent, handleCancel, handleAcceptAll]);
 
     // Auto-scroll to current hunk when it changes
     useEffect(() => {
@@ -447,8 +490,8 @@ export function DiffView({ file }: DiffViewProps) {
                     totalCount={hunks.length}
                     pendingCount={pendingCount}
                     summary={summary}
-                    onPrevious={() => navigateToHunk(currentHunkIndex - 1)}
-                    onNext={() => navigateToHunk(currentHunkIndex + 1)}
+                    onPrevious={navigateToPrevPending}
+                    onNext={navigateToNextPending}
                     onAcceptCurrent={handleAcceptCurrent}
                     onRejectCurrent={handleRejectCurrent}
                     onAcceptAll={handleAcceptAll}

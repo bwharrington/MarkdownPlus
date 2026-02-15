@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, IconButton, Button, Typography, Divider, styled, Tooltip } from '@mui/material';
 import {
     KeyboardArrowUpIcon,
@@ -7,6 +7,7 @@ import {
     UndoIcon,
     CloseIcon,
     DoneAllIcon,
+    DragIndicatorIcon,
 } from './AppIcons';
 
 interface DiffNavigationToolbarProps {
@@ -24,8 +25,6 @@ interface DiffNavigationToolbarProps {
 
 const ToolbarContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',
-    bottom: 16,
-    right: 16,
     display: 'flex',
     alignItems: 'center',
     gap: 8,
@@ -34,6 +33,17 @@ const ToolbarContainer = styled(Box)(({ theme }) => ({
     boxShadow: theme.shadows[4],
     padding: '8px 12px',
     zIndex: 1000,
+}));
+
+const DragHandle = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    cursor: 'grab',
+    color: theme.palette.text.secondary,
+    padding: '0 2px',
+    '&:active': {
+        cursor: 'grabbing',
+    },
 }));
 
 const NavigationGroup = styled(Box)({
@@ -88,8 +98,67 @@ export function DiffNavigationToolbar({
     const hasPending = pendingCount > 0;
     const isCurrentPending = currentIndex >= 0 && currentIndex < totalCount;
 
+    // Drag state
+    const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+    const isDragging = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+    const toolbarRef = useRef<HTMLDivElement>(null);
+
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isDragging.current = true;
+        const toolbar = toolbarRef.current;
+        if (!toolbar) return;
+        const rect = toolbar.getBoundingClientRect();
+        dragStart.current = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isDragging.current || !toolbarRef.current) return;
+            const parent = toolbarRef.current.parentElement;
+            if (!parent) return;
+            const parentRect = parent.getBoundingClientRect();
+            const toolbarRect = toolbarRef.current.getBoundingClientRect();
+
+            let newX = e.clientX - parentRect.left - dragStart.current.x;
+            let newY = e.clientY - parentRect.top - dragStart.current.y;
+
+            // Clamp within parent bounds
+            newX = Math.max(0, Math.min(newX, parentRect.width - toolbarRect.width));
+            newY = Math.max(0, Math.min(newY, parentRect.height - toolbarRect.height));
+
+            setPosition({ x: newX, y: newY });
+        };
+
+        const handleMouseUp = () => {
+            isDragging.current = false;
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, []);
+
+    const positionStyle = position
+        ? { left: position.x, top: position.y }
+        : { bottom: 16, right: 16 };
+
     return (
-        <ToolbarContainer>
+        <ToolbarContainer ref={toolbarRef} sx={positionStyle}>
+            {/* Drag handle */}
+            <DragHandle onMouseDown={handleMouseDown}>
+                <DragIndicatorIcon fontSize="small" />
+            </DragHandle>
+
+            <StyledDivider orientation="vertical" flexItem />
+
             {/* Navigation */}
             <NavigationGroup>
                 <Tooltip title="Previous change (K)">
