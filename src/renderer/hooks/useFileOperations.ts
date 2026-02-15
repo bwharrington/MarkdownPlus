@@ -393,7 +393,7 @@ export function useFileOperations() {
                 // Use existing file's mode
                 const existingFile = state.openFiles.find(f => f.path === fileRef.fileName);
                 if (existingFile) {
-                    openedFileRefs.push({ fileName: fileRef.fileName, mode: existingFile.viewMode });
+                    openedFileRefs.push({ fileName: fileRef.fileName, mode: existingFile.viewMode as 'edit' | 'preview' });
                 }
                 continue;
             }
@@ -408,11 +408,11 @@ export function useFileOperations() {
                         name: result.filePath.split(/[\\/]/).pop() || 'Unknown',
                         content: result.content,
                         lineEnding: result.lineEnding,
-                        viewMode: fileRef.mode,
+                        viewMode: fileRef.mode as 'edit' | 'preview',
                         fileType: fileType,
                     },
                 });
-                openedFileRefs.push({ fileName: result.filePath, mode: fileRef.mode });
+                openedFileRefs.push({ fileName: result.filePath, mode: fileRef.mode as 'edit' | 'preview' });
             }
         }
 

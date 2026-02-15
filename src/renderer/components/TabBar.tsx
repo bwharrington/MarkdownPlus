@@ -7,6 +7,7 @@ import {
     DescriptionIcon,
     EditIcon,
     FolderOpenIcon,
+    FileDiffIcon,
 } from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
@@ -48,6 +49,7 @@ interface FileTabProps {
 function FileTab({ file, isActive }: FileTabProps) {
     const dispatch = useEditorDispatch();
     const { closeFile } = useFileOperations();
+    const isDiffTab = file.viewMode === 'diff';
 
     const handleToggleViewMode = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -56,39 +58,55 @@ function FileTab({ file, isActive }: FileTabProps) {
 
     const handleClose = (e: React.MouseEvent) => {
         e.stopPropagation();
-        closeFile(file.id);
+        if (isDiffTab) {
+            dispatch({ type: 'CLOSE_DIFF_TAB', payload: { diffTabId: file.id } });
+        } else {
+            closeFile(file.id);
+        }
     };
 
     return (
         <TabContent>
-            {file.isDirty && (
-                <Tooltip title="Unsaved changes">
-                    <SaveIcon 
+            {isDiffTab ? (
+                <Tooltip title="AI Diff">
+                    <FileDiffIcon
                         size={16}
-                        sx={{ 
+                        sx={{
                             opacity: 0.7,
-                            color: 'warning.main',
-                        }} 
+                            color: 'info.main',
+                        }}
                     />
                 </Tooltip>
-            )}
-            <Tooltip title={file.path || 'Unsaved file'}>
+            ) : file.isDirty ? (
+                <Tooltip title="Unsaved changes">
+                    <SaveIcon
+                        size={16}
+                        sx={{
+                            opacity: 0.7,
+                            color: 'warning.main',
+                        }}
+                    />
+                </Tooltip>
+            ) : null}
+            <Tooltip title={isDiffTab ? 'AI Changes' : (file.path || 'Unsaved file')}>
                 <FileName>{file.name}</FileName>
             </Tooltip>
-            <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview (Ctrl+E)' : 'Switch to edit (Ctrl+E)'}>
-                <IconButton
-                    component="span"
-                    size="small"
-                    onClick={handleToggleViewMode}
-                    sx={{ padding: 0.5 }}
-                >
-                    {file.viewMode === 'edit' ? (
-                        <CodeIcon size={16} />
-                    ) : (
-                        <DescriptionIcon size={16} />
-                    )}
-                </IconButton>
-            </Tooltip>
+            {!isDiffTab && (
+                <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview (Ctrl+E)' : 'Switch to edit (Ctrl+E)'}>
+                    <IconButton
+                        component="span"
+                        size="small"
+                        onClick={handleToggleViewMode}
+                        sx={{ padding: 0.5 }}
+                    >
+                        {file.viewMode === 'edit' ? (
+                            <CodeIcon size={16} />
+                        ) : (
+                            <DescriptionIcon size={16} />
+                        )}
+                    </IconButton>
+                </Tooltip>
+            )}
             <Tooltip title="Close">
                 <IconButton
                     component="span"

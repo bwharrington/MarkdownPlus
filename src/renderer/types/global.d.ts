@@ -1,7 +1,7 @@
 // Type definitions for the Electron API exposed via preload script
 
 export type LineEnding = 'CRLF' | 'LF';
-export type ViewMode = 'edit' | 'preview';
+export type ViewMode = 'edit' | 'preview' | 'diff';
 
 export interface IFileReference {
   fileName: string;
@@ -52,8 +52,10 @@ export interface IConfig {
   aiModels?: AIModelsConfig;
   silentFileUpdates?: boolean;
   imageSaveFolder?: string;
-  aiChatDocked?: boolean;
   aiChatDockWidth?: number;
+  aiChatEditMode?: boolean;
+  aiChatProvider?: string;
+  aiChatModel?: string;
 }
 
 export interface ConfirmCloseResult {

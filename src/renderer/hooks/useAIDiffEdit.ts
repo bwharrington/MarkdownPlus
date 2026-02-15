@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { diffLines } from 'diff';
 import { useEditorDispatch, useEditorState, useActiveFile } from '../contexts/EditorContext';
-import { DiffHunk } from '../types/diffTypes';
+import type { DiffHunk } from '../types/diffTypes';
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -32,8 +32,11 @@ const MERGE_GAP_THRESHOLD = 2;
  * post-processes to merge nearby hunks (within MERGE_GAP_THRESHOLD
  * unchanged lines) into a single grouped hunk.
  */
-function computeDiffHunks(original: string, modified: string): DiffHunk[] {
-    const changes = diffLines(original, modified);
+export function computeDiffHunks(original: string, modified: string): DiffHunk[] {
+    // Normalize line endings to LF before diffing to avoid CRLF vs LF false diffs
+    const normalizedOriginal = original.replace(/\r\n/g, '\n');
+    const normalizedModified = modified.replace(/\r\n/g, '\n');
+    const changes = diffLines(normalizedOriginal, normalizedModified);
     const rawHunks: DiffHunk[] = [];
     let lineNumber = 0;
 
@@ -46,9 +49,10 @@ function computeDiffHunks(original: string, modified: string): DiffHunk[] {
             : change.value.split('\n');
 
         if (change.added) {
-            // Check if previous change was a removal - this is a modification
+            // Check if previous diff change was a removal - this is a modification
+            const prevChange = changes[i - 1];
             const prevHunk = rawHunks.length > 0 ? rawHunks[rawHunks.length - 1] : null;
-            if (prevHunk && prevHunk.type === 'remove' && prevHunk.endLine === lineNumber - 1) {
+            if (prevHunk && prevHunk.type === 'remove' && prevChange?.removed) {
                 // Merge with previous removal to create a 'modify' hunk
                 prevHunk.newLines = lines;
                 prevHunk.type = 'modify';
@@ -85,7 +89,7 @@ function computeDiffHunks(original: string, modified: string): DiffHunk[] {
     }
 
     // --- Pass 2: Merge nearby hunks separated by few unchanged lines ---
-    const originalLines = original.split('\n');
+    const originalLines = normalizedOriginal.split('\n');
     const merged: DiffHunk[] = [rawHunks[0]];
 
     for (let i = 1; i < rawHunks.length; i++) {
@@ -135,6 +139,9 @@ export function useAIDiffEdit() {
     const state = useEditorState();
     const activeFile = useActiveFile();
 
+    // Check if a diff tab is currently open
+    const hasDiffTab = state.openFiles.some(f => f.viewMode === 'diff');
+
     const requestEdit = useCallback(async (
         prompt: string,
         provider: 'claude' | 'openai',
@@ -156,8 +163,10 @@ export function useAIDiffEdit() {
             throw new Error(response.error || 'Edit request failed');
         }
 
-        // Check if content actually changed
-        if (response.modifiedContent === activeFile.content) {
+        // Check if content actually changed (normalize for comparison)
+        const normalizedOriginal = activeFile.content.replace(/\r\n/g, '\n');
+        const normalizedModified = response.modifiedContent.replace(/\r\n/g, '\n');
+        if (normalizedModified === normalizedOriginal) {
             throw new Error('No changes detected in AI response');
         }
 
@@ -168,19 +177,11 @@ export function useAIDiffEdit() {
             throw new Error('No changes detected in AI response');
         }
 
-        // Auto-switch to edit mode if currently in preview (diff rendering only works in edit mode)
-        if (activeFile.viewMode !== 'edit') {
-            dispatch({
-                type: 'TOGGLE_VIEW_MODE',
-                payload: { id: activeFile.id },
-            });
-        }
-
-        // Start diff session
+        // Open a new diff tab
         dispatch({
-            type: 'START_DIFF_SESSION',
+            type: 'OPEN_DIFF_TAB',
             payload: {
-                fileId: activeFile.id,
+                sourceFileId: activeFile.id,
                 originalContent: activeFile.content,
                 modifiedContent: response.modifiedContent,
                 hunks,
@@ -191,45 +192,8 @@ export function useAIDiffEdit() {
         return { hunkCount: hunks.length, summary: response.summary || 'Changes applied' };
     }, [activeFile, dispatch]);
 
-    const acceptHunk = useCallback((hunkId: string) => {
-        dispatch({ type: 'ACCEPT_HUNK', payload: { hunkId } });
-    }, [dispatch]);
-
-    const rejectHunk = useCallback((hunkId: string) => {
-        dispatch({ type: 'REJECT_HUNK', payload: { hunkId } });
-    }, [dispatch]);
-
-    const acceptAll = useCallback(() => {
-        dispatch({ type: 'ACCEPT_ALL_HUNKS' });
-    }, [dispatch]);
-
-    const navigateToHunk = useCallback((index: number) => {
-        if (!state.diffSession) return;
-        const clampedIndex = Math.max(0, Math.min(index, state.diffSession.hunks.length - 1));
-        dispatch({ type: 'SET_CURRENT_HUNK', payload: { index: clampedIndex } });
-    }, [dispatch, state.diffSession]);
-
-    const cancelSession = useCallback(() => {
-        dispatch({ type: 'END_DIFF_SESSION' });
-    }, [dispatch]);
-
-    // Get pending hunks count
-    const pendingCount = state.diffSession?.hunks.filter(h => h.status === 'pending').length ?? 0;
-
-    // Get current hunk
-    const currentHunk = state.diffSession && state.diffSession.currentHunkIndex >= 0
-        ? state.diffSession.hunks[state.diffSession.currentHunkIndex]
-        : null;
-
     return {
-        diffSession: state.diffSession,
-        currentHunk,
-        pendingCount,
+        hasDiffTab,
         requestEdit,
-        acceptHunk,
-        rejectHunk,
-        acceptAll,
-        navigateToHunk,
-        cancelSession,
     };
 }

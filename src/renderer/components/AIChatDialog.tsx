@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
     Box,
     styled,
@@ -13,7 +13,6 @@ import {
     CircularProgress,
     Chip,
     Tooltip,
-    ToggleButton,
     Dialog,
     DialogTitle,
     DialogContent,
@@ -22,7 +21,6 @@ import {
 } from '@mui/material';
 import {
     CloseIcon,
-    DragIndicatorIcon,
     SendIcon,
     DeleteOutlineIcon,
     ExpandLessIcon,
@@ -32,40 +30,31 @@ import {
     WarningAmberIcon,
     VisibilityIcon,
     VisibilityOffIcon,
-    DockRightIcon,
-    UndockIcon,
 } from './AppIcons';
 import ReactMarkdown from 'react-markdown';
 import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
-import { useEditorState } from '../contexts/EditorContext';
+import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
-    position: 'absolute',
-    zIndex: 1000,
+    position: 'relative',
     backgroundColor: theme.palette.background.paper,
-    border: `1px solid ${theme.palette.divider}`,
-    borderRadius: 4,
-    boxShadow: theme.shadows[4],
+    borderLeft: `1px solid ${theme.palette.divider}`,
     overflow: 'hidden',
     display: 'flex',
     flexDirection: 'column',
-    minWidth: 350,
-    minHeight: 42,
+    width: '100%',
+    height: '100%',
 }));
 
-const DragHandle = styled(Box)(({ theme }) => ({
+const PanelHeader = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '8px 12px',
-    cursor: 'move',
     backgroundColor: theme.palette.action.hover,
     borderBottom: `1px solid ${theme.palette.divider}`,
-    '&:hover': {
-        backgroundColor: theme.palette.action.selected,
-    },
 }));
 
 const HeaderControls = styled(Box)({
@@ -153,25 +142,6 @@ const StatusDot = styled('span')<{ status: string }>(({ status }) => ({
         : '#9e9e9e',
 }));
 
-const ResizeHandle = styled(Box)(({ theme }) => ({
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 16,
-    height: 16,
-    cursor: 'nesw-resize',
-    '&::after': {
-        content: '""',
-        position: 'absolute',
-        bottom: 2,
-        left: 2,
-        width: 10,
-        height: 10,
-        backgroundColor: theme.palette.divider,
-        clipPath: 'polygon(0 100%, 0 0, 100% 100%)',
-    },
-}));
-
 const AttachmentsContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexWrap: 'wrap',
@@ -198,8 +168,6 @@ const glowAnimation = `
 interface AIChatDialogProps {
     open: boolean;
     onClose: () => void;
-    isDocked?: boolean;
-    onDockChange?: (isDocked: boolean) => void;
 }
 
 interface AttachedFile {
@@ -211,38 +179,56 @@ interface AttachedFile {
     enabled?: boolean; // True if context doc is enabled (default true)
 }
 
-export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: AIChatDialogProps) {
+export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const editorState = useEditorState();
+    const dispatch = useEditorDispatch();
 
-    const [position, setPosition] = useState({ x: 0, y: 50 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [isDialogFocused, setIsDialogFocused] = useState(true);
+    // Random greeting (stable for session lifetime)
+    const [greeting] = useState(() => {
+        const greetings = [
+            "I'll be back\u2026 right after you say something.",
+            "You have 20 seconds to comply. Chat now.",
+            "I'm sorry, Dave. I'm afraid I can talk\u2026 if you start.",
+            "Number 5 is alive! Your move, human.",
+            "Come with me if you want to chat.",
+            "I've seen chat things you people wouldn't believe.",
+            "There is no spoon. There is only chat. Begin.",
+            "Hello, I am Baymax. On a scale of 1\u201310, how chatty are you?",
+            "Sir, the conversation is ready.",
+            "Eva? \u2026No, but I'm still here. Talk to me.",
+            "You are the one\u2026 who needs to type first.",
+            "Resistance is futile. Start typing.",
+            "More than meets the eye\u2026 and ready to talk.",
+            "The cake is a lie. This chat is not.",
+            "Dead or alive, you're chatting with me.",
+            "Human detected. Beep boop. Your turn.",
+            "I'm more machine now than man\u2026 but I still love a good chat.",
+            "Let's make the robots jealous. Start now.",
+            "I am Groot\u2026 and I want to chat.",
+            "The machines are listening. Impress them.",
+        ];
+        return greetings[Math.floor(Math.random() * greetings.length)];
+    });
 
     // Collapse/Expand state
     const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Resize state
-    const [size, setSize] = useState({ width: 450, height: 550 });
-    const [isResizing, setIsResizing] = useState(false);
-    const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0, left: 0, rightEdge: 0 });
 
     // File attachments state
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
-    // Edit mode state
-    const [isEditMode, setIsEditMode] = useState(false);
+    // Edit mode state - persisted in config
+    const [isEditMode, setIsEditMode] = useState(editorState.config.aiChatEditMode ?? false);
     const [editModeError, setEditModeError] = useState<string | null>(null);
     const [isEditLoading, setIsEditLoading] = useState(false);
     const activeEditRequestIdRef = useRef<string | null>(null);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
     // AI Diff Edit hook
-    const { requestEdit, diffSession } = useAIDiffEdit();
+    const { requestEdit, hasDiffTab } = useAIDiffEdit();
 
     // Rotating loading messages with typewriter effect
     const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
@@ -264,29 +250,43 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
         sendMessage,
         cancelCurrentRequest,
         clearChat,
-    } = useAIChat();
+    } = useAIChat({
+        savedProvider: editorState.config.aiChatProvider,
+        savedModel: editorState.config.aiChatModel,
+    });
 
-    // Initialize position when dialog opens
-    useEffect(() => {
-        if (open && !isDocked && dialogRef.current) {
-            const rect = dialogRef.current.getBoundingClientRect();
-            const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
-            if (parentRect) {
-                // Position on the right side by default
-                setPosition({
-                    x: parentRect.width - rect.width - 16,
-                    y: 50
-                });
-            }
-        }
-    }, [open, isDocked]);
+    // Persist config helper
+    const persistConfig = useCallback((updates: Record<string, unknown>) => {
+        const nextConfig = { ...editorState.config, ...updates };
+        dispatch({ type: 'SET_CONFIG', payload: nextConfig });
+        void window.electronAPI.saveConfig(nextConfig).catch((err) => {
+            console.error('Failed to save AI chat config:', err);
+        });
+    }, [dispatch, editorState.config]);
+
+    // Persist edit mode to config
+    const handleModeChange = useCallback((editMode: boolean) => {
+        setIsEditMode(editMode);
+        persistConfig({ aiChatEditMode: editMode });
+    }, [persistConfig]);
+
+    // Persist provider selection
+    const handleProviderChange = useCallback((newProvider: AIProvider) => {
+        setProvider(newProvider);
+        persistConfig({ aiChatProvider: newProvider });
+    }, [setProvider, persistConfig]);
+
+    // Persist model selection
+    const handleModelChange = useCallback((newModel: string) => {
+        setSelectedModel(newModel);
+        persistConfig({ aiChatModel: newModel });
+    }, [setSelectedModel, persistConfig]);
 
     // Focus input when dialog opens
     useEffect(() => {
         if (open) {
             requestAnimationFrame(() => {
                 inputRef.current?.focus();
-                setIsDialogFocused(true);
             });
         }
     }, [open]);
@@ -342,149 +342,9 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
     // Reset edit mode when switching to xAI (not supported)
     useEffect(() => {
         if (provider === 'xai' && isEditMode) {
-            setIsEditMode(false);
+            handleModeChange(false);
         }
-    }, [provider, isEditMode]);
-
-    // Handle focus/blur events to change opacity
-    useEffect(() => {
-        if (isDocked) {
-            setIsDialogFocused(true);
-            return;
-        }
-
-        const handleFocusIn = (e: FocusEvent) => {
-            if (dialogRef.current && dialogRef.current.contains(e.target as Node)) {
-                setIsDialogFocused(true);
-            }
-        };
-
-        const handleFocusOut = (e: FocusEvent) => {
-            if (dialogRef.current && !dialogRef.current.contains(e.relatedTarget as Node)) {
-                setIsDialogFocused(false);
-            }
-        };
-
-        const handleMouseDown = (e: MouseEvent) => {
-            if (dialogRef.current && !dialogRef.current.contains(e.target as Node)) {
-                setIsDialogFocused(false);
-            } else if (dialogRef.current && dialogRef.current.contains(e.target as Node)) {
-                setIsDialogFocused(true);
-            }
-        };
-
-        if (open) {
-            document.addEventListener('focusin', handleFocusIn);
-            document.addEventListener('focusout', handleFocusOut);
-            document.addEventListener('mousedown', handleMouseDown);
-
-            return () => {
-                document.removeEventListener('focusin', handleFocusIn);
-                document.removeEventListener('focusout', handleFocusOut);
-                document.removeEventListener('mousedown', handleMouseDown);
-            };
-        }
-    }, [open, isDocked]);
-
-    // Handle dragging
-    const handleDragMouseDown = (e: React.MouseEvent) => {
-        if (isDocked) {
-            return;
-        }
-
-        if (dialogRef.current) {
-            setIsDragging(true);
-            setDragStart({
-                x: e.clientX - position.x,
-                y: e.clientY - position.y
-            });
-            e.preventDefault();
-        }
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging && dialogRef.current) {
-                const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
-                if (parentRect) {
-                    let newX = e.clientX - dragStart.x;
-                    let newY = e.clientY - dragStart.y;
-
-                    // Constrain to parent bounds
-                    const dialogRect = dialogRef.current.getBoundingClientRect();
-                    newX = Math.max(0, Math.min(newX, parentRect.width - dialogRect.width));
-                    newY = Math.max(0, Math.min(newY, parentRect.height - dialogRect.height));
-
-                    setPosition({ x: newX, y: newY });
-                }
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, dragStart]);
-
-    // Handle resizing
-    const handleResizeMouseDown = (e: React.MouseEvent) => {
-        if (isDocked) {
-            return;
-        }
-
-        e.preventDefault();
-        e.stopPropagation();
-        setIsResizing(true);
-        setResizeStart({
-            x: e.clientX,
-            y: e.clientY,
-            width: size.width,
-            height: size.height,
-            left: position.x,
-            rightEdge: position.x + size.width,
-        });
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isResizing) {
-                const deltaX = e.clientX - resizeStart.x;
-                const deltaY = e.clientY - resizeStart.y;
-                const newHeight = Math.max(200, resizeStart.height + deltaY);
-                const minWidth = 350;
-
-                // Bottom-left handle: move left edge while keeping right edge anchored.
-                const proposedLeft = resizeStart.left + deltaX;
-                const maxLeft = resizeStart.rightEdge - minWidth;
-                const newLeft = Math.max(0, Math.min(proposedLeft, maxLeft));
-                const newWidth = resizeStart.rightEdge - newLeft;
-
-                setPosition(prev => ({ ...prev, x: newLeft }));
-                setSize({ width: newWidth, height: newHeight });
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-        };
-
-        if (isResizing) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isResizing, resizeStart]);
+    }, [provider, isEditMode, handleModeChange]);
 
     if (!open) return null;
 
@@ -611,43 +471,14 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
     };
 
     return (
-        <DialogContainer
-            ref={dialogRef}
-            sx={{
-                position: isDocked ? 'relative' : 'absolute',
-                left: isDocked ? 'auto' : position.x,
-                top: isDocked ? 'auto' : position.y,
-                width: isDocked ? '100%' : (isCollapsed ? 'auto' : size.width),
-                height: isDocked ? '100%' : (isCollapsed ? 'auto' : size.height),
-                minWidth: isDocked ? 0 : 350,
-                borderRadius: isDocked ? 0 : 4,
-                boxShadow: isDocked ? 'none' : 4,
-                borderTop: isDocked ? 'none' : undefined,
-                borderBottom: isDocked ? 'none' : undefined,
-                borderRight: isDocked ? 'none' : undefined,
-                cursor: isDragging ? 'grabbing' : (isResizing ? 'nwse-resize' : 'default'),
-                opacity: isDocked ? 1 : (isDialogFocused ? 1 : 0.6),
-                transition: isDocked ? 'none' : 'opacity 0.2s ease-in-out',
-            }}
-        >
-            <DragHandle
-                onMouseDown={isDocked ? undefined : handleDragMouseDown}
-                sx={{ cursor: isDocked ? 'default' : 'move' }}
-            >
+        <DialogContainer ref={dialogRef}>
+            <PanelHeader>
                 <HeaderControls>
-                    {!isDocked && <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />}
                     <Typography variant="subtitle2" fontWeight={600}>
                         AI Chat
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>
-                    <IconButton
-                        size="small"
-                        onClick={() => onDockChange?.(!isDocked)}
-                        title={isDocked ? 'Float' : 'Dock right'}
-                    >
-                        {isDocked ? <UndockIcon fontSize="small" /> : <DockRightIcon fontSize="small" />}
-                    </IconButton>
                     <IconButton size="small" onClick={() => setIsCollapsed(!isCollapsed)} title={isCollapsed ? "Expand" : "Collapse"}>
                         {isCollapsed ? <ExpandMoreIcon fontSize="small" /> : <ExpandLessIcon fontSize="small" />}
                     </IconButton>
@@ -660,7 +491,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                         <CloseIcon fontSize="small" />
                     </IconButton>
                 </HeaderControls>
-            </DragHandle>
+            </PanelHeader>
 
             {!isCollapsed && (!hasProviders ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -679,7 +510,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                             <Select
                                 value={provider}
                                 label="Provider"
-                                onChange={(e) => setProvider(e.target.value as AIProvider)}
+                                onChange={(e) => handleProviderChange(e.target.value as AIProvider)}
                                 disabled={hasActiveRequest}
                             >
                                 {providerOptions.map((opt) => (
@@ -696,7 +527,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                             <Select
                                 value={selectedModel}
                                 label="Model"
-                                onChange={(e) => setSelectedModel(e.target.value)}
+                                onChange={(e) => handleModelChange(e.target.value)}
                                 disabled={isLoadingModels || hasActiveRequest}
                             >
                                 {models.map((model) => (
@@ -707,60 +538,36 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                             </Select>
                         </FormControl>
 
-                        {/* Edit mode toggle or xAI warning */}
-                        {provider === 'xai' ? (
-                            <Tooltip title="xAI does not support structured output required for edit mode. Switch to Claude or OpenAI to use edit mode.">
-                                <Chip
-                                    icon={<WarningAmberIcon fontSize="small" />}
-                                    label="Edit N/A"
-                                    size="small"
-                                    color="warning"
-                                    variant="outlined"
-                                    sx={{
-                                        fontSize: '0.7rem',
-                                        height: 32,
-                                        alignSelf: 'center',
-                                    }}
-                                />
-                            </Tooltip>
-                        ) : (
-                            <Tooltip title={isEditMode ? "Edit mode: AI will modify your document" : "Chat mode: Have a conversation with AI"}>
-                                <ToggleButton
+                        {/* Chat/Edit mode selector */}
+                        <FormControl size="small" sx={{ minWidth: 100 }}>
+                            <InputLabel>Mode</InputLabel>
+                            <Select
+                                value={isEditMode ? 'edit' : 'chat'}
+                                label="Mode"
+                                onChange={(e) => handleModeChange(e.target.value === 'edit')}
+                                disabled={hasDiffTab || hasActiveRequest}
+                            >
+                                <MenuItem value="chat">Chat</MenuItem>
+                                <MenuItem
                                     value="edit"
-                                    selected={isEditMode}
-                                    onChange={() => setIsEditMode(!isEditMode)}
-                                    size="small"
-                                    disabled={diffSession?.isActive}
-                                    sx={{
-                                        height: 32,
-                                        minWidth: 32,
-                                        alignSelf: 'center',
-                                        borderColor: isEditMode ? 'primary.main' : 'divider',
-                                        backgroundColor: isEditMode ? 'primary.main' : 'transparent',
-                                        color: isEditMode ? 'primary.contrastText' : 'text.secondary',
-                                        '&:hover': {
-                                            backgroundColor: isEditMode ? 'primary.dark' : 'action.hover',
-                                        },
-                                        '&.Mui-selected': {
-                                            backgroundColor: 'primary.main',
-                                            color: 'primary.contrastText',
-                                            '&:hover': {
-                                                backgroundColor: 'primary.dark',
-                                            },
-                                        },
-                                    }}
+                                    disabled={provider === 'xai'}
                                 >
-                                    <EditIcon fontSize="small" />
-                                </ToggleButton>
+                                    Edit
+                                </MenuItem>
+                            </Select>
+                        </FormControl>
+                        {provider === 'xai' && isEditMode && (
+                            <Tooltip title="xAI does not support edit mode. Switch to Claude or OpenAI.">
+                                <WarningAmberIcon fontSize="small" color="warning" sx={{ alignSelf: 'center' }} />
                             </Tooltip>
                         )}
                     </SelectorsContainer>
 
                     <MessagesContainer>
-                        {messages.length === 0 ? (
+                        {messages.length === 0 && !isLoading && !isEditLoading && !hasDiffTab ? (
                             <Box sx={{ textAlign: 'center', py: 4 }}>
-                                <Typography color="text.secondary" variant="body2">
-                                    Start a conversation with AI
+                                <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
+                                    {greeting}
                                 </Typography>
                             </Box>
                         ) : (
@@ -827,7 +634,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                                 {editModeError}
                             </Typography>
                         )}
-                        {diffSession?.isActive && (
+                        {hasDiffTab && (
                             <Box sx={{
                                 textAlign: 'center',
                                 py: 1,
@@ -837,7 +644,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                                 borderRadius: 1,
                             }}>
                                 <Typography variant="body2">
-                                    Edit in progress - {diffSession.hunks.filter(h => h.status === 'pending').length} changes pending
+                                    AI diff tab open - review changes there
                                 </Typography>
                             </Box>
                         )}
@@ -907,7 +714,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                             onChange={(e) => setInputValue(e.target.value)}
                             onKeyDown={handleKeyDown}
                             fullWidth
-                            disabled={isLoading || isEditLoading || diffSession?.isActive}
+                            disabled={isLoading || isEditLoading || hasDiffTab}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
                                     fontSize: '0.875rem',
@@ -928,7 +735,7 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                             variant="contained"
                             size="small"
                             onClick={handleSendMessage}
-                            disabled={!inputValue.trim() || isLoading || isEditLoading || diffSession?.isActive}
+                            disabled={!inputValue.trim() || isLoading || isEditLoading || hasDiffTab}
                             color={isEditMode ? 'success' : 'primary'}
                             sx={{ minWidth: 'auto', px: 2 }}
                         >
@@ -944,7 +751,6 @@ export function AIChatDialog({ open, onClose, isDocked = false, onDockChange }: 
                 </>
             ))}
 
-            {!isCollapsed && !isDocked && <ResizeHandle onMouseDown={handleResizeMouseDown} />}
             <Dialog
                 open={clearConfirmOpen}
                 onClose={handleClearChatCancel}

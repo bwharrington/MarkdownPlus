@@ -16,25 +16,29 @@ const getFileTypeFromPath = (filePath: string): FileType => {
 // Apply hunks based on their status to produce the final content
 // This reconstructs the content by selectively applying accepted changes
 function applyAcceptedHunks(originalContent: string, modifiedContent: string, hunks: DiffHunk[]): string {
+    // Normalize to LF for consistent processing
+    const normalizedOriginal = originalContent.replace(/\r\n/g, '\n');
+    const normalizedModified = modifiedContent.replace(/\r\n/g, '\n');
+
     // If no hunks or all pending, return original
     if (hunks.length === 0 || hunks.every(h => h.status === 'pending')) {
-        return originalContent;
+        return normalizedOriginal;
     }
 
     // If all accepted, return modified
     if (hunks.every(h => h.status === 'accepted')) {
-        return modifiedContent;
+        return normalizedModified;
     }
 
     // If all rejected, return original
     if (hunks.every(h => h.status === 'rejected')) {
-        return originalContent;
+        return normalizedOriginal;
     }
 
     // Mixed case: need to selectively apply changes
     // We'll rebuild the content line by line
-    const originalLines = originalContent.split('\n');
-    const modifiedLines = modifiedContent.split('\n');
+    const originalLines = normalizedOriginal.split('\n');
+    const modifiedLines = normalizedModified.split('\n');
     const result: string[] = [];
 
     // Sort hunks by startLine to ensure correct reconstruction order
@@ -84,7 +88,6 @@ const defaultConfig: IConfig = {
     recentFiles: [],
     openFiles: [],
     defaultLineEnding: 'CRLF',
-    aiChatDocked: false,
     aiChatDockWidth: 420,
 };
 
@@ -95,7 +98,6 @@ const initialState: EditorState = {
     untitledCounter: 1,
     config: defaultConfig,
     notifications: [],
-    diffSession: null,
 };
 
 // Action types
@@ -118,12 +120,9 @@ type EditorAction =
     | { type: 'UNDO'; payload: { id: string } }
     | { type: 'REDO'; payload: { id: string } }
     | { type: 'PUSH_UNDO'; payload: { id: string; content: string } }
-    | { type: 'START_DIFF_SESSION'; payload: { fileId: string; originalContent: string; modifiedContent: string; hunks: DiffHunk[]; summary?: string } }
-    | { type: 'ACCEPT_HUNK'; payload: { hunkId: string } }
-    | { type: 'REJECT_HUNK'; payload: { hunkId: string } }
-    | { type: 'ACCEPT_ALL_HUNKS' }
-    | { type: 'SET_CURRENT_HUNK'; payload: { index: number } }
-    | { type: 'END_DIFF_SESSION' };
+    | { type: 'OPEN_DIFF_TAB'; payload: { sourceFileId: string; originalContent: string; modifiedContent: string; hunks: DiffHunk[]; summary?: string } }
+    | { type: 'UPDATE_DIFF_SESSION'; payload: { diffTabId: string; hunks: DiffHunk[]; currentHunkIndex?: number } }
+    | { type: 'CLOSE_DIFF_TAB'; payload: { diffTabId: string } };
 
 // Reducer
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -199,10 +198,14 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         }
 
         case 'CLOSE_FILE': {
-            const newOpenFiles = state.openFiles.filter(f => f.id !== action.payload.id);
+            // Also close any diff tabs that reference this file as their source
+            const newOpenFiles = state.openFiles.filter(
+                f => f.id !== action.payload.id && f.sourceFileId !== action.payload.id
+            );
             let newActiveId = state.activeFileId;
-            
-            if (state.activeFileId === action.payload.id) {
+
+            if (state.activeFileId === action.payload.id ||
+                !newOpenFiles.find(f => f.id === state.activeFileId)) {
                 const closedIndex = state.openFiles.findIndex(f => f.id === action.payload.id);
                 if (newOpenFiles.length > 0) {
                     // Select the previous tab, or the first one if closing the first
@@ -246,10 +249,10 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             return {
                 ...state,
                 openFiles: state.openFiles.map(f =>
-                    f.id === action.payload.id
-                        ? { 
-                            ...f, 
-                            viewMode: f.viewMode === 'edit' ? 'preview' : 'edit',
+                    f.id === action.payload.id && f.viewMode !== 'diff'
+                        ? {
+                            ...f,
+                            viewMode: f.viewMode === 'edit' ? 'preview' as const : 'edit' as const,
                             scrollPosition: action.payload.scrollPosition ?? f.scrollPosition
                         }
                         : f
@@ -414,11 +417,33 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
             };
         }
 
-        case 'START_DIFF_SESSION': {
-            return {
-                ...state,
+        case 'OPEN_DIFF_TAB': {
+            const sourceFile = state.openFiles.find(f => f.id === action.payload.sourceFileId);
+            if (!sourceFile) return state;
+
+            // Close any existing diff tab for this source file
+            const filteredFiles = state.openFiles.filter(
+                f => !(f.viewMode === 'diff' && f.sourceFileId === action.payload.sourceFileId)
+            );
+
+            const diffTabId = `diff-${generateId()}`;
+            const diffFile: IFile = {
+                id: diffTabId,
+                path: null,
+                name: `${sourceFile.name} (AI Diff)`,
+                content: '',
+                originalContent: '',
+                isDirty: false,
+                viewMode: 'diff',
+                lineEnding: sourceFile.lineEnding,
+                undoStack: [],
+                redoStack: [],
+                undoStackPointer: 0,
+                scrollPosition: 0,
+                fileType: sourceFile.fileType,
+                sourceFileId: action.payload.sourceFileId,
                 diffSession: {
-                    fileId: action.payload.fileId,
+                    fileId: action.payload.sourceFileId,
                     originalContent: action.payload.originalContent,
                     modifiedContent: action.payload.modifiedContent,
                     hunks: action.payload.hunks,
@@ -427,94 +452,81 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                     summary: action.payload.summary,
                 },
             };
+
+            return {
+                ...state,
+                openFiles: [...filteredFiles, diffFile],
+                activeFileId: diffTabId,
+            };
         }
 
-        case 'ACCEPT_HUNK': {
-            if (!state.diffSession) return state;
-            const updatedHunks = state.diffSession.hunks.map(h =>
-                h.id === action.payload.hunkId ? { ...h, status: 'accepted' as const } : h
-            );
-            // Apply the modified content to the file (showing what's accepted)
+        case 'UPDATE_DIFF_SESSION': {
+            const diffTab = state.openFiles.find(f => f.id === action.payload.diffTabId);
+            if (!diffTab?.diffSession) return state;
+
+            const allResolved = action.payload.hunks.every(h => h.status !== 'pending');
+
+            // Build new content from accepted hunks and apply to source file
             const newContent = applyAcceptedHunks(
-                state.diffSession.originalContent,
-                state.diffSession.modifiedContent,
-                updatedHunks
+                diffTab.diffSession.originalContent,
+                diffTab.diffSession.modifiedContent,
+                action.payload.hunks
             );
-            // Check if all hunks are resolved
-            const allResolved = updatedHunks.every(h => h.status !== 'pending');
-            return {
-                ...state,
-                diffSession: allResolved ? null : { ...state.diffSession, hunks: updatedHunks },
-                openFiles: state.openFiles.map(f =>
-                    f.id === state.diffSession!.fileId
-                        ? { ...f, content: newContent, isDirty: newContent !== f.originalContent }
-                        : f
-                ),
-            };
+
+            // Restore CRLF if the source file uses it
+            const sourceFile = state.openFiles.find(f => f.id === diffTab.sourceFileId);
+            const finalContent = sourceFile?.lineEnding === 'CRLF'
+                ? newContent.replace(/\n/g, '\r\n')
+                : newContent;
+
+            let newOpenFiles = state.openFiles.map(f => {
+                if (f.id === action.payload.diffTabId) {
+                    return {
+                        ...f,
+                        diffSession: {
+                            ...f.diffSession!,
+                            hunks: action.payload.hunks,
+                            currentHunkIndex: action.payload.currentHunkIndex ?? f.diffSession!.currentHunkIndex,
+                        },
+                    };
+                }
+                if (f.id === diffTab.sourceFileId) {
+                    // Push current content to undo stack before applying changes
+                    const MAX_HISTORY = 100;
+                    const newStack = [...f.undoStack.slice(Math.max(0, f.undoStack.length - MAX_HISTORY + 1)), f.content];
+                    return {
+                        ...f,
+                        content: finalContent,
+                        isDirty: finalContent !== f.originalContent,
+                        undoStack: newStack,
+                        undoStackPointer: newStack.length - 1,
+                        redoStack: [],
+                    };
+                }
+                return f;
+            });
+
+            let newActiveId = state.activeFileId;
+            if (allResolved) {
+                // Auto-close the diff tab and switch to source file
+                newOpenFiles = newOpenFiles.filter(f => f.id !== action.payload.diffTabId);
+                newActiveId = diffTab.sourceFileId!;
+            }
+
+            return { ...state, openFiles: newOpenFiles, activeFileId: newActiveId };
         }
 
-        case 'REJECT_HUNK': {
-            if (!state.diffSession) return state;
-            const updatedHunks = state.diffSession.hunks.map(h =>
-                h.id === action.payload.hunkId ? { ...h, status: 'rejected' as const } : h
-            );
-            // Apply the content keeping rejected hunks as original
-            const newContent = applyAcceptedHunks(
-                state.diffSession.originalContent,
-                state.diffSession.modifiedContent,
-                updatedHunks
-            );
-            // Check if all hunks are resolved
-            const allResolved = updatedHunks.every(h => h.status !== 'pending');
-            return {
-                ...state,
-                diffSession: allResolved ? null : { ...state.diffSession, hunks: updatedHunks },
-                openFiles: state.openFiles.map(f =>
-                    f.id === state.diffSession!.fileId
-                        ? { ...f, content: newContent, isDirty: newContent !== f.originalContent }
-                        : f
-                ),
-            };
-        }
+        case 'CLOSE_DIFF_TAB': {
+            const diffTab = state.openFiles.find(f => f.id === action.payload.diffTabId);
+            const newOpenFiles = state.openFiles.filter(f => f.id !== action.payload.diffTabId);
+            let newActiveId = state.activeFileId;
 
-        case 'ACCEPT_ALL_HUNKS': {
-            if (!state.diffSession) return state;
-            // Use the full modified content when accepting all
-            const newContent = state.diffSession.modifiedContent;
-            return {
-                ...state,
-                diffSession: null, // End session
-                openFiles: state.openFiles.map(f =>
-                    f.id === state.diffSession!.fileId
-                        ? { ...f, content: newContent, isDirty: newContent !== f.originalContent }
-                        : f
-                ),
-            };
-        }
+            if (state.activeFileId === action.payload.diffTabId) {
+                // Switch to the source file if possible
+                newActiveId = diffTab?.sourceFileId || (newOpenFiles.length > 0 ? newOpenFiles[newOpenFiles.length - 1].id : null);
+            }
 
-        case 'SET_CURRENT_HUNK': {
-            if (!state.diffSession) return state;
-            return {
-                ...state,
-                diffSession: {
-                    ...state.diffSession,
-                    currentHunkIndex: action.payload.index,
-                },
-            };
-        }
-
-        case 'END_DIFF_SESSION': {
-            if (!state.diffSession) return state;
-            // Restore original content when canceling
-            return {
-                ...state,
-                diffSession: null,
-                openFiles: state.openFiles.map(f =>
-                    f.id === state.diffSession!.fileId
-                        ? { ...f, content: state.diffSession!.originalContent }
-                        : f
-                ),
-            };
+            return { ...state, openFiles: newOpenFiles, activeFileId: newActiveId };
         }
 
         default:
@@ -593,8 +605,8 @@ export function EditorProvider({ children }: EditorProviderProps) {
     useEffect(() => {
         const handleBeforeUnload = async () => {
             const openFileRefs = state.openFiles
-                .filter(f => f.path !== null && !f.path.endsWith('config.json'))
-                .map(f => ({ fileName: f.path!, mode: f.viewMode }));
+                .filter(f => f.path !== null && !f.path.endsWith('config.json') && f.viewMode !== 'diff')
+                .map(f => ({ fileName: f.path!, mode: f.viewMode as 'edit' | 'preview' }));
 
             if (openFileRefs.length > 0) {
                 await window.electronAPI.syncRecentFiles(openFileRefs);
@@ -667,8 +679,11 @@ export function useActiveFile() {
     return state.openFiles.find(f => f.id === state.activeFileId) || null;
 }
 
-// Hook to get diff session
-export function useDiffSession() {
+// Hook to check if a diff tab exists for a given source file
+export function useHasDiffTab(sourceFileId?: string) {
     const state = useEditorState();
-    return state.diffSession;
+    if (sourceFileId) {
+        return state.openFiles.some(f => f.viewMode === 'diff' && f.sourceFileId === sourceFileId);
+    }
+    return state.openFiles.some(f => f.viewMode === 'diff');
 }

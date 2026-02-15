@@ -32,9 +32,17 @@ export interface AIProviderStatuses {
     openai: AIProviderStatus;
 }
 
-export function useAIChat() {
+export interface UseAIChatOptions {
+    savedProvider?: string;
+    savedModel?: string;
+}
+
+export function useAIChat(options?: UseAIChatOptions) {
     // Provider state
-    const [provider, setProvider] = useState<AIProvider>('claude');
+    const [provider, setProvider] = useState<AIProvider>(
+        (options?.savedProvider as AIProvider) || 'claude'
+    );
+    const savedModelRef = useRef(options?.savedModel);
     const [providerStatuses, setProviderStatuses] = useState<AIProviderStatuses>({
         xai: { enabled: false, status: 'unchecked' },
         claude: { enabled: false, status: 'unchecked' },
@@ -66,8 +74,11 @@ export function useAIChat() {
                 const statuses = await window.electronAPI.getAIProviderStatuses();
                 setProviderStatuses(statuses);
 
-                // Set initial provider to first enabled one (skip xAI for now)
-                if (statuses.claude.enabled) {
+                // Use saved provider if it's enabled, otherwise fall back to first enabled
+                const saved = options?.savedProvider as AIProvider | undefined;
+                if (saved && statuses[saved]?.enabled) {
+                    setProvider(saved);
+                } else if (statuses.claude.enabled) {
                     setProvider('claude');
                 } else if (statuses.openai.enabled) {
                     setProvider('openai');
@@ -100,7 +111,12 @@ export function useAIChat() {
                 if (response.success && response.models) {
                     setModels(response.models);
                     if (response.models.length > 0) {
-                        setSelectedModel(response.models[0].id);
+                        // Prefer saved model if it exists in the list
+                        const saved = savedModelRef.current;
+                        const match = saved && response.models.find(m => m.id === saved);
+                        setSelectedModel(match ? match.id : response.models[0].id);
+                        // Only use saved model for the initial load
+                        savedModelRef.current = undefined;
                     }
                 } else {
                     setError(response.error || 'Failed to load models');

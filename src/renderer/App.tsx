@@ -75,13 +75,12 @@ function AppContent() {
 
     // AI Chat dialog state
     const [aiChatOpen, setAiChatOpen] = useState(false);
-    const [isAiDocked, setIsAiDocked] = useState(false);
     const [aiDockWidth, setAiDockWidth] = useState(DEFAULT_AI_DOCK_WIDTH);
     const [isResizingAiDock, setIsResizingAiDock] = useState(false);
     const mainContentRef = useRef<HTMLDivElement | null>(null);
     const aiDockResizeStartRef = useRef({ x: 0, width: DEFAULT_AI_DOCK_WIDTH });
 
-    const persistAiChatLayout = useCallback((updates: { aiChatDocked?: boolean; aiChatDockWidth?: number }) => {
+    const persistAiChatLayout = useCallback((updates: { aiChatDockWidth?: number }) => {
         const nextConfig = {
             ...state.config,
             ...updates,
@@ -99,12 +98,6 @@ function AppContent() {
     const handleCloseAIChat = useCallback(() => {
         setAiChatOpen(false);
     }, []);
-
-    const handleAiDockChange = useCallback((nextDocked: boolean) => {
-        setIsAiDocked(nextDocked);
-        setAiChatOpen(true);
-        persistAiChatLayout({ aiChatDocked: nextDocked });
-    }, [persistAiChatLayout]);
 
     // Settings dialog state
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -275,21 +268,20 @@ function AppContent() {
     // Handle external file changes (silent reload or prompt based on config)
     useExternalFileWatcher({ openFiles: state.openFiles, dispatch });
 
-    // Sync AI dock state from config once loaded.
+    // Sync AI dock width from config once loaded.
     useEffect(() => {
-        setIsAiDocked(state.config.aiChatDocked ?? false);
         setAiDockWidth(Math.max(MIN_AI_DOCK_WIDTH, state.config.aiChatDockWidth ?? DEFAULT_AI_DOCK_WIDTH));
-    }, [state.config.aiChatDocked, state.config.aiChatDockWidth]);
+    }, [state.config.aiChatDockWidth]);
 
     const handleAiDockResizeStart = useCallback((e: React.MouseEvent) => {
-        if (!aiChatOpen || !isAiDocked) {
+        if (!aiChatOpen) {
             return;
         }
 
         aiDockResizeStartRef.current = { x: e.clientX, width: aiDockWidth };
         setIsResizingAiDock(true);
         e.preventDefault();
-    }, [aiChatOpen, isAiDocked, aiDockWidth]);
+    }, [aiChatOpen, aiDockWidth]);
 
     useEffect(() => {
         if (!isResizingAiDock) {
@@ -439,7 +431,7 @@ function AppContent() {
                                             name: getFilename(result.filePath),
                                             content: result.content,
                                             lineEnding: result.lineEnding,
-                                            viewMode: fileRef.mode,
+                                            viewMode: fileRef.mode as 'edit' | 'preview',
                                             fileType: getFileType(result.filePath),
                                         },
                                     });
@@ -473,7 +465,7 @@ function AppContent() {
                 <EditorArea>
                     {hasOpenFiles ? <EditorPane /> : <EmptyState />}
                 </EditorArea>
-                {aiChatOpen && isAiDocked && (
+                {aiChatOpen && (
                     <>
                         <SplitDivider
                             onMouseDown={handleAiDockResizeStart}
@@ -483,19 +475,9 @@ function AppContent() {
                             <AIChatDialog
                                 open={aiChatOpen}
                                 onClose={handleCloseAIChat}
-                                isDocked={true}
-                                onDockChange={handleAiDockChange}
                             />
                         </DockedAIPanel>
                     </>
-                )}
-                {aiChatOpen && !isAiDocked && (
-                    <AIChatDialog
-                        open={aiChatOpen}
-                        onClose={handleCloseAIChat}
-                        isDocked={false}
-                        onDockChange={handleAiDockChange}
-                    />
                 )}
                 <SettingsDialog open={settingsOpen} onClose={handleCloseSettings} />
             </MainContent>

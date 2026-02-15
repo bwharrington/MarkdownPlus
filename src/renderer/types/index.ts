@@ -13,13 +13,15 @@ export interface IFile {
   content: string;
   originalContent: string; // Track original content for dirty detection
   isDirty: boolean;
-  viewMode: 'edit' | 'preview';
+  viewMode: 'edit' | 'preview' | 'diff';
   lineEnding: 'CRLF' | 'LF';
   undoStack: string[];
   redoStack: string[];
   undoStackPointer: number;
   scrollPosition: number; // Track scroll position when switching modes
   fileType: FileType; // Type of file for rendering
+  sourceFileId?: string; // For diff tabs: ID of the original file being diffed
+  diffSession?: import('./diffTypes').DiffSession; // For diff tabs: the diff session data
 }
 
 // Editor state interface
@@ -29,7 +31,6 @@ export interface EditorState {
   untitledCounter: number;
   config: IConfig;
   notifications: Notification[];
-  diffSession: import('./diffTypes').DiffSession | null;
 }
 
 // Notification interface

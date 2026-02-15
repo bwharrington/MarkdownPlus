@@ -4,31 +4,21 @@ import { useContentEditable } from '../hooks/useContentEditable';
 import { useEditorKeyboard } from '../hooks/useEditorKeyboard';
 import { useImagePaste } from '../hooks/useImagePaste';
 import { useFindReplace } from '../hooks/useFindReplace';
-import { renderDiffContent } from '../utils/diffRenderer';
 import { getPlainText, getCursorPosition, setPlainText, clearWordHighlights } from '../utils/domUtils';
 import { EditorContainer, EditorWrapper, ContentEditableDiv } from '../styles/editor.styles';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { RstToolbar } from './RstToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
-import { DiffNavigationToolbar } from './DiffNavigationToolbar';
-import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { buildPdfHtmlDocument } from '../utils/pdfExport';
+import { useHasDiffTab } from '../contexts/EditorContext';
 
 export function EditView() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
     const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
 
-    const {
-        diffSession,
-        currentHunk,
-        pendingCount,
-        acceptHunk,
-        rejectHunk,
-        acceptAll,
-        navigateToHunk,
-        cancelSession,
-    } = useAIDiffEdit();
+    // Check if this file has an open diff tab (make it read-only if so)
+    const hasDiffForThisFile = useHasDiffTab(activeFile?.id);
 
     const {
         contentEditableRef,
@@ -125,71 +115,12 @@ export function EditView() {
         }
     }, [activeFile?.id, activeFile?.viewMode, activeFile, contentEditableRef]);
 
-    // Keyboard shortcuts for diff navigation
-    React.useEffect(() => {
-        if (!diffSession?.isActive) return;
-
-        const handleDiffKeyDown = (e: KeyboardEvent) => {
-            const target = e.target as HTMLElement;
-            if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-                return;
-            }
-
-            if (e.key === 'j' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                if (diffSession.currentHunkIndex < diffSession.hunks.length - 1) {
-                    navigateToHunk(diffSession.currentHunkIndex + 1);
-                }
-                return;
-            }
-
-            if (e.key === 'k' || e.key === 'ArrowUp') {
-                e.preventDefault();
-                if (diffSession.currentHunkIndex > 0) {
-                    navigateToHunk(diffSession.currentHunkIndex - 1);
-                }
-                return;
-            }
-
-            if ((e.key === 'Enter' || e.key === 'y') && !e.ctrlKey && !e.shiftKey) {
-                e.preventDefault();
-                if (currentHunk && currentHunk.status === 'pending') {
-                    acceptHunk(currentHunk.id);
-                }
-                return;
-            }
-
-            if ((e.key === 'Backspace' || e.key === 'n') && !e.ctrlKey && !e.shiftKey) {
-                e.preventDefault();
-                if (currentHunk && currentHunk.status === 'pending') {
-                    rejectHunk(currentHunk.id);
-                }
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                cancelSession();
-                return;
-            }
-
-            if (e.key === 'a' && e.ctrlKey && e.shiftKey) {
-                e.preventDefault();
-                acceptAll();
-                return;
-            }
-        };
-
-        window.addEventListener('keydown', handleDiffKeyDown);
-        return () => window.removeEventListener('keydown', handleDiffKeyDown);
-    }, [diffSession, currentHunk, navigateToHunk, acceptHunk, rejectHunk, cancelSession, acceptAll]);
-
     if (!activeFile) return null;
 
     const isRstFileEdit = activeFile.fileType === 'rst';
     const EditToolbar = isRstFileEdit ? RstToolbar : MarkdownToolbar;
     const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing markdown...';
-    const isDiffActive = diffSession?.isActive && diffSession.fileId === activeFile.id;
+
     const handleExportPdf = useCallback(async () => {
         if (!activeFile) return;
 
@@ -224,46 +155,32 @@ export function EditView() {
         <EditorContainer>
             <EditToolbar
                 mode="edit"
-                onInsert={isDiffActive ? undefined : handleMarkdownInsert}
-                onUndo={isDiffActive ? undefined : handleUndo}
-                onRedo={isDiffActive ? undefined : handleRedo}
+                onInsert={hasDiffForThisFile ? undefined : handleMarkdownInsert}
+                onUndo={hasDiffForThisFile ? undefined : handleUndo}
+                onRedo={hasDiffForThisFile ? undefined : handleRedo}
                 onFind={handleOpenFind}
                 onExportPdf={handleExportPdf}
             />
             <EditorWrapper>
-                {isDiffActive ? (
-                    <ContentEditableDiv
-                        ref={contentEditableRef}
-                        contentEditable={false}
-                        suppressContentEditableWarning
-                        spellCheck={false}
-                        dangerouslySetInnerHTML={{ __html: renderDiffContent(diffSession) }}
-                        onScroll={(e) => {
-                            const target = e.target as HTMLDivElement;
-                            handleScrollThrottled(target.scrollTop);
-                        }}
-                        style={{ cursor: 'default' }}
-                    />
-                ) : (
-                    <ContentEditableDiv
-                        ref={contentEditableRef}
-                        contentEditable
-                        suppressContentEditableWarning
-                        data-placeholder={placeholder}
-                        onInput={handleContentChange}
-                        onKeyDown={handleKeyDown}
-                        onClick={handleClick}
-                        onDoubleClick={handleDoubleClick}
-                        onPaste={handlePaste}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                        spellCheck={false}
-                        onScroll={(e) => {
-                            const target = e.target as HTMLDivElement;
-                            handleScrollThrottled(target.scrollTop);
-                        }}
-                    />
-                )}
+                <ContentEditableDiv
+                    ref={contentEditableRef}
+                    contentEditable={!hasDiffForThisFile}
+                    suppressContentEditableWarning
+                    data-placeholder={placeholder}
+                    onInput={hasDiffForThisFile ? undefined : handleContentChange}
+                    onKeyDown={hasDiffForThisFile ? undefined : handleKeyDown}
+                    onClick={hasDiffForThisFile ? undefined : handleClick}
+                    onDoubleClick={hasDiffForThisFile ? undefined : handleDoubleClick}
+                    onPaste={hasDiffForThisFile ? undefined : handlePaste}
+                    onDragOver={hasDiffForThisFile ? undefined : handleDragOver}
+                    onDrop={hasDiffForThisFile ? undefined : handleDrop}
+                    spellCheck={false}
+                    onScroll={(e) => {
+                        const target = e.target as HTMLDivElement;
+                        handleScrollThrottled(target.scrollTop);
+                    }}
+                    style={hasDiffForThisFile ? { cursor: 'default', opacity: 0.7 } : undefined}
+                />
                 <FindReplaceDialog
                     open={findDialogOpen}
                     mode="edit"
@@ -282,28 +199,6 @@ export function EditView() {
                     onReplaceAll={handleReplaceAll}
                     onClose={handleCloseFind}
                 />
-                {diffSession?.isActive && diffSession.fileId === activeFile.id && (
-                    <DiffNavigationToolbar
-                        currentIndex={diffSession.currentHunkIndex}
-                        totalCount={diffSession.hunks.length}
-                        pendingCount={pendingCount}
-                        summary={diffSession.summary}
-                        onPrevious={() => navigateToHunk(diffSession.currentHunkIndex - 1)}
-                        onNext={() => navigateToHunk(diffSession.currentHunkIndex + 1)}
-                        onAcceptCurrent={() => {
-                            if (currentHunk) {
-                                acceptHunk(currentHunk.id);
-                            }
-                        }}
-                        onRejectCurrent={() => {
-                            if (currentHunk) {
-                                rejectHunk(currentHunk.id);
-                            }
-                        }}
-                        onAcceptAll={acceptAll}
-                        onCancel={cancelSession}
-                    />
-                )}
             </EditorWrapper>
         </EditorContainer>
     );

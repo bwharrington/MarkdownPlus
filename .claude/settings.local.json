@@ -8,7 +8,10 @@
       "Bash(git rm:*)",
       "Bash(npm install)",
       "Bash(dir:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:fabianhertwig.com)",
+      "WebFetch(domain:githubnext.com)"
     ]
   }
 }
