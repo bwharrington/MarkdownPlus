@@ -115,7 +115,6 @@ export function DiffView({ file }: DiffViewProps) {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const diffSession = file.diffSession!;
     const { hunks, currentHunkIndex, summary } = diffSession;
-
     const pendingHunks = useMemo(() => hunks.filter(h => h.status === 'pending'), [hunks]);
     const pendingCount = pendingHunks.length;
 
@@ -149,6 +148,24 @@ export function DiffView({ file }: DiffViewProps) {
         return -1;
     }, []);
 
+    // Show save reminder after all hunks are resolved
+    const handlePostResolve = useCallback((updatedHunks: DiffHunk[]) => {
+        const allResolved = updatedHunks.every(h => h.status !== 'pending');
+        const hasAccepted = updatedHunks.some(h => h.status === 'accepted');
+
+        if (allResolved && hasAccepted) {
+            // Use global notification since the diff tab auto-closes when all resolved,
+            // which would unmount a local toast before it renders
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: 'AI changes applied. Remember to save your file (Ctrl+S).',
+                    severity: 'info',
+                },
+            });
+        }
+    }, [dispatch]);
+
     // Accept a single hunk and auto-advance to next pending
     const handleAccept = useCallback((hunkId: string) => {
         const updatedHunks = hunks.map(h =>
@@ -157,7 +174,8 @@ export function DiffView({ file }: DiffViewProps) {
         const resolvedIndex = hunks.findIndex(h => h.id === hunkId);
         const nextIndex = findNextPendingIndex(resolvedIndex, updatedHunks);
         dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks, currentHunkIndex: nextIndex >= 0 ? nextIndex : currentHunkIndex } });
-    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex]);
+        handlePostResolve(updatedHunks);
+    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex, handlePostResolve]);
 
     // Reject a single hunk and auto-advance to next pending
     const handleReject = useCallback((hunkId: string) => {
@@ -167,7 +185,8 @@ export function DiffView({ file }: DiffViewProps) {
         const resolvedIndex = hunks.findIndex(h => h.id === hunkId);
         const nextIndex = findNextPendingIndex(resolvedIndex, updatedHunks);
         dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks, currentHunkIndex: nextIndex >= 0 ? nextIndex : currentHunkIndex } });
-    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex]);
+        handlePostResolve(updatedHunks);
+    }, [hunks, file.id, dispatch, currentHunkIndex, findNextPendingIndex, handlePostResolve]);
 
     // Accept all pending hunks
     const handleAcceptAll = useCallback(() => {
@@ -175,7 +194,8 @@ export function DiffView({ file }: DiffViewProps) {
             h.status === 'pending' ? { ...h, status: 'accepted' as const } : h
         );
         dispatch({ type: 'UPDATE_DIFF_SESSION', payload: { diffTabId: file.id, hunks: updatedHunks } });
-    }, [hunks, file.id, dispatch]);
+        handlePostResolve(updatedHunks);
+    }, [hunks, file.id, dispatch, handlePostResolve]);
 
     // Navigate to next pending hunk
     const navigateToNextPending = useCallback(() => {

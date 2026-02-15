@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, CircularProgress, styled } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
@@ -91,6 +91,19 @@ const LoadingCursor = styled(Box)(({ theme }) => ({
     animation: 'blink 1s step-end infinite',
 }));
 
+const DIFF_REVIEW_MESSAGES = [
+    "Scan the upgrades.",
+    "Inspect the implants.",
+    "Review the reboots.",
+    "Audit the augmentations.",
+    "Verify the vectors.",
+    "Process the protocols.",
+    "Debug the droids.",
+    "Assess the assimilations.",
+    "Examine the exosuit edits.",
+    "Approve the automaton alterations.",
+];
+
 const DiffTabBanner = styled(Box)(({ theme }) => ({
     textAlign: 'center',
     paddingTop: 8,
@@ -125,6 +138,9 @@ export function ChatMessages({
     editModeError,
     messagesEndRef,
 }: ChatMessagesProps) {
+    const [diffReviewMessage] = useState(() =>
+        DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
+    );
     const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !hasDiffTab;
 
     return (
@@ -181,7 +197,7 @@ export function ChatMessages({
             {hasDiffTab && (
                 <DiffTabBanner>
                     <Typography variant="body2">
-                        AI diff tab open - review changes there
+                        {diffReviewMessage}
                     </Typography>
                 </DiffTabBanner>
             )}
