@@ -153,17 +153,32 @@ const AttachmentsContainer = styled(Box)(({ theme }) => ({
     overflowY: 'auto',
 }));
 
-// Keyframes for glow animation
-const glowAnimation = `
-    @keyframes chipGlow {
-        0%, 100% {
-            box-shadow: 0 0 2px rgba(33, 150, 243, 0.3);
-        }
-        50% {
-            box-shadow: 0 0 12px rgba(33, 150, 243, 0.8), 0 0 20px rgba(33, 150, 243, 0.4);
-        }
-    }
-`;
+const GlowingChip = styled(Chip)({
+    '@keyframes chipGlow': {
+        '0%, 100%': {
+            boxShadow: '0 0 2px rgba(33, 150, 243, 0.3)',
+        },
+        '50%': {
+            boxShadow: '0 0 12px rgba(33, 150, 243, 0.8), 0 0 20px rgba(33, 150, 243, 0.4)',
+        },
+    },
+    animation: 'chipGlow 1.5s ease-in-out infinite',
+    transition: 'box-shadow 0.3s ease-in-out',
+});
+
+const LoadingCursor = styled(Box)(({ theme }) => ({
+    display: 'inline-block',
+    width: '2px',
+    height: '1em',
+    backgroundColor: theme.palette.text.secondary,
+    marginLeft: '1px',
+    verticalAlign: 'text-bottom',
+    '@keyframes blink': {
+        '0%, 100%': { opacity: 1 },
+        '50%': { opacity: 0 },
+    },
+    animation: 'blink 1s step-end infinite',
+}));
 
 interface AIChatDialogProps {
     open: boolean;
@@ -360,11 +375,15 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
         if (result && !result.canceled && result.filePaths.length > 0) {
             const newFiles: AttachedFile[] = result.filePaths.map((filePath: string) => {
-                const fileName = filePath.split(/[/\\]/).pop() || filePath;
+                const parts = filePath.split(/[/\\]/);
+                const fileName = parts[parts.length - 1] || filePath;
+                const fileExtension = fileName.includes('.')
+                    ? fileName.split('.').pop()?.toLowerCase() || 'unknown'
+                    : 'unknown';
                 return {
                     name: fileName,
                     path: filePath,
-                    type: fileName.split('.').pop()?.toLowerCase() || 'unknown',
+                    type: fileExtension,
                     size: 0, // Will be populated when reading the file
                 };
             });
@@ -605,22 +624,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                                     }}
                                 >
                                     {loadingDisplayText}
-                                    <Box
-                                        component="span"
-                                        sx={{
-                                            display: 'inline-block',
-                                            width: '2px',
-                                            height: '1em',
-                                            backgroundColor: 'text.secondary',
-                                            ml: '1px',
-                                            verticalAlign: 'text-bottom',
-                                            animation: 'blink 1s step-end infinite',
-                                            '@keyframes blink': {
-                                                '0%, 100%': { opacity: 1 },
-                                                '50%': { opacity: 0 },
-                                            },
-                                        }}
-                                    />
+                                    <LoadingCursor />
                                 </Typography>
                             </Box>
                         )}
@@ -653,42 +657,38 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
                     {/* File Attachments Display */}
                     {attachedFiles.length > 0 && (
-                        <>
-                            <style>{glowAnimation}</style>
-                            <AttachmentsContainer>
-                                {attachedFiles.map((file) => {
-                                    const isDisabled = file.isContextDoc && file.enabled === false;
-                                    const isGlowing = glowingFile === file.path;
+                        <AttachmentsContainer>
+                            {attachedFiles.map((file) => {
+                                const isDisabled = file.isContextDoc && file.enabled === false;
+                                const isGlowing = glowingFile === file.path;
+                                const ChipComponent = isGlowing ? GlowingChip : Chip;
 
-                                    return (
-                                        <Chip
-                                            key={file.path}
-                                            label={file.name}
-                                            size="small"
-                                            title={file.path}
-                                            icon={file.isContextDoc ? (
-                                                isDisabled ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />
-                                            ) : undefined}
-                                            onDelete={file.isContextDoc ? undefined : () => handleRemoveFile(file.path)}
-                                            onClick={file.isContextDoc ? () => handleToggleContextDoc(file.path) : undefined}
-                                            sx={{
-                                                fontSize: '0.75rem',
-                                                cursor: file.isContextDoc ? 'pointer' : 'default',
-                                                opacity: isDisabled ? 0.5 : 1,
-                                                animation: isGlowing ? 'chipGlow 1.5s ease-in-out infinite' : 'none',
-                                                transition: 'box-shadow 0.3s ease-in-out',
-                                                '& .MuiChip-label': {
-                                                    color: isDisabled ? 'text.disabled' : 'text.primary',
-                                                },
-                                                '& .MuiChip-icon': {
-                                                    color: isDisabled ? 'text.disabled' : 'primary.main',
-                                                },
-                                            }}
-                                        />
-                                    );
-                                })}
-                            </AttachmentsContainer>
-                        </>
+                                return (
+                                    <ChipComponent
+                                        key={file.path}
+                                        label={file.name}
+                                        size="small"
+                                        title={file.path}
+                                        icon={file.isContextDoc ? (
+                                            isDisabled ? <VisibilityOffIcon fontSize="small" /> : <VisibilityIcon fontSize="small" />
+                                        ) : undefined}
+                                        onDelete={file.isContextDoc ? undefined : () => handleRemoveFile(file.path)}
+                                        onClick={file.isContextDoc ? () => handleToggleContextDoc(file.path) : undefined}
+                                        sx={{
+                                            fontSize: '0.75rem',
+                                            cursor: file.isContextDoc ? 'pointer' : 'default',
+                                            opacity: isDisabled ? 0.5 : 1,
+                                            '& .MuiChip-label': {
+                                                color: isDisabled ? 'text.disabled' : 'text.primary',
+                                            },
+                                            '& .MuiChip-icon': {
+                                                color: isDisabled ? 'text.disabled' : 'primary.main',
+                                            },
+                                        }}
+                                    />
+                                );
+                            })}
+                        </AttachmentsContainer>
                     )}
 
                     <InputContainer>
@@ -715,10 +715,10 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                             onKeyDown={handleKeyDown}
                             fullWidth
                             disabled={isLoading || isEditLoading || hasDiffTab}
-                            sx={{
-                                '& .MuiOutlinedInput-root': {
-                                    fontSize: '0.875rem',
-                                },
+                            slotProps={{
+                                input: {
+                                    sx: { fontSize: '0.875rem' }
+                                }
                             }}
                         />
                         <Button
