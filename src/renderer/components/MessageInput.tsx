@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, TextField, Button, IconButton, CircularProgress, styled } from '@mui/material';
-import { AttachFileIcon, SendIcon, EditIcon } from './AppIcons';
+import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
+import type { AIChatMode } from '../types/global';
 
 const InputContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -13,9 +14,10 @@ const InputContainer = styled(Box)(({ theme }) => ({
 interface MessageInputProps {
     inputRef: React.RefObject<HTMLTextAreaElement | null>;
     inputValue: string;
-    isEditMode: boolean;
+    mode: AIChatMode;
     isLoading: boolean;
     isEditLoading: boolean;
+    isResearchLoading: boolean;
     hasDiffTab: boolean;
     hasActiveRequest: boolean;
     onInputChange: (value: string) => void;
@@ -28,9 +30,10 @@ interface MessageInputProps {
 export function MessageInput({
     inputRef,
     inputValue,
-    isEditMode,
+    mode,
     isLoading,
     isEditLoading,
+    isResearchLoading,
     hasDiffTab,
     hasActiveRequest,
     onInputChange,
@@ -64,15 +67,18 @@ export function MessageInput({
                 multiline
                 maxRows={4}
                 size="small"
-                placeholder={isEditMode
-                    ? "Describe the changes you want... (e.g., 'Add a table of contents')"
-                    : "Type a message... (Enter to send, Shift+Enter for newline)"
+                placeholder={
+                    mode === 'edit'
+                        ? "Describe the changes you want... (e.g., 'Add a table of contents')"
+                        : mode === 'research'
+                            ? "Enter a research topic... (e.g., 'Vector search in production')"
+                            : "Type a message... (Enter to send, Shift+Enter for newline)"
                 }
                 value={inputValue}
                 onChange={(e) => onInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 fullWidth
-                disabled={isLoading || isEditLoading || hasDiffTab}
+                disabled={isLoading || isEditLoading || isResearchLoading || hasDiffTab}
                 slotProps={{
                     input: {
                         sx: { fontSize: '0.875rem' }
@@ -93,14 +99,16 @@ export function MessageInput({
                 variant="contained"
                 size="small"
                 onClick={onSend}
-                disabled={!inputValue.trim() || isLoading || isEditLoading || hasDiffTab}
-                color={isEditMode ? 'success' : 'primary'}
+                disabled={!inputValue.trim() || isLoading || isEditLoading || isResearchLoading || hasDiffTab}
+                color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : 'primary'}
                 sx={{ minWidth: 'auto', px: 2 }}
             >
-                {isEditLoading ? (
+                {(isEditLoading || isResearchLoading) ? (
                     <CircularProgress size={18} color="inherit" />
-                ) : isEditMode ? (
+                ) : mode === 'edit' ? (
                     <EditIcon fontSize="small" />
+                ) : mode === 'research' ? (
+                    <ResearchIcon fontSize="small" />
                 ) : (
                     <SendIcon fontSize="small" />
                 )}

@@ -24,8 +24,10 @@ import type { AttachedFile } from './FileAttachmentsList';
 import { MessageInput } from './MessageInput';
 import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
+import { useAIResearch } from '../hooks/useAIResearch';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
+import type { AIChatMode } from '../types/global';
 
 const AI_GREETINGS = [
     "I'll be back\u2026 right after you say something.",
@@ -105,8 +107,8 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
     const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
-    // Edit mode state - persisted in config
-    const [isEditMode, setIsEditMode] = useState(editorState.config.aiChatEditMode ?? false);
+    // Mode state - persisted in config (chat | edit | research)
+    const [mode, setMode] = useState<AIChatMode>(editorState.config.aiChatMode ?? 'chat');
     const [editModeError, setEditModeError] = useState<string | null>(null);
     const [isEditLoading, setIsEditLoading] = useState(false);
     const activeEditRequestIdRef = useRef<string | null>(null);
@@ -114,6 +116,19 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     // AI Diff Edit hook
     const { requestEdit, hasDiffTab } = useAIDiffEdit();
+
+    // AI Research hook
+    const {
+        submitResearch,
+        cancelResearch,
+        dismissResearchProgress,
+        isResearchLoading,
+        researchError,
+        researchPhase,
+        deepeningProgress,
+        inferenceResult,
+        researchComplete,
+    } = useAIResearch();
 
     // Rotating loading messages with typewriter effect
     const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
@@ -148,23 +163,26 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         });
     }, [dispatch, editorState.config]);
 
-    // Persist edit mode to config
-    const handleModeChange = useCallback((editMode: boolean) => {
-        setIsEditMode(editMode);
-        persistConfig({ aiChatEditMode: editMode });
-    }, [persistConfig]);
+    // Persist mode to config
+    const handleModeChange = useCallback((newMode: AIChatMode) => {
+        setMode(newMode);
+        persistConfig({ aiChatMode: newMode });
+        dismissResearchProgress();
+    }, [persistConfig, dismissResearchProgress]);
 
     // Persist provider selection
     const handleProviderChange = useCallback((newProvider: AIProvider) => {
         setProvider(newProvider);
         persistConfig({ aiChatProvider: newProvider });
-    }, [setProvider, persistConfig]);
+        dismissResearchProgress();
+    }, [setProvider, persistConfig, dismissResearchProgress]);
 
     // Persist model selection
     const handleModelChange = useCallback((newModel: string) => {
         setSelectedModel(newModel);
         persistConfig({ aiChatModel: newModel });
-    }, [setSelectedModel, persistConfig]);
+        dismissResearchProgress();
+    }, [setSelectedModel, persistConfig, dismissResearchProgress]);
 
     // Focus input when dialog opens
     useEffect(() => {
@@ -219,12 +237,12 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Reset edit mode when switching to xAI (not supported)
+    // Reset mode to chat when switching to xAI (edit/research not supported)
     useEffect(() => {
-        if (provider === 'xai' && isEditMode) {
-            handleModeChange(false);
+        if (provider === 'xai' && mode !== 'chat') {
+            handleModeChange('chat');
         }
-    }, [provider, isEditMode, handleModeChange]);
+    }, [provider, mode, handleModeChange]);
 
     // File attachment handlers
     const handleAttachFile = useCallback(async () => {
@@ -264,9 +282,10 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     const handleSendMessage = useCallback(async () => {
         setEditModeError(null);
+        dismissResearchProgress();
 
         // Edit mode request
-        if (isEditMode && (provider === 'claude' || provider === 'openai')) {
+        if (mode === 'edit' && (provider === 'claude' || provider === 'openai')) {
             setIsEditLoading(true);
             const requestId = `ai-edit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             activeEditRequestIdRef.current = requestId;
@@ -286,13 +305,26 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             return;
         }
 
+        // Research mode request
+        if (mode === 'research' && (provider === 'claude' || provider === 'openai')) {
+            const requestId = `ai-research-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            try {
+                const topic = inputValue;
+                setInputValue('');
+                await submitResearch(topic, provider, selectedModel, requestId);
+            } catch {
+                // Error is handled by the useAIResearch hook (researchError state)
+            }
+            return;
+        }
+
         // Regular chat mode
         const enabledFiles = attachedFiles.filter(file =>
             !file.isContextDoc || file.enabled !== false
         );
         await sendMessage(enabledFiles.length > 0 ? enabledFiles : undefined);
         setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
-    }, [isEditMode, provider, selectedModel, inputValue, requestEdit, setInputValue, sendMessage, attachedFiles]);
+    }, [mode, provider, selectedModel, inputValue, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress]);
 
     const handleCancelRequest = useCallback(async () => {
         if (isLoading) {
@@ -313,8 +345,13 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
             } catch (err) {
                 console.error('Failed to cancel AI edit request:', err);
             }
+            return;
         }
-    }, [isLoading, isEditLoading, cancelCurrentRequest]);
+
+        if (isResearchLoading) {
+            await cancelResearch();
+        }
+    }, [isLoading, isEditLoading, isResearchLoading, cancelCurrentRequest, cancelResearch]);
 
     const handleClearChatConfirm = useCallback(() => {
         clearChat();
@@ -325,7 +362,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
 
     const providerOptions = getProviderOptions();
     const hasProviders = providerOptions.length > 0;
-    const hasActiveRequest = isLoading || isEditLoading;
+    const hasActiveRequest = isLoading || isEditLoading || isResearchLoading;
 
     return (
         <DialogContainer ref={dialogRef}>
@@ -367,7 +404,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         models={models}
                         selectedModel={selectedModel}
                         isLoadingModels={isLoadingModels}
-                        isEditMode={isEditMode}
+                        mode={mode}
                         hasDiffTab={hasDiffTab}
                         hasActiveRequest={hasActiveRequest}
                         onProviderChange={handleProviderChange}
@@ -380,10 +417,16 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         greeting={greeting}
                         isLoading={isLoading}
                         isEditLoading={isEditLoading}
+                        isResearchLoading={isResearchLoading}
+                        researchPhase={researchPhase}
+                        deepeningProgress={deepeningProgress}
+                        inferenceResult={inferenceResult}
+                        researchComplete={researchComplete}
                         hasDiffTab={hasDiffTab}
                         loadingDisplayText={loadingDisplayText}
                         error={error}
                         editModeError={editModeError}
+                        researchError={researchError}
                         messagesEndRef={messagesEndRef}
                     />
 
@@ -397,9 +440,10 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                     <MessageInput
                         inputRef={inputRef}
                         inputValue={inputValue}
-                        isEditMode={isEditMode}
+                        mode={mode}
                         isLoading={isLoading}
                         isEditLoading={isEditLoading}
+                        isResearchLoading={isResearchLoading}
                         hasDiffTab={hasDiffTab}
                         hasActiveRequest={hasActiveRequest}
                         onInputChange={setInputValue}

@@ -103,7 +103,7 @@ const initialState: EditorState = {
 // Action types
 type EditorAction =
     | { type: 'NEW_FILE' }
-    | { type: 'OPEN_FILE'; payload: { id: string; path: string; name: string; content: string; lineEnding: 'CRLF' | 'LF'; viewMode?: 'edit' | 'preview'; fileType?: FileType } }
+    | { type: 'OPEN_FILE'; payload: { id: string; path: string | null; name: string; content: string; lineEnding: 'CRLF' | 'LF'; viewMode?: 'edit' | 'preview'; fileType?: FileType } }
     | { type: 'CLOSE_FILE'; payload: { id: string } }
     | { type: 'UPDATE_CONTENT'; payload: { id: string; content: string } }
     | { type: 'SET_DIRTY'; payload: { id: string; isDirty: boolean } }
@@ -159,8 +159,10 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                 currentOpenFilesCount: state.openFiles.length 
             });
             
-            // Check for duplicate
-            const existingFile = state.openFiles.find(f => f.path === action.payload.path);
+            // Check for duplicate (skip for virtual files with path: null)
+            const existingFile = action.payload.path != null
+                ? state.openFiles.find(f => f.path === action.payload.path)
+                : undefined;
             if (existingFile) {
                 console.log('[EditorContext] File already open, switching to it', { existingFileId: existingFile.id });
                 return {
@@ -555,6 +557,15 @@ export function EditorProvider({ children }: EditorProviderProps) {
         const loadInitialConfig = async () => {
             try {
                 const config = await window.electronAPI.loadConfig();
+
+                // Migrate legacy aiChatEditMode boolean to aiChatMode enum
+                if ('aiChatEditMode' in config && (config as Record<string, unknown>).aiChatEditMode !== undefined) {
+                    const legacy = config as Record<string, unknown>;
+                    config.aiChatMode = legacy.aiChatEditMode ? 'edit' : 'chat';
+                    delete legacy.aiChatEditMode;
+                    void window.electronAPI.saveConfig(config).catch(() => {});
+                }
+
                 dispatch({ type: 'SET_CONFIG', payload: config });
 
                 // Don't automatically restore open files - let App.tsx handle this

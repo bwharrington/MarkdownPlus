@@ -55,6 +55,7 @@ import {
     PanelRightClose,
     FileDiff,
     RefreshCw,
+    Telescope,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -180,3 +181,4 @@ export const DockRightIcon = createIcon(PanelRightOpen);
 export const UndockIcon = createIcon(PanelRightClose);
 export const FileDiffIcon = createIcon(FileDiff);
 export const RefreshIcon = createIcon(RefreshCw);
+export const ResearchIcon = createIcon(Telescope);

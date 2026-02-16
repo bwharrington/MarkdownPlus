@@ -2,6 +2,7 @@
 
 export type LineEnding = 'CRLF' | 'LF';
 export type ViewMode = 'edit' | 'preview' | 'diff';
+export type AIChatMode = 'chat' | 'edit' | 'research';
 
 export interface IFileReference {
   fileName: string;
@@ -53,7 +54,7 @@ export interface IConfig {
   silentFileUpdates?: boolean;
   imageSaveFolder?: string;
   aiChatDockWidth?: number;
-  aiChatEditMode?: boolean;
+  aiChatMode?: AIChatMode;
   aiChatProvider?: string;
   aiChatModel?: string;
 }

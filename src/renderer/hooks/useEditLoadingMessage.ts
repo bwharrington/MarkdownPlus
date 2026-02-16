@@ -29,9 +29,9 @@ const CHAR_DELAY_MS = 30;
  * Shuffle-bag: returns a random message without repeating until all are used.
  * Mutates the `remaining` array in place and refills from the full pool when empty.
  */
-function pickNextMessage(remaining: string[]): string {
+function pickNextMessage(remaining: string[], pool: readonly string[]): string {
     if (remaining.length === 0) {
-        remaining.push(...LOADING_MESSAGES);
+        remaining.push(...pool);
     }
     const idx = Math.floor(Math.random() * remaining.length);
     return remaining.splice(idx, 1)[0];
@@ -52,20 +52,25 @@ interface UseEditLoadingMessageResult {
  * no message repeats until all have been used.
  *
  * @param isActive - Whether the loading indicator should be running
+ * @param messagePool - Optional custom message pool (defaults to built-in edit messages)
  */
-export function useEditLoadingMessage(isActive: boolean): UseEditLoadingMessageResult {
+export function useEditLoadingMessage(
+    isActive: boolean,
+    messagePool?: readonly string[],
+): UseEditLoadingMessageResult {
+    const pool = messagePool ?? LOADING_MESSAGES;
     const remainingRef = useRef<string[]>([]);
     const [fullMessage, setFullMessage] = useState('');
     const [charIndex, setCharIndex] = useState(0);
 
     /** Pick the next message from the shuffle bag */
     const rotate = useCallback(() => {
-        const next = pickNextMessage(remainingRef.current);
+        const next = pickNextMessage(remainingRef.current, pool);
         setFullMessage(next);
         setCharIndex(0);
-    }, []);
+    }, [pool]);
 
-    // When activated, pick the first message immediately
+    // When activated or pool changes, pick the first message immediately
     useEffect(() => {
         if (!isActive) {
             // Reset state when deactivated
@@ -74,6 +79,8 @@ export function useEditLoadingMessage(isActive: boolean): UseEditLoadingMessageR
             remainingRef.current = [];
             return;
         }
+        // Reset bag when pool changes (e.g., phase transition)
+        remainingRef.current = [];
         rotate();
     }, [isActive, rotate]);
 

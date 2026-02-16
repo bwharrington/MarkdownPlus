@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Typography, CircularProgress, styled } from '@mui/material';
-import ReactMarkdown from 'react-markdown';
+import ReactMarkdown, { Components } from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
+import type { ResearchPhase, DeepeningProgress, InferenceResult } from '../hooks/useAIResearch';
+import { CodeBlock } from './CodeBlock';
+import { ResearchProgress } from './ResearchProgress';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
     flex: 1,
@@ -36,13 +39,11 @@ const MessageBubble = styled(Box)<{ role: 'user' | 'assistant' }>(({ theme, role
         marginTop: 8,
     },
     '& pre': {
-        backgroundColor: theme.palette.mode === 'dark'
-            ? 'rgba(0,0,0,0.3)'
-            : 'rgba(0,0,0,0.05)',
-        padding: 8,
+        padding: 0,
         borderRadius: 4,
         overflowX: 'auto',
         margin: '8px 0',
+        backgroundColor: 'transparent',
     },
     '& code': {
         fontFamily: 'monospace',
@@ -77,7 +78,7 @@ const EditLoadingContainer = styled(Box)({
     gap: 8,
 });
 
-const LoadingCursor = styled(Box)(({ theme }) => ({
+const LoadingCursor = styled('span')(({ theme }) => ({
     display: 'inline-block',
     width: '2px',
     height: '1em',
@@ -104,6 +105,26 @@ const DIFF_REVIEW_MESSAGES = [
     "Approve the automaton alterations.",
 ];
 
+
+const chatMarkdownComponents: Components = {
+    code({ node, className, children, ...props }) {
+        const match = /language-(\w+)/.exec(className || '');
+        const language = match ? match[1] : '';
+        const isBlock = node?.position && String(children).includes('\n');
+
+        if (language && isBlock) {
+            const code = String(children).replace(/\n$/, '');
+            return <CodeBlock language={language}>{code}</CodeBlock>;
+        }
+
+        return (
+            <code className={className} {...props}>
+                {children}
+            </code>
+        );
+    },
+};
+
 const DiffTabBanner = styled(Box)(({ theme }) => ({
     textAlign: 'center',
     paddingTop: 8,
@@ -120,10 +141,16 @@ interface ChatMessagesProps {
     greeting: string;
     isLoading: boolean;
     isEditLoading: boolean;
+    isResearchLoading: boolean;
+    researchPhase: ResearchPhase;
+    deepeningProgress: DeepeningProgress | null;
+    inferenceResult: InferenceResult | null;
+    researchComplete: boolean;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
     editModeError: string | null;
+    researchError: string | null;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -132,16 +159,23 @@ export function ChatMessages({
     greeting,
     isLoading,
     isEditLoading,
+    isResearchLoading,
+    researchPhase,
+    deepeningProgress,
+    inferenceResult,
+    researchComplete,
     hasDiffTab,
     loadingDisplayText,
     error,
     editModeError,
+    researchError,
     messagesEndRef,
 }: ChatMessagesProps) {
     const [diffReviewMessage] = useState(() =>
         DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
     );
-    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !hasDiffTab;
+
+    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !hasDiffTab;
 
     return (
         <MessagesContainer>
@@ -155,7 +189,7 @@ export function ChatMessages({
                 messages.map((msg, idx) => (
                     <MessageBubble key={idx} role={msg.role}>
                         {msg.role === 'assistant' ? (
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            <ReactMarkdown components={chatMarkdownComponents}>{msg.content}</ReactMarkdown>
                         ) : (
                             <Typography variant="body2">{msg.content}</Typography>
                         )}
@@ -184,6 +218,13 @@ export function ChatMessages({
                     </Typography>
                 </EditLoadingContainer>
             )}
+            {(isResearchLoading || researchComplete) && (
+                <ResearchProgress
+                    researchPhase={researchPhase}
+                    deepeningProgress={deepeningProgress}
+                    inferenceResult={inferenceResult}
+                />
+            )}
             {error && (
                 <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
                     {error}
@@ -192,6 +233,11 @@ export function ChatMessages({
             {editModeError && (
                 <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
                     {editModeError}
+                </Typography>
+            )}
+            {researchError && (
+                <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
+                    {researchError}
                 </Typography>
             )}
             {hasDiffTab && (

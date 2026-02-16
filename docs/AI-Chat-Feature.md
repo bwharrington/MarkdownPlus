@@ -27,11 +27,15 @@ This document describes the AI Chat feature in MarkdownPlus, covering configurat
    - [Accepting and Rejecting Changes](#accepting-and-rejecting-changes)
    - [Keyboard Shortcuts](#keyboard-shortcuts)
    - [Source File Protection](#source-file-protection)
-5. [Supported AI Providers](#supported-ai-providers)
+5. [Research Mode](#research-mode)
+   - [Activating Research Mode](#activating-research-mode)
+   - [How Research Works](#how-research-works)
+   - [Research Output](#research-output)
+6. [Supported AI Providers](#supported-ai-providers)
    - [Claude (Anthropic)](#claude-anthropic)
    - [OpenAI](#openai)
    - [xAI (Grok)](#xai-grok)
-6. [Architecture](#architecture)
+7. [Architecture](#architecture)
    - [File Structure](#file-structure)
    - [IPC Communication](#ipc-communication)
    - [State Management](#state-management)
@@ -40,12 +44,13 @@ This document describes the AI Chat feature in MarkdownPlus, covering configurat
 
 ## Overview
 
-The AI Chat feature allows users to interact with AI language models directly within the MarkdownPlus editor. It supports two modes:
+The AI Chat feature allows users to interact with AI language models directly within the MarkdownPlus editor. It supports three modes:
 
 - **Chat Mode**: A conversational interface for asking questions, brainstorming, or getting help with writing. The AI sees the current document as context and responds in a chat bubble format.
 - **Edit Mode**: The AI modifies the current markdown document based on user instructions. Changes are presented in a **dedicated diff tab** with a unified inline diff view, where the user can accept or reject changes on a per-hunk basis.
+- **Research Mode**: Deep research on any topic. The AI performs a two-step process — first inferring the target audience and relevant fields, then generating a comprehensive, structured research report. The output opens as a new markdown file tab in preview mode.
 
-Three AI providers are supported: **Claude (Anthropic)**, **OpenAI**, and **xAI (Grok)** (xAI is currently disabled in the UI).
+Three AI providers are supported: **Claude (Anthropic)**, **OpenAI**, and **xAI (Grok)** (xAI is currently disabled in the UI). Research and Edit modes require Claude or OpenAI.
 
 ---
 
@@ -187,6 +192,7 @@ Messages appear as styled bubbles in the messages container:
 - Grey background (adapts to light/dark theme)
 - Maximum width: 85% of the container
 - Content rendered as Markdown using `ReactMarkdown`, supporting formatted text, code blocks, lists, and other Markdown elements
+- **Code blocks with syntax highlighting**: Fenced code blocks (e.g., ` ```javascript `) are rendered with language-aware syntax highlighting using `react-syntax-highlighter` with Prism. Colors adapt to light/dark theme (oneLight / oneDark)
 
 The message area automatically scrolls to the latest message using smooth scrolling.
 
@@ -398,6 +404,133 @@ This prevents conflicts between manual edits and the pending diff changes. Once 
 
 ---
 
+## Research Mode
+
+### Activating Research Mode
+
+- Select **Research** from the Mode dropdown in the AI Chat panel
+- Research mode is supported for **Claude** and **OpenAI** providers only (disabled for xAI)
+- The input placeholder changes to "Enter a research topic..." and the send button shows a telescope icon with an info-blue color
+
+### How Research Works
+
+Research mode uses a **multi-phase AI flow** with dynamic deepening to produce comprehensive, structured research reports:
+
+**Phase 1 — Pre-Prompt Inference (Automatic):**
+
+When the user submits a research topic, a quick preliminary LLM call analyzes the topic to infer:
+- **Target audience** (e.g., "mid-level software engineers building AI apps")
+- **Relevant fields** (e.g., technology, databases, software engineering)
+- **Focus areas** (key angles to explore)
+- **Deep dive topics** (4-6 specific technical concepts to explore in depth)
+
+The user's full message serves as both the topic and the user intent — no separate input is needed. This inference step uses the same provider and model the user has selected. If inference fails (e.g., invalid JSON response), sensible defaults are used automatically.
+
+**Phase 2 — Main Research Call:**
+
+The inferred metadata (audience, fields, focus areas, deep dive topics) is injected into a comprehensive research prompt template that instructs the AI to produce a detailed, structured research report. The template enforces:
+- Depth-first analysis with historical context, current state, and future projections
+- Technical mastery with code examples, architectures, and implementation guides
+- Dedicated deep dive sections for each inferred topic
+- Truth-seeking with source citations and confidence ratings
+- Strategic value tailored to the inferred audience
+
+**Phase 3 — Dynamic Deepening (Multi-Turn Chaining):**
+
+After the main research call, automatic follow-up calls expand the technical sections based on the inferred deep dive topics:
+
+- Deep dive topics are **batched into groups of 2** per follow-up call
+- Up to **3 deepening calls** maximum (covering up to 6 topics)
+- The number of calls is dynamic: `Math.min(Math.ceil(topics.length / 2), 3)`
+- Each deepening call asks the AI for exhaustive coverage of its batch: internals, code examples, pitfalls, best practices, and latest updates
+- If no deep dive topics were inferred, deepening is skipped entirely
+
+**Graceful degradation:** If any deepening call fails, the base report plus any successful deepening results are still used. The research never fails due to a deepening error.
+
+**Final merge:** The base report and all successful deepening responses are concatenated with a horizontal rule separator (`---`) to form the final document.
+
+**Phase 4 — Filename Inference:**
+
+After the research content is assembled, a final lightweight LLM call generates a descriptive filename for the tab:
+- The AI is prompted to return a short, descriptive Title Case filename (max 50 chars, no extension)
+- The response is sanitized (invalid characters removed, length truncated to 60 chars)
+- **Graceful fallback:** If the naming call fails, the tab uses the legacy format `Research - <topic snippet>.md`
+
+### Research Output
+
+The merged AI response is opened as a **new markdown file tab** in preview mode:
+- Tab name: AI-inferred descriptive name with `.md` extension (e.g., `React Hooks Deep Dive.md`)
+- Falls back to `Research - <topic snippet>.md` if naming fails
+- File is virtual (not saved to disk) with `path: null`
+- Opens in preview mode for immediate reading
+- Can be saved to disk using Ctrl+S / Save As
+
+### Output Structure
+
+The research report follows a standardized markdown format:
+- **Executive Summary**: 4-6 bullet takeaways
+- **Historical Evolution**: Timeline of milestones
+- **Current State**: Landscape, leaders, metrics
+- **Key Debates & Risks**: Pros/cons, controversies
+- **Engineering & Implementation Guide**: Code examples, architectures, tools, plus dedicated deep dive subsections for inferred topics
+- **Future Horizons**: 2026-2030 projections
+- **Actionable Playbook**: Recommendations, experiments
+- **Sources & Rigor**: References, confidence matrix
+- **Extended Technical Deep Dive** (appended from deepening calls): Exhaustive coverage of each deep dive topic with production-ready code, pitfalls, and comparative analysis
+
+### Loading States — Visual Progress Stepper
+
+During research, the chat panel shows a **vertical stepper UI** (`ResearchProgress` component) that visualizes all four phases as a timeline:
+
+```
+● Analyzing Topic                    ✓ 2.1s
+  "Identifying key research angles..."
+  ┌──────────────────────────────────┐
+  │ Audience: mid-level engineers    │
+  │ Fields: React, TypeScript        │
+  │ Topics: useEffect, useMemo ...   │
+  └──────────────────────────────────┘
+
+◉ Compiling Research Report          ⟳ active
+  "Synthesizing findings..."
+
+○ Expanding Depth (0/3)              pending
+
+○ Generating Filename                pending
+```
+
+**Step indicators:**
+- **Pending** (grey dot): Phase not yet started, label dimmed
+- **Active** (pulsing blue dot): Currently running, shows typewriter-animated message with blinking cursor
+- **Complete** (green checkmark): Phase finished, shows elapsed time badge (e.g., "2.1s")
+
+**Phase-specific typewriter messages** rotate every 5 seconds:
+- **Inference**: "Analyzing your topic...", "Identifying key research angles...", "Mapping the knowledge landscape..."
+- **Researching**: "Compiling research report...", "Synthesizing findings...", "Building executive summary..."
+- **Deepening**: "Expanding technical deep dive...", "Adding code examples and patterns..." with a progress counter showing "(1/3)", "(2/3)", etc.
+- **Naming**: "Generating filename...", "Picking the perfect title...", "Naming your report..."
+
+**Metadata cards:** After inference completes, a bordered card appears showing the AI-inferred audience, fields (as chips), and deep dive topics (as info-colored chips).
+
+Each message appears with a typewriter effect (30ms per character) and a blinking cursor.
+
+### Cancellation
+
+Research requests can be canceled at any time using the Cancel button. All in-flight API calls (inference, research, deepening, and naming calls) are aborted.
+
+### Debugging & Logging
+
+All research phases are logged to the browser console with `[Research]` prefix, including:
+- Phase transitions with elapsed time
+- Inference results (audience, fields, deep dive topics)
+- Response lengths for each API call
+- Deepening batch details (which topics, batch number)
+- Errors with the phase where failure occurred
+
+Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
+
+---
+
 ## Supported AI Providers
 
 ### Claude (Anthropic)
@@ -446,11 +579,14 @@ This prevents conflicts between manual edits and the pending diff changes. Once 
 | `src/renderer/components/ProviderSelector.tsx`      | Provider and model dropdown selectors with status indicators                 |
 | `src/renderer/components/FileAttachmentsList.tsx`   | File attachment chips and context document management                        |
 | `src/renderer/components/MessageInput.tsx`          | Message text input, send/edit button, cancel, and attachment trigger         |
+| `src/renderer/components/CodeBlock.tsx`              | Syntax-highlighted code blocks using PrismLight (react-syntax-highlighter)   |
+| `src/renderer/components/ResearchProgress.tsx`      | Vertical stepper UI for research phase visualization with metadata cards     |
 | `src/renderer/components/DiffView.tsx`              | Dedicated diff tab view with unified inline diff rendering                   |
 | `src/renderer/components/DiffNavigationToolbar.tsx` | Floating toolbar for navigating and resolving diff hunks                     |
 | `src/renderer/components/DiffHunkControl.tsx`       | Per-hunk inline accept/reject buttons                                        |
 | `src/renderer/hooks/useAIChat.ts`                   | Chat state management, message sending, provider/model loading               |
 | `src/renderer/hooks/useAIDiffEdit.ts`               | Edit mode logic, diff computation, opens diff tab                            |
+| `src/renderer/hooks/useAIResearch.ts`               | Research mode: inference, research, deepening, naming phases; opens file tab |
 | `src/renderer/hooks/useEditLoadingMessage.ts`       | Typewriter-animated loading messages                                         |
 | `src/renderer/utils/diffUtils.ts`                   | Diff computation utilities (line ending normalization, hunk building)        |
 | `src/renderer/types/diffTypes.ts`                   | TypeScript interfaces for DiffHunk and DiffSession                           |
@@ -530,6 +666,6 @@ Diff state is no longer global — it lives on each diff tab's `IFile` object:
 - `aiModels` - Per-provider model enable/disable flags
 - `aiChatDocked` - Whether the chat panel is docked
 - `aiChatDockWidth` - Width of the docked chat panel
-- `aiChatEditMode` - Whether edit mode is toggled on
+- `aiChatMode` - Current AI chat mode (`'chat'`, `'edit'`, or `'research'`). Migrated from legacy `aiChatEditMode` boolean
 - `aiChatProvider` - Last selected AI provider
 - `aiChatModel` - Last selected AI model

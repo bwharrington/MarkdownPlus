@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { WarningAmberIcon } from './AppIcons';
 import type { AIProvider, AIModelOption } from '../hooks/useAIChat';
+import type { AIChatMode } from '../types/global';
 
 const SelectorsContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -43,12 +44,12 @@ interface ProviderSelectorProps {
     models: AIModelOption[];
     selectedModel: string;
     isLoadingModels: boolean;
-    isEditMode: boolean;
+    mode: AIChatMode;
     hasDiffTab: boolean;
     hasActiveRequest: boolean;
     onProviderChange: (provider: AIProvider) => void;
     onModelChange: (model: string) => void;
-    onModeChange: (editMode: boolean) => void;
+    onModeChange: (mode: AIChatMode) => void;
 }
 
 export function ProviderSelector({
@@ -57,7 +58,7 @@ export function ProviderSelector({
     models,
     selectedModel,
     isLoadingModels,
-    isEditMode,
+    mode,
     hasDiffTab,
     hasActiveRequest,
     onProviderChange,
@@ -99,12 +100,12 @@ export function ProviderSelector({
                 </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 100 }}>
+            <FormControl size="small" sx={{ minWidth: 110 }}>
                 <InputLabel>Mode</InputLabel>
                 <Select
-                    value={isEditMode ? 'edit' : 'chat'}
+                    value={mode}
                     label="Mode"
-                    onChange={(e) => onModeChange(e.target.value === 'edit')}
+                    onChange={(e) => onModeChange(e.target.value as AIChatMode)}
                     disabled={hasDiffTab || hasActiveRequest}
                 >
                     <MenuItem value="chat">Chat</MenuItem>
@@ -114,10 +115,16 @@ export function ProviderSelector({
                     >
                         Edit
                     </MenuItem>
+                    <MenuItem
+                        value="research"
+                        disabled={provider === 'xai'}
+                    >
+                        Research
+                    </MenuItem>
                 </Select>
             </FormControl>
-            {provider === 'xai' && isEditMode && (
-                <Tooltip title="xAI does not support edit mode. Switch to Claude or OpenAI.">
+            {provider === 'xai' && (mode === 'edit' || mode === 'research') && (
+                <Tooltip title="xAI does not support edit or research mode. Switch to Claude or OpenAI.">
                     <WarningAmberIcon fontSize="small" color="warning" sx={{ alignSelf: 'center' }} />
                 </Tooltip>
             )}

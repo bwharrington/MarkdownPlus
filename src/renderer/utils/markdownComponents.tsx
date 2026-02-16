@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Components } from 'react-markdown';
 import { MermaidDiagram } from '../components/MermaidDiagram';
+import { CodeBlock } from '../components/CodeBlock';
 import { useActiveFile } from '../contexts';
 
 /**
@@ -78,10 +79,16 @@ export function useMarkdownComponents(
         code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '');
             const language = match ? match[1] : '';
+            const isBlock = node?.position && String(children).includes('\n');
 
             if (language === 'mermaid') {
                 const chartCode = String(children).replace(/\n$/, '');
                 return <MermaidDiagram chart={chartCode} />;
+            }
+
+            if (language && isBlock) {
+                const code = String(children).replace(/\n$/, '');
+                return <CodeBlock language={language}>{code}</CodeBlock>;
             }
 
             return (
