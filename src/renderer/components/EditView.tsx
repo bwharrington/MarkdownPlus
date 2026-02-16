@@ -141,7 +141,14 @@ export function EditView() {
             const outputName = result.filePath?.split(/[\\/]/).pop() || `${defaultName}.pdf`;
             dispatch({
                 type: 'SHOW_NOTIFICATION',
-                payload: { message: `Exported "${outputName}"`, severity: 'success' },
+                payload: {
+                    message: `Exported "${outputName}"`,
+                    severity: 'success',
+                    action: result.filePath ? {
+                        label: 'Show in Folder',
+                        onClick: () => window.electronAPI.showInFolder(result.filePath!),
+                    } : undefined,
+                },
             });
         } else {
             dispatch({

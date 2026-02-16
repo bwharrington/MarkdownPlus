@@ -34,10 +34,16 @@ export interface EditorState {
 }
 
 // Notification interface
+export interface NotificationAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface Notification {
   id: string;
   message: string;
   severity: 'error' | 'warning' | 'info' | 'success';
+  action?: NotificationAction;
 }
 
 // Import IConfig from global
