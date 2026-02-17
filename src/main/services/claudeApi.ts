@@ -45,6 +45,10 @@ export interface ListClaudeModelsResponse {
     last_id: string;
 }
 
+type ClaudeContentBlock =
+    | { type: 'text'; text: string }
+    | { type: 'image'; source: { type: 'base64'; media_type: string | undefined; data: string } };
+
 // Default models to use if API listing fails
 export const DEFAULT_CLAUDE_MODELS = [
     { id: 'claude-sonnet-4-5-20250514', displayName: 'Claude Sonnet 4.5' },
@@ -52,24 +56,10 @@ export const DEFAULT_CLAUDE_MODELS = [
     { id: 'claude-haiku-3-5-20241022', displayName: 'Claude Haiku 3.5' },
 ];
 
-export async function callClaudeApi(
-    messages: Message[],
-    model: string = 'claude-sonnet-4-5-20250514',
-    signal?: AbortSignal
-): Promise<string> {
-    // Only use secure storage (no .env fallback)
-    const apiKey = getApiKeyForService('claude');
-    if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
-    }
-
-    // Format messages for Claude API (support attachments)
-    const formattedMessages = messages.map(msg => {
-        // If message has attachments, use content array format
+function formatMessagesForClaude(messages: Message[]) {
+    return messages.map(msg => {
         if (msg.attachments && msg.attachments.length > 0) {
-            const content: any[] = [{ type: 'text', text: msg.content }];
-
-            // Add attachments
+            const content: ClaudeContentBlock[] = [{ type: 'text', text: msg.content }];
             for (const attachment of msg.attachments) {
                 if (attachment.type === 'image') {
                     content.push({
@@ -81,28 +71,48 @@ export async function callClaudeApi(
                         },
                     });
                 } else if (attachment.type === 'text') {
-                    // Include text files as additional text content
                     content.push({
                         type: 'text',
                         text: `\n\n[File: ${attachment.name}]\n${attachment.data}`,
                     });
                 }
             }
-
             return { role: msg.role, content };
         }
-
-        // Simple text message
         return { role: msg.role, content: msg.content };
     });
+}
 
-    const requestBody = {
+interface ClaudeApiOptions {
+    systemPrompt?: string;
+    maxTokens?: number;
+}
+
+async function callClaudeApiInternal(
+    messages: Message[],
+    model: string,
+    options: ClaudeApiOptions,
+    signal?: AbortSignal,
+): Promise<string> {
+    const apiKey = getApiKeyForService('claude');
+    if (!apiKey) {
+        throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
+    }
+
+    const formattedMessages = formatMessagesForClaude(messages);
+
+    const requestBody: Record<string, unknown> = {
         messages: formattedMessages,
         model,
-        max_tokens: 4096,
+        max_tokens: options.maxTokens ?? 4096,
     };
 
-    log('Claude API Request', {
+    if (options.systemPrompt) {
+        requestBody.system = options.systemPrompt;
+    }
+
+    const logLabel = options.systemPrompt ? 'Claude API Request (with system prompt)' : 'Claude API Request';
+    log(logLabel, {
         url: 'https://api.anthropic.com/v1/messages',
         model,
         messageCount: messages.length,
@@ -136,6 +146,14 @@ export async function callClaudeApi(
     }
 }
 
+export async function callClaudeApi(
+    messages: Message[],
+    model: string = 'claude-sonnet-4-5-20250514',
+    signal?: AbortSignal
+): Promise<string> {
+    return callClaudeApiInternal(messages, model, { maxTokens: 4096 }, signal);
+}
+
 /**
  * Call Claude API with a system prompt for edit mode
  * This is used for structured JSON output when editing files
@@ -146,76 +164,7 @@ export async function callClaudeApiWithSystemPrompt(
     model: string = 'claude-sonnet-4-5-20250514',
     signal?: AbortSignal
 ): Promise<string> {
-    const apiKey = getApiKeyForService('claude');
-    if (!apiKey) {
-        throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
-    }
-
-    // Format messages for Claude API
-    const formattedMessages = messages.map(msg => {
-        if (msg.attachments && msg.attachments.length > 0) {
-            const content: any[] = [{ type: 'text', text: msg.content }];
-            for (const attachment of msg.attachments) {
-                if (attachment.type === 'image') {
-                    content.push({
-                        type: 'image',
-                        source: {
-                            type: 'base64',
-                            media_type: attachment.mimeType,
-                            data: attachment.data,
-                        },
-                    });
-                } else if (attachment.type === 'text') {
-                    content.push({
-                        type: 'text',
-                        text: `\n\n[File: ${attachment.name}]\n${attachment.data}`,
-                    });
-                }
-            }
-            return { role: msg.role, content };
-        }
-        return { role: msg.role, content: msg.content };
-    });
-
-    const requestBody = {
-        messages: formattedMessages,
-        model,
-        max_tokens: 16384, // Increased for large document edits
-        system: systemPrompt,
-    };
-
-    log('Claude API Request (with system prompt)', {
-        url: 'https://api.anthropic.com/v1/messages',
-        model,
-        messageCount: messages.length,
-    });
-
-    try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'X-Api-Key': apiKey,
-                'Content-Type': 'application/json',
-                'anthropic-version': '2023-06-01',
-            },
-            body: JSON.stringify(requestBody),
-            signal,
-        });
-
-        log('Claude API Response Status', { status: response.status, statusText: response.statusText });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            logError('Claude API Error Response', { status: response.status, body: errorBody });
-            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
-        }
-
-        const data: ClaudeApiResponse = await response.json();
-        return data.content[0]?.text || 'No response from Claude';
-    } catch (error) {
-        logError('Error calling Claude API with system prompt', error as Error);
-        throw new Error(`Failed to call Claude API: ${error instanceof Error ? error.message : String(error)}`);
-    }
+    return callClaudeApiInternal(messages, model, { systemPrompt, maxTokens: 16384 }, signal);
 }
 
 export async function listClaudeModels(): Promise<ClaudeModel[]> {

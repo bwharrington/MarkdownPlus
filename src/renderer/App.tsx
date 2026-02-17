@@ -13,22 +13,22 @@ const originalConsole = {
     info: console.info,
 };
 
-console.log = (...args: any[]) => {
+console.log = (...args: unknown[]) => {
     originalConsole.log(...args);
     window.electronAPI.sendConsoleLog('log', ...args);
 };
 
-console.warn = (...args: any[]) => {
+console.warn = (...args: unknown[]) => {
     originalConsole.warn(...args);
     window.electronAPI.sendConsoleLog('warn', ...args);
 };
 
-console.error = (...args: any[]) => {
+console.error = (...args: unknown[]) => {
     originalConsole.error(...args);
     window.electronAPI.sendConsoleLog('error', ...args);
 };
 
-console.info = (...args: any[]) => {
+console.info = (...args: unknown[]) => {
     originalConsole.info(...args);
     window.electronAPI.sendConsoleLog('info', ...args);
 };

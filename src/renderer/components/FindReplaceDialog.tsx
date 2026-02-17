@@ -1,6 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab } from '@mui/material';
 import { CloseIcon, DragIndicatorIcon } from './AppIcons';
+import { useDraggableDialog } from '../hooks/useDraggableDialog';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',
@@ -85,26 +86,11 @@ export function FindReplaceDialog({
 }: FindReplaceDialogProps) {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const replaceInputRef = useRef<HTMLInputElement>(null);
-    const dialogRef = useRef<HTMLDivElement>(null);
-    const [position, setPosition] = useState({ x: 0, y: 50 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const { dialogRef, position, isDragging, handleDragMouseDown } = useDraggableDialog(open, {
+        initialPosition: { x: 0, y: 50 },
+        positionStrategy: 'top-right',
+    });
     const [isDialogFocused, setIsDialogFocused] = useState(true);
-
-    // Initialize position when dialog opens
-    useEffect(() => {
-        if (open && dialogRef.current) {
-            const rect = dialogRef.current.getBoundingClientRect();
-            const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
-            if (parentRect) {
-                // Position on the right side by default
-                setPosition({
-                    x: parentRect.width - rect.width - 16,
-                    y: 50
-                });
-            }
-        }
-    }, [open]);
 
     // Switch to Find tab if mode changes to preview while on Replace tab
     useEffect(() => {
@@ -161,73 +147,29 @@ export function FindReplaceDialog({
         }
     }, [open]);
 
-    // Handle dragging
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (dialogRef.current) {
-            setIsDragging(true);
-            setDragStart({
-                x: e.clientX - position.x,
-                y: e.clientY - position.y
-            });
-            e.preventDefault();
-        }
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging && dialogRef.current) {
-                const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
-                if (parentRect) {
-                    let newX = e.clientX - dragStart.x;
-                    let newY = e.clientY - dragStart.y;
-
-                    // Constrain to parent bounds
-                    const dialogRect = dialogRef.current.getBoundingClientRect();
-                    newX = Math.max(0, Math.min(newX, parentRect.width - dialogRect.width));
-                    newY = Math.max(0, Math.min(newY, parentRect.height - dialogRect.height));
-
-                    setPosition({ x: newX, y: newY });
-                }
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, dragStart]);
-
-    if (!open) return null;
-
-    const isPreviewMode = mode === 'preview';
-
-    const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             onFindNext();
         } else if (e.key === 'Escape') {
             onClose();
         }
-    };
+    }, [onFindNext, onClose]);
 
-    const handleReplaceKeyDown = (e: React.KeyboardEvent) => {
+    const handleReplaceKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
             onReplace();
         } else if (e.key === 'Escape') {
             onClose();
         }
-    };
+    }, [onReplace, onClose]);
 
-    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: number) => {
         onTabChange(newValue === 0 ? 'find' : 'replace');
-    };
+    }, [onTabChange]);
+
+    if (!open) return null;
+
+    const isPreviewMode = mode === 'preview';
 
     const renderStatusText = () => {
         if (matchCount === null) return null;
@@ -275,7 +217,7 @@ export function FindReplaceDialog({
                 transition: 'opacity 0.2s ease-in-out',
             }}
         >
-            <DragHandle onMouseDown={handleMouseDown}>
+            <DragHandle onMouseDown={handleDragMouseDown}>
                 <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />
             </DragHandle>
             <StyledTabs

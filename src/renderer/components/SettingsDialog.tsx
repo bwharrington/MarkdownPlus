@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Box,
     Typography,
@@ -38,6 +38,7 @@ import {
 } from './AppIcons';
 
 import { useSettingsConfig } from '../hooks/useSettingsConfig';
+import { useDraggableDialog } from '../hooks/useDraggableDialog';
 import { useEditorDispatch } from '../contexts/EditorContext';
 import { IConfig, IFileReference, AIProviderStatuses } from '../types/global';
 
@@ -299,12 +300,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
-    const dialogRef = useRef<HTMLDivElement>(null);
-
-    // Dragging state
-    const [position, setPosition] = useState({ x: 100, y: 50 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const { dialogRef, position, isDragging, handleDragMouseDown } = useDraggableDialog(open);
 
     // Config management
     const { config, updateConfig, isSaving } = useSettingsConfig();
@@ -350,10 +346,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     const dispatch = useEditorDispatch();
 
     // Refresh provider statuses (re-ping)
-    const refreshProviderStatuses = async () => {
+    const refreshProviderStatuses = useCallback(async () => {
         const statuses = await window.electronAPI.getAIProviderStatuses();
         setProviderStatuses(statuses);
-    };
+    }, []);
 
     // Load provider statuses and API key status on mount
     useEffect(() => {
@@ -362,65 +358,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             window.electronAPI.getApiKeyStatus().then(setApiKeyStatus);
         }
     }, [open]);
-
-    // Initialize position when dialog opens
-    useEffect(() => {
-        if (open && dialogRef.current) {
-            const rect = dialogRef.current.getBoundingClientRect();
-            const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
-            if (parentRect) {
-                setPosition({
-                    x: Math.max(0, (parentRect.width - rect.width) / 2),
-                    y: Math.max(0, (parentRect.height - rect.height) / 2),
-                });
-            }
-        }
-    }, [open]);
-
-
-    // Dragging handlers
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (dialogRef.current) {
-            setIsDragging(true);
-            setDragStart({
-                x: e.clientX - position.x,
-                y: e.clientY - position.y
-            });
-            e.preventDefault();
-        }
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            if (isDragging && dialogRef.current) {
-                const parentRect = dialogRef.current.parentElement?.getBoundingClientRect();
-                if (parentRect) {
-                    let newX = e.clientX - dragStart.x;
-                    let newY = e.clientY - dragStart.y;
-
-                    // Constrain to parent bounds
-                    const dialogRect = dialogRef.current.getBoundingClientRect();
-                    newX = Math.max(0, Math.min(newX, parentRect.width - dialogRect.width));
-                    newY = Math.max(0, Math.min(newY, parentRect.height - dialogRect.height));
-
-                    setPosition({ x: newX, y: newY });
-                }
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            return () => {
-                document.removeEventListener('mousemove', handleMouseMove);
-                document.removeEventListener('mouseup', handleMouseUp);
-            };
-        }
-    }, [isDragging, dragStart]);
 
     // Keyboard handler
     useEffect(() => {
@@ -437,15 +374,15 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }, [open, onClose]);
 
     // Handlers for each setting type
-    const handleLineEndingChange = (value: 'CRLF' | 'LF') => {
+    const handleLineEndingChange = useCallback((value: 'CRLF' | 'LF') => {
         updateConfig({ defaultLineEnding: value });
-    };
+    }, [updateConfig]);
 
-    const handleSilentFileUpdatesToggle = (enabled: boolean) => {
+    const handleSilentFileUpdatesToggle = useCallback((enabled: boolean) => {
         updateConfig({ silentFileUpdates: enabled });
-    };
+    }, [updateConfig]);
 
-    const handleModelToggle = (provider: 'xai' | 'claude' | 'openai', modelId: string, enabled: boolean) => {
+    const handleModelToggle = useCallback((provider: 'xai' | 'claude' | 'openai', modelId: string, enabled: boolean) => {
         const newAiModels = {
             ...config?.aiModels,
             [provider]: {
@@ -454,17 +391,17 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             }
         };
         updateConfig({ aiModels: newAiModels });
-    };
+    }, [config?.aiModels, updateConfig]);
 
-    const handleSectionToggle = (provider: 'xai' | 'claude' | 'openai') => {
+    const handleSectionToggle = useCallback((provider: 'xai' | 'claude' | 'openai') => {
         setExpandedSections(prev => ({
             ...prev,
             [provider]: !prev[provider]
         }));
-    };
+    }, []);
 
     // API Key handlers
-    const handleSetApiKey = async (provider: 'xai' | 'claude' | 'openai') => {
+    const handleSetApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai') => {
         const key = apiKeyInputs[provider].trim();
         if (!key) {
             dispatch({
@@ -479,10 +416,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
         const result = await window.electronAPI.setApiKey(provider, key);
         if (result.success) {
-            // Clear input and update status
             setApiKeyInputs(prev => ({ ...prev, [provider]: '' }));
             setApiKeyStatus(prev => ({ ...prev, [provider]: true }));
-            // Re-ping provider statuses so the UI reflects the new connection
             await refreshProviderStatuses();
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -500,13 +435,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 },
             });
         }
-    };
+    }, [apiKeyInputs, dispatch, refreshProviderStatuses]);
 
-    const handleClearApiKey = async (provider: 'xai' | 'claude' | 'openai') => {
+    const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai') => {
         const result = await window.electronAPI.deleteApiKey(provider);
         if (result.success) {
             setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
-            // Re-ping provider statuses to reflect the removed connection
             await refreshProviderStatuses();
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -524,9 +458,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 },
             });
         }
-    };
+    }, [dispatch, refreshProviderStatuses]);
 
-    const handleTestProvider = async (provider: 'xai' | 'claude' | 'openai') => {
+    const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai') => {
         setTestingProvider(provider);
         try {
             const statuses = await window.electronAPI.getAIProviderStatuses();
@@ -560,7 +494,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         } finally {
             setTestingProvider(null);
         }
-    };
+    }, [dispatch]);
 
     if (!open) return null;
 
@@ -585,7 +519,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     cursor: isDragging ? 'grabbing' : 'default',
                 }}
             >
-            <DragHandle onMouseDown={handleMouseDown}>
+            <DragHandle onMouseDown={handleDragMouseDown}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                     <Typography variant="subtitle2" fontWeight={600}>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Tabs, Tab, Box, IconButton, Tooltip, styled, Menu, MenuItem, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField } from '@mui/material';
 import {
     CloseIcon,
@@ -46,24 +46,24 @@ interface FileTabProps {
     isActive: boolean;
 }
 
-function FileTab({ file, isActive }: FileTabProps) {
+const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
     const dispatch = useEditorDispatch();
     const { closeFile } = useFileOperations();
     const isDiffTab = file.viewMode === 'diff';
 
-    const handleToggleViewMode = (e: React.MouseEvent) => {
+    const handleToggleViewMode = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         dispatch({ type: 'TOGGLE_VIEW_MODE', payload: { id: file.id } });
-    };
+    }, [file.id, dispatch]);
 
-    const handleClose = (e: React.MouseEvent) => {
+    const handleClose = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         if (isDiffTab) {
             dispatch({ type: 'CLOSE_DIFF_TAB', payload: { diffTabId: file.id } });
         } else {
             closeFile(file.id);
         }
-    };
+    }, [file.id, isDiffTab, dispatch, closeFile]);
 
     return (
         <TabContent>
@@ -119,7 +119,7 @@ function FileTab({ file, isActive }: FileTabProps) {
             </Tooltip>
         </TabContent>
     );
-}
+});
 
 export function TabBar() {
     const state = useEditorState();
@@ -130,73 +130,76 @@ export function TabBar() {
     const [newFileName, setNewFileName] = React.useState('');
     const { renameFile, showInFolder } = useFileOperations();
 
-    const handleTabChange = (_event: React.SyntheticEvent, newValue: string) => {
+    const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: string) => {
         dispatch({ type: 'SELECT_TAB', payload: { id: newValue } });
-    };
+    }, [dispatch]);
 
-    const handleDragStart = (e: React.DragEvent, index: number) => {
+    const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
         setDraggedIndex(index);
         e.dataTransfer.effectAllowed = 'move';
-    };
+    }, []);
 
-    const handleDragOver = (e: React.DragEvent, index: number) => {
+    const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-        
+
         if (draggedIndex !== null && draggedIndex !== index) {
-            dispatch({ 
-                type: 'REORDER_TABS', 
-                payload: { fromIndex: draggedIndex, toIndex: index } 
+            dispatch({
+                type: 'REORDER_TABS',
+                payload: { fromIndex: draggedIndex, toIndex: index },
             });
             setDraggedIndex(index);
         }
-    };
+    }, [draggedIndex, dispatch]);
 
-    const handleDragEnd = () => {
+    const handleDragEnd = useCallback(() => {
         setDraggedIndex(null);
-    };
+    }, []);
 
-    const handleContextMenu = (e: React.MouseEvent, fileId: string) => {
+    const handleContextMenu = useCallback((e: React.MouseEvent, fileId: string) => {
         e.preventDefault();
-        setContextMenu(contextMenu === null ? { mouseX: e.clientX - 2, mouseY: e.clientY - 4, fileId } : null);
-    };
+        setContextMenu(prev => prev === null ? { mouseX: e.clientX - 2, mouseY: e.clientY - 4, fileId } : null);
+    }, []);
 
-    const handleContextMenuClose = () => {
+    const handleContextMenuClose = useCallback(() => {
         setContextMenu(null);
-    };
+    }, []);
 
-    const handleRenameClick = () => {
-        if (contextMenu) {
-            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
-            if (file) {
-                setNewFileName(file.name);
-                setRenameDialog({ open: true, fileId: file.id, currentName: file.name });
+    const handleRenameClick = useCallback(() => {
+        setContextMenu(prev => {
+            if (prev) {
+                const file = state.openFiles.find(f => f.id === prev.fileId);
+                if (file) {
+                    setNewFileName(file.name);
+                    setRenameDialog({ open: true, fileId: file.id, currentName: file.name });
+                }
             }
-        }
-        handleContextMenuClose();
-    };
+            return null;
+        });
+    }, [state.openFiles]);
 
-    const handleOpenLocationClick = async () => {
+    const handleOpenLocationClick = useCallback(async () => {
         if (contextMenu) {
             const file = state.openFiles.find(f => f.id === contextMenu.fileId);
             if (file && file.path) {
                 await window.electronAPI.showInFolder(file.path);
             }
         }
-        handleContextMenuClose();
-    };
+        setContextMenu(null);
+    }, [contextMenu, state.openFiles]);
 
-    const handleRenameDialogClose = () => {
+    const handleRenameDialogClose = useCallback(() => {
         setRenameDialog({ open: false, fileId: '', currentName: '' });
         setNewFileName('');
-    };
+    }, []);
 
-    const handleRenameConfirm = async () => {
+    const handleRenameConfirm = useCallback(async () => {
         if (renameDialog.fileId && newFileName && newFileName !== renameDialog.currentName) {
             await renameFile(renameDialog.fileId, newFileName);
         }
-        handleRenameDialogClose();
-    };
+        setRenameDialog({ open: false, fileId: '', currentName: '' });
+        setNewFileName('');
+    }, [renameDialog.fileId, renameDialog.currentName, newFileName, renameFile]);
 
     if (state.openFiles.length === 0) {
         return null;

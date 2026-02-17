@@ -7,3 +7,4 @@ export { useFindReplace } from './useFindReplace';
 export { useImagePaste } from './useImagePaste';
 export { useContentEditable } from './useContentEditable';
 export { useEditorKeyboard } from './useEditorKeyboard';
+export { useDraggableDialog } from './useDraggableDialog';

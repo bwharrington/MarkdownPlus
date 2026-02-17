@@ -77,6 +77,11 @@ export function EditView() {
         }, 100);
     }, [activeFile, dispatch]);
 
+    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLDivElement;
+        handleScrollThrottled(target.scrollTop);
+    }, [handleScrollThrottled]);
+
     // Sync activeFile content to contenteditable when it changes programmatically
     React.useEffect(() => {
         if (isUserInputRef.current) {
@@ -182,10 +187,7 @@ export function EditView() {
                     onDragOver={hasDiffForThisFile ? undefined : handleDragOver}
                     onDrop={hasDiffForThisFile ? undefined : handleDrop}
                     spellCheck={false}
-                    onScroll={(e) => {
-                        const target = e.target as HTMLDivElement;
-                        handleScrollThrottled(target.scrollTop);
-                    }}
+                    onScroll={handleScroll}
                     style={hasDiffForThisFile ? { cursor: 'default', opacity: 0.7 } : undefined}
                 />
                 <FindReplaceDialog

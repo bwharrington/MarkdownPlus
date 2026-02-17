@@ -111,8 +111,7 @@ export function useImagePaste(
 
         // Process each dropped image
         imageFiles.forEach(async (file) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const filePath = (file as any).path;
+            const filePath = (file as File & { path: string }).path;
             if (filePath) {
                 await saveAndInsertImage({ type: 'file', path: filePath });
             }

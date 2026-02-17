@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Box, TextField, Button, IconButton, CircularProgress, styled } from '@mui/material';
 import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
 import type { AIChatMode } from '../types/global';
@@ -42,14 +42,14 @@ export function MessageInput({
     onAttachFile,
     onClose,
 }: MessageInputProps) {
-    const handleKeyDown = (e: React.KeyboardEvent) => {
+    const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             onSend();
         } else if (e.key === 'Escape') {
             onClose();
         }
-    };
+    }, [onSend, onClose]);
 
     return (
         <InputContainer>

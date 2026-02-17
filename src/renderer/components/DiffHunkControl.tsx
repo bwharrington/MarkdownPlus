@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Box, IconButton, styled } from '@mui/material';
 import { CheckIcon, UndoIcon } from './AppIcons';
 
@@ -36,7 +36,17 @@ const RejectButton = styled(IconButton)(({ theme }) => ({
     },
 }));
 
-export function DiffHunkControl({ hunkId, position, onAccept, onReject }: DiffHunkControlProps) {
+export const DiffHunkControl = React.memo(function DiffHunkControl({ hunkId, position, onAccept, onReject }: DiffHunkControlProps) {
+    const handleAcceptClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onAccept();
+    }, [onAccept]);
+
+    const handleRejectClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        onReject();
+    }, [onReject]);
+
     return (
         <ControlContainer
             sx={{
@@ -47,24 +57,18 @@ export function DiffHunkControl({ hunkId, position, onAccept, onReject }: DiffHu
         >
             <AcceptButton
                 size="small"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onAccept();
-                }}
+                onClick={handleAcceptClick}
                 title="Keep this change"
             >
                 <CheckIcon fontSize="small" />
             </AcceptButton>
             <RejectButton
                 size="small"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onReject();
-                }}
+                onClick={handleRejectClick}
                 title="Undo this change"
             >
                 <UndoIcon fontSize="small" />
             </RejectButton>
         </ControlContainer>
     );
-}
+});

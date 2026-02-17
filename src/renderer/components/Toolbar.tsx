@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { AppBar, Toolbar as MuiToolbar, IconButton, Tooltip, Divider, Box, Typography, styled, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button } from '@mui/material';
 import {
     NoteAddIcon,
@@ -75,12 +75,12 @@ export function Toolbar() {
         window.electronAPI.getDevToolsState().then(setDevToolsOpen);
     }, []);
 
-    const handleToggleDevTools = async () => {
+    const handleToggleDevTools = useCallback(async () => {
         const isOpen = await window.electronAPI.toggleDevTools();
         setDevToolsOpen(isOpen);
-    };
+    }, []);
 
-    const handleOpenLog = async () => {
+    const handleOpenLog = useCallback(async () => {
         const logPath = await window.electronAPI.getLogPath();
         const fileData = await window.electronAPI.readFile(logPath);
         if (fileData) {
@@ -97,32 +97,44 @@ export function Toolbar() {
                 },
             });
         }
-    };
+    }, [dispatch]);
 
-    const handleMinimize = () => {
+    const handleMinimize = useCallback(() => {
         window.electronAPI.minimizeWindow();
-    };
+    }, []);
 
-    const handleMaximize = () => {
+    const handleMaximize = useCallback(() => {
         window.electronAPI.maximizeWindow();
-    };
+    }, []);
 
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         window.electronAPI.closeWindow();
-    };
+    }, []);
 
-    const handleCloseAllClick = () => {
+    const handleCloseAllClick = useCallback(() => {
         setCloseAllDialogOpen(true);
-    };
+    }, []);
 
-    const handleCloseAllConfirm = () => {
+    const handleCloseAllConfirm = useCallback(() => {
         setCloseAllDialogOpen(false);
         closeAllFiles();
-    };
+    }, [closeAllFiles]);
 
-    const handleCloseAllCancel = () => {
+    const handleCloseAllCancel = useCallback(() => {
         setCloseAllDialogOpen(false);
-    };
+    }, []);
+
+    const handleOpenAIChat = useCallback(() => {
+        window.dispatchEvent(new CustomEvent('open-ai-chat'));
+    }, []);
+
+    const handleOpenSettings = useCallback(() => {
+        window.dispatchEvent(new CustomEvent('open-settings'));
+    }, []);
+
+    const handleSave = useCallback(() => {
+        saveFile();
+    }, [saveFile]);
 
     return (
         <StyledAppBar position="static">
@@ -151,8 +163,8 @@ export function Toolbar() {
 
                 <Tooltip title="Save (Ctrl+S)">
                     <span>
-                        <IconButton 
-                            onClick={() => saveFile()} 
+                        <IconButton
+                            onClick={handleSave}
                             color="inherit"
                             disabled={!canSave}
                             sx={{ WebkitAppRegion: 'no-drag' }}
@@ -193,7 +205,7 @@ export function Toolbar() {
 
                 <Tooltip title="AI Chat (Ctrl+Shift+A)">
                     <IconButton
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-ai-chat'))}
+                        onClick={handleOpenAIChat}
                         color="inherit"
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
@@ -223,7 +235,7 @@ export function Toolbar() {
 
                 <Tooltip title="Settings (Ctrl+,)">
                     <IconButton
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-settings'))}
+                        onClick={handleOpenSettings}
                         color="inherit"
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >

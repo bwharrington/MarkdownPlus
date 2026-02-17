@@ -60,6 +60,11 @@ export function PreviewView() {
         }, 100);
     }, [activeFile, dispatch]);
 
+    const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLDivElement;
+        handleScrollThrottled(target.scrollTop);
+    }, [handleScrollThrottled]);
+
     const handlePreviewDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         if (!activeFile || !previewRef.current) return;
 
@@ -197,10 +202,7 @@ export function PreviewView() {
                         ref={previewRef}
                         onClick={handlePreviewClick}
                         onDoubleClick={handlePreviewDoubleClick}
-                        onScroll={(e) => {
-                            const target = e.target as HTMLDivElement;
-                            handleScrollThrottled(target.scrollTop);
-                        }}
+                        onScroll={handleScroll}
                         sx={{ flex: 1, overflow: 'auto' }}
                     >
                         <RstRenderer content={activeFile.content || ''} documentPath={activeFile.path} />
@@ -210,10 +212,7 @@ export function PreviewView() {
                         ref={previewRef}
                         onClick={handlePreviewClick}
                         onDoubleClick={handlePreviewDoubleClick}
-                        onScroll={(e) => {
-                            const target = e.target as HTMLDivElement;
-                            handleScrollThrottled(target.scrollTop);
-                        }}
+                        onScroll={handleScroll}
                     >
                         <ReactMarkdown
                             remarkPlugins={markdownPlugins}

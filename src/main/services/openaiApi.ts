@@ -14,6 +14,10 @@ export interface Message {
     attachments?: AttachmentData[];
 }
 
+type OpenAIContentBlock =
+    | { type: 'text'; text: string }
+    | { type: 'image_url'; image_url: { url: string } };
+
 export interface OpenAIApiResponse {
     choices: Array<{
         message: {
@@ -56,7 +60,7 @@ export async function callOpenAIApi(
     const formattedMessages = messages.map(msg => {
         // If message has attachments, use content array format
         if (msg.attachments && msg.attachments.length > 0) {
-            const content: any[] = [{ type: 'text', text: msg.content }];
+            const content: OpenAIContentBlock[] = [{ type: 'text', text: msg.content }];
 
             // Add attachments
             for (const attachment of msg.attachments) {
