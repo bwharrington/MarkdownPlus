@@ -69,7 +69,7 @@ const ProgressContainer = styled(Box)({
 const StepRow = styled(Box)({
     display: 'flex',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'stretch',
     gap: 12,
 });
 
@@ -111,8 +111,8 @@ const StepDot = styled(Box)<{ status: StepStatus }>(({ theme, status }) => ({
 
 const StepConnector = styled(Box)<{ status: StepStatus }>(({ theme, status }) => ({
     width: 2,
-    height: 16,
-    flexShrink: 0,
+    flex: 1,
+    minHeight: 8,
     backgroundColor: status === 'complete'
         ? theme.palette.success.main
         : theme.palette.mode === 'dark'

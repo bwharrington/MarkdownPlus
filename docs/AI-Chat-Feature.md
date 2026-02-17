@@ -586,7 +586,7 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 | `src/renderer/components/DiffHunkControl.tsx`       | Per-hunk inline accept/reject buttons                                        |
 | `src/renderer/hooks/useAIChat.ts`                   | Chat state management, message sending, provider/model loading               |
 | `src/renderer/hooks/useAIDiffEdit.ts`               | Edit mode logic, diff computation, opens diff tab                            |
-| `src/renderer/hooks/useAIResearch.ts`               | Research mode: inference, research, deepening, naming phases; opens file tab |
+| `src/renderer/hooks/useAIResearch.ts`               | Research mode logic, two-step inference + research, opens file tab           |
 | `src/renderer/hooks/useEditLoadingMessage.ts`       | Typewriter-animated loading messages                                         |
 | `src/renderer/utils/diffUtils.ts`                   | Diff computation utilities (line ending normalization, hunk building)        |
 | `src/renderer/types/diffTypes.ts`                   | TypeScript interfaces for DiffHunk and DiffSession                           |
