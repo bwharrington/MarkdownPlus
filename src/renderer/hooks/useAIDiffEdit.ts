@@ -144,7 +144,7 @@ export function useAIDiffEdit() {
 
     const requestEdit = useCallback(async (
         prompt: string,
-        provider: 'claude' | 'openai',
+        provider: 'claude' | 'openai' | 'gemini',
         model: string,
         requestId?: string
     ): Promise<{ hunkCount: number; summary: string }> => {

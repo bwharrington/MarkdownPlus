@@ -11,6 +11,7 @@ import {
 import { WarningAmberIcon } from './AppIcons';
 import type { AIProvider, AIModelOption } from '../hooks/useAIChat';
 import type { AIChatMode } from '../types/global';
+import { isProviderRestrictedFromMode, getRestrictionReason, getRestrictedModesForProvider } from '../aiProviderModeRestrictions';
 
 const SelectorsContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -111,20 +112,20 @@ export function ProviderSelector({
                     <MenuItem value="chat">Chat</MenuItem>
                     <MenuItem
                         value="edit"
-                        disabled={provider === 'xai'}
+                        disabled={isProviderRestrictedFromMode(provider, 'edit')}
                     >
                         Edit
                     </MenuItem>
                     <MenuItem
                         value="research"
-                        disabled={provider === 'xai'}
+                        disabled={isProviderRestrictedFromMode(provider, 'research')}
                     >
                         Research
                     </MenuItem>
                 </Select>
             </FormControl>
-            {provider === 'xai' && (mode === 'edit' || mode === 'research') && (
-                <Tooltip title="xAI does not support edit or research mode. Switch to Claude or OpenAI.">
+            {getRestrictedModesForProvider(provider).includes(mode) && (
+                <Tooltip title={getRestrictionReason(provider, mode)}>
                     <WarningAmberIcon fontSize="small" color="warning" sx={{ alignSelf: 'center' }} />
                 </Tooltip>
             )}

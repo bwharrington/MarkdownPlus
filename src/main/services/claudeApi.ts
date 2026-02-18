@@ -51,9 +51,9 @@ type ClaudeContentBlock =
 
 // Default models to use if API listing fails
 export const DEFAULT_CLAUDE_MODELS = [
-    { id: 'claude-sonnet-4-5-20250514', displayName: 'Claude Sonnet 4.5' },
-    { id: 'claude-sonnet-4-20250514', displayName: 'Claude Sonnet 4' },
-    { id: 'claude-haiku-3-5-20241022', displayName: 'Claude Haiku 3.5' },
+    { id: 'claude-opus-4-6', displayName: 'Claude Opus 4.6' },
+    { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6' },
+    { id: 'claude-haiku-4-5-20251001', displayName: 'Claude Haiku 4.5' },
 ];
 
 function formatMessagesForClaude(messages: Message[]) {
@@ -193,7 +193,11 @@ export async function listClaudeModels(): Promise<ClaudeModel[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
-        return data.data;
+        // Filter out old Claude 3 base generation (pre-3.5) — keep claude-3-5+, claude-3-7+, claude-4+, etc.
+        return data.data.filter(model =>
+            model.id.startsWith('claude-') &&
+            !model.id.startsWith('claude-3-')
+        );
     } catch (error) {
         logError('Error listing Claude models', error as Error);
         throw new Error(`Failed to list Claude models: ${error instanceof Error ? error.message : String(error)}`);

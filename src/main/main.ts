@@ -10,6 +10,7 @@ import { loadEncryptedKeys } from './services/secureStorage';
 import { listModels as listXAIModels, hasApiKey as hasXaiApiKey } from './services/xaiApi';
 import { listClaudeModels, hasApiKey as hasClaudeApiKey } from './services/claudeApi';
 import { listOpenAIModels, hasApiKey as hasOpenAIApiKey } from './services/openaiApi';
+import { listGeminiModels, hasApiKey as hasGeminiApiKey } from './services/geminiApi';
 
 // Load .env file for development (optional - will be ignored if not present)
 // In production builds, this file typically won't exist, and secure storage will be used
@@ -158,6 +159,16 @@ async function syncAIModelsConfig() {
                         log('Added new xAI model to config', { modelId: model.id });
                     }
                 }
+
+                // Remove models that no longer pass the filter (e.g. image/video models)
+                const allowedXaiIds = new Set(models.map(m => m.id));
+                for (const modelId of Object.keys(config.aiModels.xai)) {
+                    if (!allowedXaiIds.has(modelId)) {
+                        delete config.aiModels.xai[modelId];
+                        configUpdated = true;
+                        log('Removed filtered-out xAI model from config', { modelId });
+                    }
+                }
             } catch (error) {
                 logError('Failed to sync xAI models', error as Error);
             }
@@ -177,6 +188,16 @@ async function syncAIModelsConfig() {
                         config.aiModels.claude[model.id] = { enabled: true };
                         configUpdated = true;
                         log('Added new Claude model to config', { modelId: model.id });
+                    }
+                }
+
+                // Remove models that no longer pass the filter (e.g. old claude-3- base generation)
+                const allowedClaudeIds = new Set(models.map(m => m.id));
+                for (const modelId of Object.keys(config.aiModels.claude)) {
+                    if (!allowedClaudeIds.has(modelId)) {
+                        delete config.aiModels.claude[modelId];
+                        configUpdated = true;
+                        log('Removed filtered-out Claude model from config', { modelId });
                     }
                 }
             } catch (error) {
@@ -202,6 +223,39 @@ async function syncAIModelsConfig() {
                 }
             } catch (error) {
                 logError('Failed to sync OpenAI models', error as Error);
+            }
+        }
+
+        // Sync Gemini models
+        if (hasGeminiApiKey()) {
+            try {
+                const models = await listGeminiModels();
+                if (!config.aiModels.gemini) {
+                    config.aiModels.gemini = {};
+                    configUpdated = true;
+                }
+
+                // Add any new models not yet in config
+                for (const model of models) {
+                    if (!config.aiModels.gemini[model.id]) {
+                        config.aiModels.gemini[model.id] = { enabled: true };
+                        configUpdated = true;
+                        log('Added new Gemini model to config', { modelId: model.id });
+                    }
+                }
+
+                // Remove models that no longer pass the filter (e.g. previously synced
+                // image-only or deprecated models that were since filtered out)
+                const allowedIds = new Set(models.map(m => m.id));
+                for (const modelId of Object.keys(config.aiModels.gemini)) {
+                    if (!allowedIds.has(modelId)) {
+                        delete config.aiModels.gemini[modelId];
+                        configUpdated = true;
+                        log('Removed filtered-out Gemini model from config', { modelId });
+                    }
+                }
+            } catch (error) {
+                logError('Failed to sync Gemini models', error as Error);
             }
         }
 

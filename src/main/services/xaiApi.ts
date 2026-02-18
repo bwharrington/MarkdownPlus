@@ -143,7 +143,13 @@ export async function listModels(): Promise<Model[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
-        return data.data;
+        // Filter to text chat models only — exclude image, video, and image-generation variants
+        return data.data.filter(model =>
+            model.id.startsWith('grok-') &&
+            !model.id.includes('image') &&
+            !model.id.includes('video') &&
+            !model.id.includes('imagine')
+        );
     } catch (error) {
         logError('Error listing xAI models', error as Error);
         throw new Error(`Failed to list models: ${error instanceof Error ? error.message : String(error)}`);

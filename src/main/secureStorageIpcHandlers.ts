@@ -11,6 +11,7 @@ import {
 import { validateApiKey as validateXAiKey } from './services/xaiApi';
 import { validateApiKey as validateClaudeKey } from './services/claudeApi';
 import { validateApiKey as validateOpenAIKey } from './services/openaiApi';
+import { validateApiKey as validateGeminiKey } from './services/geminiApi';
 
 export interface SetApiKeyData {
     provider: ApiProvider;
@@ -21,6 +22,7 @@ export interface ApiKeyStatusResponse {
     xai: boolean;
     claude: boolean;
     openai: boolean;
+    gemini: boolean;
 }
 
 export function registerSecureStorageIpcHandlers() {
@@ -42,6 +44,9 @@ export function registerSecureStorageIpcHandlers() {
                     break;
                 case 'openai':
                     validationResult = await validateOpenAIKey(data.key);
+                    break;
+                case 'gemini':
+                    validationResult = await validateGeminiKey(data.key);
                     break;
                 default:
                     return {
@@ -98,6 +103,7 @@ export function registerSecureStorageIpcHandlers() {
             xai: hasApiKey('xai'),
             claude: hasApiKey('claude'),
             openai: hasApiKey('openai'),
+            gemini: hasApiKey('gemini'),
         };
     });
 

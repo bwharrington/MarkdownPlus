@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export type AIProvider = 'xai' | 'claude' | 'openai';
+export type AIProvider = 'xai' | 'claude' | 'openai' | 'gemini';
 
 export interface AIMessage {
     role: 'user' | 'assistant';
@@ -30,6 +30,7 @@ export interface AIProviderStatuses {
     xai: AIProviderStatus;
     claude: AIProviderStatus;
     openai: AIProviderStatus;
+    gemini: AIProviderStatus;
 }
 
 export interface UseAIChatOptions {
@@ -47,6 +48,7 @@ export function useAIChat(options?: UseAIChatOptions) {
         xai: { enabled: false, status: 'unchecked' },
         claude: { enabled: false, status: 'unchecked' },
         openai: { enabled: false, status: 'unchecked' },
+        gemini: { enabled: false, status: 'unchecked' },
     });
 
     // Model state
@@ -68,6 +70,7 @@ export function useAIChat(options?: UseAIChatOptions) {
                 xai: { enabled: false, status: 'checking' },
                 claude: { enabled: false, status: 'checking' },
                 openai: { enabled: false, status: 'checking' },
+                gemini: { enabled: false, status: 'checking' },
             });
 
             try {
@@ -82,11 +85,11 @@ export function useAIChat(options?: UseAIChatOptions) {
                     setProvider('claude');
                 } else if (statuses.openai.enabled) {
                     setProvider('openai');
+                } else if (statuses.gemini.enabled) {
+                    setProvider('gemini');
+                } else if (statuses.xai.enabled) {
+                    setProvider('xai');
                 }
-                // xAI temporarily disabled
-                // else if (statuses.xai.enabled) {
-                //     setProvider('xai');
-                // }
             } catch (err) {
                 console.error('Failed to check provider statuses:', err);
             }
@@ -102,11 +105,16 @@ export function useAIChat(options?: UseAIChatOptions) {
             setError(null);
 
             try {
-                const response = provider === 'xai'
-                    ? await window.electronAPI.listAIModels()
-                    : provider === 'claude'
-                        ? await window.electronAPI.listClaudeModels()
-                        : await window.electronAPI.listOpenAIModels();
+                let response;
+                if (provider === 'xai') {
+                    response = await window.electronAPI.listAIModels();
+                } else if (provider === 'claude') {
+                    response = await window.electronAPI.listClaudeModels();
+                } else if (provider === 'openai') {
+                    response = await window.electronAPI.listOpenAIModels();
+                } else {
+                    response = await window.electronAPI.listGeminiModels();
+                }
 
                 if (response.success && response.models) {
                     setModels(response.models);
@@ -184,11 +192,16 @@ export function useAIChat(options?: UseAIChatOptions) {
                 attachments: m.attachments,
             }));
 
-            const response = provider === 'xai'
-                ? await window.electronAPI.aiChatRequest(apiMessages, selectedModel, requestId)
-                : provider === 'claude'
-                    ? await window.electronAPI.claudeChatRequest(apiMessages, selectedModel, requestId)
-                    : await window.electronAPI.openaiChatRequest(apiMessages, selectedModel, requestId);
+            let response;
+            if (provider === 'xai') {
+                response = await window.electronAPI.aiChatRequest(apiMessages, selectedModel, requestId);
+            } else if (provider === 'claude') {
+                response = await window.electronAPI.claudeChatRequest(apiMessages, selectedModel, requestId);
+            } else if (provider === 'openai') {
+                response = await window.electronAPI.openaiChatRequest(apiMessages, selectedModel, requestId);
+            } else {
+                response = await window.electronAPI.geminiChatRequest(apiMessages, selectedModel, requestId);
+            }
 
             // Ignore stale responses for requests that were cancelled or superseded.
             if (activeRequestIdRef.current !== requestId) {
@@ -246,15 +259,14 @@ export function useAIChat(options?: UseAIChatOptions) {
     const getProviderOptions = useCallback(() => {
         const options: Array<{ value: AIProvider; label: string; disabled: boolean; status: string }> = [];
 
-        // xAI temporarily disabled
-        // if (providerStatuses.xai.enabled) {
-        //     options.push({
-        //         value: 'xai',
-        //         label: 'xAI (Grok)',
-        //         disabled: false,
-        //         status: providerStatuses.xai.status,
-        //     });
-        // }
+        if (providerStatuses.xai.enabled) {
+            options.push({
+                value: 'xai',
+                label: 'xAI (Grok)',
+                disabled: false,
+                status: providerStatuses.xai.status,
+            });
+        }
 
         if (providerStatuses.claude.enabled) {
             options.push({
@@ -271,6 +283,15 @@ export function useAIChat(options?: UseAIChatOptions) {
                 label: 'OpenAI',
                 disabled: false,
                 status: providerStatuses.openai.status,
+            });
+        }
+
+        if (providerStatuses.gemini.enabled) {
+            options.push({
+                value: 'gemini',
+                label: 'Google Gemini',
+                disabled: false,
+                status: providerStatuses.gemini.status,
             });
         }
 

@@ -37,6 +37,7 @@ export interface AIModelsConfig {
   xai?: Record<string, AIModelConfig>;
   claude?: Record<string, AIModelConfig>;
   openai?: Record<string, AIModelConfig>;
+  gemini?: Record<string, AIModelConfig>;
 }
 
 export interface IConfig {
@@ -83,6 +84,7 @@ export interface AIProviderStatuses {
   xai: AIProviderStatus;
   claude: AIProviderStatus;
   openai: AIProviderStatus;
+  gemini: AIProviderStatus;
 }
 
 export interface AIChatResponse {
@@ -186,19 +188,21 @@ export interface ElectronAPI {
   aiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
   claudeChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
   openaiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
+  geminiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
   cancelAIChatRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
   cancelAIEditRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
-  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai', requestId?: string) => Promise<AIEditResponse>;
+  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai' | 'gemini', requestId?: string) => Promise<AIEditResponse>;
   listAIModels: () => Promise<AIModelsResponse>;
   listClaudeModels: () => Promise<AIModelsResponse>;
   listOpenAIModels: () => Promise<AIModelsResponse>;
+  listGeminiModels: () => Promise<AIModelsResponse>;
   getAIProviderStatuses: () => Promise<AIProviderStatuses>;
 
   // Secure Storage operations (API Keys)
-  setApiKey: (provider: 'xai' | 'claude' | 'openai', key: string) => Promise<{ success: boolean; error?: string }>;
-  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai') => Promise<boolean>;
-  deleteApiKey: (provider: 'xai' | 'claude' | 'openai') => Promise<{ success: boolean; error?: string }>;
-  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean }>;
+  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini', key: string) => Promise<{ success: boolean; error?: string }>;
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini') => Promise<boolean>;
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini') => Promise<{ success: boolean; error?: string }>;
+  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean; gemini: boolean }>;
 }
 
 declare global {

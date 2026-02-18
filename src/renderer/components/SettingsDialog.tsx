@@ -98,9 +98,9 @@ function formatModelName(modelId: string): string {
 // Sub-component: AI Provider Section
 interface AIProviderSectionProps {
     title: string;
-    provider: 'xai' | 'claude' | 'openai';
+    provider: 'xai' | 'claude' | 'openai' | 'gemini';
     config: IConfig | null;
-    onModelToggle: (provider: 'xai' | 'claude' | 'openai', modelId: string, enabled: boolean) => void;
+    onModelToggle: (provider: 'xai' | 'claude' | 'openai' | 'gemini', modelId: string, enabled: boolean) => void;
     expanded: boolean;
     onToggle: () => void;
 }
@@ -159,7 +159,7 @@ function AIProviderSection({ title, provider, config, onModelToggle, expanded, o
 
 // Sub-component: API Key Input
 interface APIKeyInputProps {
-    provider: 'xai' | 'claude' | 'openai';
+    provider: 'xai' | 'claude' | 'openai' | 'gemini';
     label: string;
     hasKey: boolean;
     value: string;
@@ -242,11 +242,6 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                     </Button>
                 )}
             </Box>
-            {hasKey && (
-                <FormHelperText>
-                    API key is stored securely. Clear to update with a new key.
-                </FormHelperText>
-            )}
         </Box>
     );
 }
@@ -313,10 +308,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         xai: boolean;
         claude: boolean;
         openai: boolean;
+        gemini: boolean;
     }>({
         xai: true,
         claude: true,
         openai: true,
+        gemini: true,
     });
 
     // API Key management state
@@ -324,20 +321,24 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         xai: boolean;
         claude: boolean;
         openai: boolean;
+        gemini: boolean;
     }>({
         xai: false,
         claude: false,
         openai: false,
+        gemini: false,
     });
 
     const [apiKeyInputs, setApiKeyInputs] = useState<{
         xai: string;
         claude: string;
         openai: string;
+        gemini: string;
     }>({
         xai: '',
         claude: '',
         openai: '',
+        gemini: '',
     });
 
     // Testing state for individual providers
@@ -382,7 +383,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         updateConfig({ silentFileUpdates: enabled });
     }, [updateConfig]);
 
-    const handleModelToggle = useCallback((provider: 'xai' | 'claude' | 'openai', modelId: string, enabled: boolean) => {
+    const handleModelToggle = useCallback((provider: 'xai' | 'claude' | 'openai' | 'gemini', modelId: string, enabled: boolean) => {
         const newAiModels = {
             ...config?.aiModels,
             [provider]: {
@@ -393,7 +394,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         updateConfig({ aiModels: newAiModels });
     }, [config?.aiModels, updateConfig]);
 
-    const handleSectionToggle = useCallback((provider: 'xai' | 'claude' | 'openai') => {
+    const handleSectionToggle = useCallback((provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         setExpandedSections(prev => ({
             ...prev,
             [provider]: !prev[provider]
@@ -401,7 +402,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }, []);
 
     // API Key handlers
-    const handleSetApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai') => {
+    const handleSetApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         const key = apiKeyInputs[provider].trim();
         if (!key) {
             dispatch({
@@ -437,7 +438,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [apiKeyInputs, dispatch, refreshProviderStatuses]);
 
-    const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai') => {
+    const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         const result = await window.electronAPI.deleteApiKey(provider);
         if (result.success) {
             setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
@@ -460,7 +461,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [dispatch, refreshProviderStatuses]);
 
-    const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai') => {
+    const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         setTestingProvider(provider);
         try {
             const statuses = await window.electronAPI.getAIProviderStatuses();
@@ -572,16 +573,18 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     API keys are stored securely using your system's credential storage.
                 </Typography>
 
-                {/* xAI temporarily disabled */}
-                {/* <APIKeyInput
+                <APIKeyInput
                     provider="xai"
                     label="xAI (Grok)"
                     hasKey={apiKeyStatus.xai}
                     value={apiKeyInputs.xai}
+                    providerStatus={providerStatuses?.xai.status}
+                    isTesting={testingProvider === 'xai'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, xai: value }))}
                     onSet={() => handleSetApiKey('xai')}
                     onClear={() => handleClearApiKey('xai')}
-                /> */}
+                    onTest={() => handleTestProvider('xai')}
+                />
 
                 <APIKeyInput
                     provider="claude"
@@ -609,14 +612,25 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     onTest={() => handleTestProvider('openai')}
                 />
 
+                <APIKeyInput
+                    provider="gemini"
+                    label="Google Gemini"
+                    hasKey={apiKeyStatus.gemini}
+                    value={apiKeyInputs.gemini}
+                    providerStatus={providerStatuses?.gemini.status}
+                    isTesting={testingProvider === 'gemini'}
+                    onChange={(value) => setApiKeyInputs(prev => ({ ...prev, gemini: value }))}
+                    onSet={() => handleSetApiKey('gemini')}
+                    onClear={() => handleClearApiKey('gemini')}
+                    onTest={() => handleTestProvider('gemini')}
+                />
+
                 {/* AI Models Section - Only show if at least one provider has an API key */}
-                {(providerStatuses?.claude.enabled || providerStatuses?.openai.enabled) && (
+                {(providerStatuses?.xai.enabled || providerStatuses?.claude.enabled || providerStatuses?.openai.enabled || providerStatuses?.gemini.enabled) && (
                     <>
                         <SectionHeader>AI Models</SectionHeader>
 
-                        {/* AI Provider Sections - Render only for enabled providers */}
-                        {/* xAI temporarily disabled */}
-                        {/* {providerStatuses?.xai.enabled && (
+                        {providerStatuses?.xai.enabled && (
                             <AIProviderSection
                                 title="xAI (Grok)"
                                 provider="xai"
@@ -625,7 +639,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                 expanded={expandedSections.xai}
                                 onToggle={() => handleSectionToggle('xai')}
                             />
-                        )} */}
+                        )}
 
                         {providerStatuses?.claude.enabled && (
                             <AIProviderSection
@@ -646,6 +660,17 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                 onModelToggle={handleModelToggle}
                                 expanded={expandedSections.openai}
                                 onToggle={() => handleSectionToggle('openai')}
+                            />
+                        )}
+
+                        {providerStatuses?.gemini.enabled && (
+                            <AIProviderSection
+                                title="Google Gemini"
+                                provider="gemini"
+                                config={config}
+                                onModelToggle={handleModelToggle}
+                                expanded={expandedSections.gemini}
+                                onToggle={() => handleSectionToggle('gemini')}
                             />
                         )}
                     </>

@@ -19,13 +19,14 @@ import { log, logError } from '../logger';
 
 const API_KEY_PREFIX = 'markdownplus_api_key_';
 
-export type ApiProvider = 'xai' | 'claude' | 'openai';
+export type ApiProvider = 'xai' | 'claude' | 'openai' | 'gemini';
 
 // Map provider names to environment variable names
 const ENV_VAR_MAP: Record<ApiProvider, string> = {
     xai: 'XAI_API_KEY',
     claude: 'ANTHROPIC_API_KEY',
     openai: 'OPENAI_API_KEY',
+    gemini: 'GEMINI_API_KEY',
 };
 
 // In-memory cache of encrypted keys

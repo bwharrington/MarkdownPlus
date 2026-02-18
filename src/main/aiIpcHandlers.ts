@@ -5,6 +5,7 @@ import { log, logError } from './logger';
 import { callXAiApi, listModels, hasApiKey as hasXaiApiKey, DEFAULT_XAI_MODELS, Message } from './services/xaiApi';
 import { callClaudeApi, callClaudeApiWithSystemPrompt, listClaudeModels, hasApiKey as hasClaudeApiKey, DEFAULT_CLAUDE_MODELS } from './services/claudeApi';
 import { callOpenAIApi, callOpenAIApiWithJsonMode, listOpenAIModels, hasApiKey as hasOpenAIApiKey, DEFAULT_OPENAI_MODELS } from './services/openaiApi';
+import { callGeminiApi, callGeminiApiWithJsonMode, listGeminiModels, hasApiKey as hasGeminiApiKey, DEFAULT_GEMINI_MODELS } from './services/geminiApi';
 
 export interface AIChatRequestData {
     messages: Message[];
@@ -38,12 +39,13 @@ export interface AIProviderStatusesResponse {
     xai: AIProviderStatus;
     claude: AIProviderStatus;
     openai: AIProviderStatus;
+    gemini: AIProviderStatus;
 }
 
 export interface AIEditRequestData {
     messages: Array<{ role: string; content: string }>;
     model: string;
-    provider: 'claude' | 'openai';
+    provider: 'claude' | 'openai' | 'gemini';
     requestId?: string;
 }
 
@@ -74,7 +76,7 @@ Example response format:
 }`;
 
 // Helper function to load config and filter enabled models
-async function getEnabledModels(provider: 'xai' | 'claude' | 'openai', allModels: AIModelOption[]): Promise<AIModelOption[]> {
+async function getEnabledModels(provider: 'xai' | 'claude' | 'openai' | 'gemini', allModels: AIModelOption[]): Promise<AIModelOption[]> {
     try {
         const configPath = path.join(app.getPath('userData'), 'config.json');
         const data = await fs.readFile(configPath, 'utf-8');
@@ -203,6 +205,35 @@ export function registerAIIpcHandlers() {
         }
     });
 
+    // Gemini Chat Request
+    ipcMain.handle('ai:gemini-chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
+        log('AI IPC: gemini-chat-request', { model: data.model, messageCount: data.messages.length });
+        const controller = getControllerForRequest(data.requestId);
+        try {
+            const response = await callGeminiApi(data.messages, data.model, controller?.signal);
+            return { success: true, response };
+        } catch (error) {
+            logError('AI IPC: gemini-chat-request failed', error as Error);
+            return { success: false, error: (error as Error).message };
+        } finally {
+            finalizeRequest(data.requestId);
+        }
+    });
+
+    // List Gemini Models
+    ipcMain.handle('ai:list-gemini-models', async (): Promise<AIModelsResponse> => {
+        log('AI IPC: list-gemini-models');
+        try {
+            const models = await listGeminiModels();
+            const enabledModels = await getEnabledModels('gemini', models);
+            return { success: true, models: enabledModels };
+        } catch (error) {
+            logError('AI IPC: list-gemini-models failed, using defaults', error as Error);
+            const enabledModels = await getEnabledModels('gemini', DEFAULT_GEMINI_MODELS);
+            return { success: true, models: enabledModels };
+        }
+    });
+
     // Cancel in-flight chat request
     ipcMain.handle('ai:cancel-request', async (_event, requestId: string) => {
         const controller = activeChatRequests.get(requestId);
@@ -249,14 +280,6 @@ export function registerAIIpcHandlers() {
         log('AI IPC: edit-request', { provider: data.provider, model: data.model, messageCount: data.messages.length });
         const controller = getControllerForRequest(data.requestId);
 
-        // xAI not supported for edit mode
-        if ((data.provider as string) === 'xai') {
-            return {
-                success: false,
-                error: 'Edit mode is not supported with xAI. Please switch to Claude or OpenAI.'
-            };
-        }
-
         try {
             let response: string;
 
@@ -274,6 +297,14 @@ export function registerAIIpcHandlers() {
                     ...data.messages
                 ];
                 response = await callOpenAIApiWithJsonMode(openaiMessages, data.model, controller?.signal);
+            } else if (data.provider === 'gemini') {
+                // Gemini with JSON mode — system prompt is prepended as the first user message
+                // since Gemini's generateContent API does not have a dedicated system role
+                const geminiMessages = [
+                    { role: 'user', content: DIFF_EDIT_SYSTEM_PROMPT },
+                    ...data.messages,
+                ];
+                response = await callGeminiApiWithJsonMode(geminiMessages, data.model, controller?.signal);
             } else {
                 return { success: false, error: `Unknown provider: ${data.provider}` };
             }
@@ -397,6 +428,7 @@ export function registerAIIpcHandlers() {
             xai: { enabled: false, status: 'unchecked' },
             claude: { enabled: false, status: 'unchecked' },
             openai: { enabled: false, status: 'unchecked' },
+            gemini: { enabled: false, status: 'unchecked' },
         };
 
         // Check xAI
@@ -429,6 +461,17 @@ export function registerAIIpcHandlers() {
                 result.openai.status = 'success';
             } catch {
                 result.openai.status = 'error';
+            }
+        }
+
+        // Check Gemini
+        if (hasGeminiApiKey()) {
+            result.gemini.enabled = true;
+            try {
+                await listGeminiModels();
+                result.gemini.status = 'success';
+            } catch {
+                result.gemini.status = 'error';
             }
         }
 

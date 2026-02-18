@@ -28,6 +28,7 @@ import { useAIResearch } from '../hooks/useAIResearch';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
 import type { AIChatMode } from '../types/global';
+import { isProviderRestrictedFromMode } from '../aiProviderModeRestrictions';
 
 const AI_GREETINGS = [
     "I'll be back\u2026 right after you say something.",
@@ -237,9 +238,9 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Reset mode to chat when switching to xAI (edit/research not supported)
+    // Reset to chat mode when switching to a provider that doesn't support the current mode
     useEffect(() => {
-        if (provider === 'xai' && mode !== 'chat') {
+        if (mode !== 'chat' && isProviderRestrictedFromMode(provider, mode)) {
             handleModeChange('chat');
         }
     }, [provider, mode, handleModeChange]);
@@ -285,12 +286,12 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         dismissResearchProgress();
 
         // Edit mode request
-        if (mode === 'edit' && (provider === 'claude' || provider === 'openai')) {
+        if (mode === 'edit' && !isProviderRestrictedFromMode(provider, 'edit')) {
             setIsEditLoading(true);
             const requestId = `ai-edit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             activeEditRequestIdRef.current = requestId;
             try {
-                await requestEdit(inputValue, provider, selectedModel, requestId);
+                await requestEdit(inputValue, provider as 'claude' | 'openai', selectedModel, requestId);
                 if (activeEditRequestIdRef.current !== requestId) return;
                 setInputValue('');
             } catch (err) {
@@ -306,7 +307,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         }
 
         // Research mode request
-        if (mode === 'research' && (provider === 'claude' || provider === 'openai')) {
+        if (mode === 'research' && !isProviderRestrictedFromMode(provider, 'research')) {
             const requestId = `ai-research-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             try {
                 const topic = inputValue;

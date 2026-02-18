@@ -38,11 +38,12 @@ export interface ListModelsResponse {
     data: OpenAIModel[];
 }
 
-// Default models to use if API listing fails (only -latest models)
+// Default models to use if API listing fails
 export const DEFAULT_OPENAI_MODELS = [
-    { id: 'gpt-4o-latest', displayName: 'GPT-4 Omni Latest' },
-    { id: 'gpt-4o-mini-latest', displayName: 'GPT-4 Omni Mini Latest' },
-    { id: 'gpt-4-turbo-latest', displayName: 'GPT-4 Turbo Latest' },
+    { id: 'gpt-4o-latest', displayName: 'GPT-4o Latest' },
+    { id: 'gpt-4o-mini-latest', displayName: 'GPT-4o Mini Latest' },
+    { id: 'o3', displayName: 'o3' },
+    { id: 'o4-mini', displayName: 'o4 Mini' },
 ];
 
 export async function callOpenAIApi(
@@ -197,9 +198,12 @@ export async function listOpenAIModels(): Promise<OpenAIModel[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
-        // Filter to only GPT chat models with -latest suffix
+        // Keep GPT chat models (latest aliases only) and o-series reasoning models (base IDs only)
         return data.data.filter(model =>
-            model.id.startsWith('gpt-') && model.id.includes('-latest')
+            // GPT chat models — latest aliases only (no dated snapshots, no audio/search variants)
+            (model.id.startsWith('gpt-') && model.id.endsWith('-latest')) ||
+            // O-series reasoning models — base IDs only (e.g. o1, o3, o4-mini, o3-mini)
+            (/^o\d(-mini|-pro)?$/.test(model.id))
         );
     } catch (error) {
         logError('Error listing OpenAI models', error as Error);

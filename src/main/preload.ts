@@ -110,23 +110,26 @@ const electronAPI = {
     ipcRenderer.invoke('ai:claude-chat-request', { messages, model, requestId }),
   openaiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string) =>
     ipcRenderer.invoke('ai:openai-chat-request', { messages, model, requestId }),
+  geminiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string) =>
+    ipcRenderer.invoke('ai:gemini-chat-request', { messages, model, requestId }),
   cancelAIChatRequest: (requestId: string) =>
     ipcRenderer.invoke('ai:cancel-request', requestId),
   cancelAIEditRequest: (requestId: string) =>
     ipcRenderer.invoke('ai:cancel-edit-request', requestId),
-  aiEditRequest: (messages: Array<{ role: string; content: string }>, model: string, provider: 'claude' | 'openai', requestId?: string) =>
+  aiEditRequest: (messages: Array<{ role: string; content: string }>, model: string, provider: 'claude' | 'openai' | 'gemini', requestId?: string) =>
     ipcRenderer.invoke('ai:edit-request', { messages, model, provider, requestId }),
   listAIModels: () => ipcRenderer.invoke('ai:list-models'),
   listClaudeModels: () => ipcRenderer.invoke('ai:list-claude-models'),
   listOpenAIModels: () => ipcRenderer.invoke('ai:list-openai-models'),
+  listGeminiModels: () => ipcRenderer.invoke('ai:list-gemini-models'),
   getAIProviderStatuses: () => ipcRenderer.invoke('ai:get-provider-status'),
 
   // Secure Storage operations (API Keys)
-  setApiKey: (provider: 'xai' | 'claude' | 'openai', key: string) =>
+  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini', key: string) =>
     ipcRenderer.invoke('secure-storage:set-api-key', { provider, key }),
-  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai') =>
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini') =>
     ipcRenderer.invoke('secure-storage:has-api-key', provider),
-  deleteApiKey: (provider: 'xai' | 'claude' | 'openai') =>
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini') =>
     ipcRenderer.invoke('secure-storage:delete-api-key', provider),
   getApiKeyStatus: () => ipcRenderer.invoke('secure-storage:get-key-status'),
 };
