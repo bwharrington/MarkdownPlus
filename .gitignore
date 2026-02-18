@@ -5,7 +5,5 @@ release
 /config.json
 /markdownplus-debug.log
 NO_FILE.MD
-/dist/index.html
-/dist/main.js
-/dist/preload.js
-/dist/renderer.js
+/docs/test-documentation.pdf
+/ai-response-debug.txt
