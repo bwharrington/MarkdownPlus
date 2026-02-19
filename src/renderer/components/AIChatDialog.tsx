@@ -10,6 +10,7 @@ import {
     DialogContent,
     DialogContentText,
     DialogActions,
+    CircularProgress,
 } from '@mui/material';
 import {
     CloseIcon,
@@ -137,6 +138,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     const {
         provider,
         setProvider,
+        isStatusesLoaded,
         getProviderOptions,
         models,
         selectedModel,
@@ -388,7 +390,11 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                 </HeaderControls>
             </PanelHeader>
 
-            {!isCollapsed && (!hasProviders ? (
+            {!isCollapsed && (!isStatusesLoaded ? (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                    <CircularProgress size={24} />
+                </Box>
+            ) : !hasProviders ? (
                 <NoProvidersContainer>
                     <Typography color="text.secondary" gutterBottom>
                         No AI providers configured

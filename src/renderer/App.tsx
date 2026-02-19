@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { CssBaseline, Box, styled } from '@mui/material';
-import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider } from './contexts';
+import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider, AIProviderCacheProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog } from './components';
 import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType } from './hooks';
 import { SplitDivider } from './styles/editor.styles';
@@ -491,7 +491,9 @@ const App: React.FC = () => {
         <ThemeProvider>
             <CssBaseline />
             <EditorProvider>
-                <AppContent />
+                <AIProviderCacheProvider>
+                    <AppContent />
+                </AIProviderCacheProvider>
             </EditorProvider>
         </ThemeProvider>
     );

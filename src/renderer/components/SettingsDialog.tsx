@@ -40,7 +40,8 @@ import {
 import { useSettingsConfig } from '../hooks/useSettingsConfig';
 import { useDraggableDialog } from '../hooks/useDraggableDialog';
 import { useEditorDispatch } from '../contexts/EditorContext';
-import { IConfig, IFileReference, AIProviderStatuses } from '../types/global';
+import { useAIProviderCacheContext } from '../contexts/AIProviderCacheContext';
+import { IConfig, IFileReference } from '../types/global';
 
 // Styled Components
 const DialogContainer = styled(Box)(({ theme }) => ({
@@ -300,8 +301,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     // Config management
     const { config, updateConfig, isSaving } = useSettingsConfig();
 
-    // Provider statuses (to know which providers to show)
-    const [providerStatuses, setProviderStatuses] = useState<AIProviderStatuses | null>(null);
+    // Provider statuses from app-level cache
+    const {
+        providerStatuses,
+        refreshProviderStatuses: cacheRefreshStatuses,
+        invalidateModelsForProvider,
+    } = useAIProviderCacheContext();
 
     // Accordion expansion state for AI provider sections
     const [expandedSections, setExpandedSections] = useState<{
@@ -346,16 +351,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
     const dispatch = useEditorDispatch();
 
-    // Refresh provider statuses (re-ping)
+    // Refresh provider statuses via cache (updates all consumers reactively)
     const refreshProviderStatuses = useCallback(async () => {
-        const statuses = await window.electronAPI.getAIProviderStatuses();
-        setProviderStatuses(statuses);
-    }, []);
+        await cacheRefreshStatuses();
+    }, [cacheRefreshStatuses]);
 
-    // Load provider statuses and API key status on mount
+    // Load API key status when dialog opens
     useEffect(() => {
         if (open) {
-            window.electronAPI.getAIProviderStatuses().then(setProviderStatuses);
             window.electronAPI.getApiKeyStatus().then(setApiKeyStatus);
         }
     }, [open]);
@@ -419,6 +422,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         if (result.success) {
             setApiKeyInputs(prev => ({ ...prev, [provider]: '' }));
             setApiKeyStatus(prev => ({ ...prev, [provider]: true }));
+            invalidateModelsForProvider(provider);
             await refreshProviderStatuses();
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -436,12 +440,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 },
             });
         }
-    }, [apiKeyInputs, dispatch, refreshProviderStatuses]);
+    }, [apiKeyInputs, dispatch, refreshProviderStatuses, invalidateModelsForProvider]);
 
     const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         const result = await window.electronAPI.deleteApiKey(provider);
         if (result.success) {
             setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
+            invalidateModelsForProvider(provider);
             await refreshProviderStatuses();
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -459,13 +464,12 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 },
             });
         }
-    }, [dispatch, refreshProviderStatuses]);
+    }, [dispatch, refreshProviderStatuses, invalidateModelsForProvider]);
 
     const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         setTestingProvider(provider);
         try {
-            const statuses = await window.electronAPI.getAIProviderStatuses();
-            setProviderStatuses(statuses);
+            const statuses = await cacheRefreshStatuses();
             const status = statuses[provider];
             if (status.enabled && status.status === 'success') {
                 dispatch({
@@ -495,7 +499,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         } finally {
             setTestingProvider(null);
         }
-    }, [dispatch]);
+    }, [dispatch, cacheRefreshStatuses]);
 
     if (!open) return null;
 
@@ -578,7 +582,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="xAI (Grok)"
                     hasKey={apiKeyStatus.xai}
                     value={apiKeyInputs.xai}
-                    providerStatus={providerStatuses?.xai.status}
+                    providerStatus={providerStatuses.xai.status}
                     isTesting={testingProvider === 'xai'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, xai: value }))}
                     onSet={() => handleSetApiKey('xai')}
@@ -591,7 +595,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="Anthropic Claude"
                     hasKey={apiKeyStatus.claude}
                     value={apiKeyInputs.claude}
-                    providerStatus={providerStatuses?.claude.status}
+                    providerStatus={providerStatuses.claude.status}
                     isTesting={testingProvider === 'claude'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, claude: value }))}
                     onSet={() => handleSetApiKey('claude')}
@@ -604,7 +608,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="OpenAI"
                     hasKey={apiKeyStatus.openai}
                     value={apiKeyInputs.openai}
-                    providerStatus={providerStatuses?.openai.status}
+                    providerStatus={providerStatuses.openai.status}
                     isTesting={testingProvider === 'openai'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, openai: value }))}
                     onSet={() => handleSetApiKey('openai')}
@@ -617,7 +621,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     label="Google Gemini"
                     hasKey={apiKeyStatus.gemini}
                     value={apiKeyInputs.gemini}
-                    providerStatus={providerStatuses?.gemini.status}
+                    providerStatus={providerStatuses.gemini.status}
                     isTesting={testingProvider === 'gemini'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, gemini: value }))}
                     onSet={() => handleSetApiKey('gemini')}
@@ -626,11 +630,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 />
 
                 {/* AI Models Section - Only show if at least one provider has an API key */}
-                {(providerStatuses?.xai.enabled || providerStatuses?.claude.enabled || providerStatuses?.openai.enabled || providerStatuses?.gemini.enabled) && (
+                {(providerStatuses.xai.enabled || providerStatuses.claude.enabled || providerStatuses.openai.enabled || providerStatuses.gemini.enabled) && (
                     <>
                         <SectionHeader>AI Models</SectionHeader>
 
-                        {providerStatuses?.xai.enabled && (
+                        {providerStatuses.xai.enabled && (
                             <AIProviderSection
                                 title="xAI (Grok)"
                                 provider="xai"
@@ -641,7 +645,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             />
                         )}
 
-                        {providerStatuses?.claude.enabled && (
+                        {providerStatuses.claude.enabled && (
                             <AIProviderSection
                                 title="Anthropic Claude"
                                 provider="claude"
@@ -652,7 +656,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             />
                         )}
 
-                        {providerStatuses?.openai.enabled && (
+                        {providerStatuses.openai.enabled && (
                             <AIProviderSection
                                 title="OpenAI"
                                 provider="openai"
@@ -663,7 +667,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             />
                         )}
 
-                        {providerStatuses?.gemini.enabled && (
+                        {providerStatuses.gemini.enabled && (
                             <AIProviderSection
                                 title="Google Gemini"
                                 provider="gemini"

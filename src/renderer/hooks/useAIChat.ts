@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useAIProviderCacheContext } from '../contexts/AIProviderCacheContext';
 
 export type AIProvider = 'xai' | 'claude' | 'openai' | 'gemini';
 
@@ -23,7 +24,7 @@ export interface AIModelOption {
 
 export interface AIProviderStatus {
     enabled: boolean;
-    status: 'success' | 'error' | 'unchecked' | 'checking';
+    status: 'success' | 'error' | 'unchecked';
 }
 
 export interface AIProviderStatuses {
@@ -39,17 +40,20 @@ export interface UseAIChatOptions {
 }
 
 export function useAIChat(options?: UseAIChatOptions) {
+    // Consume provider statuses and model cache from app-level context
+    const {
+        providerStatuses,
+        isStatusesLoaded,
+        fetchModels: cacheFetchModels,
+        getCachedModels,
+    } = useAIProviderCacheContext();
+
     // Provider state
     const [provider, setProvider] = useState<AIProvider>(
         (options?.savedProvider as AIProvider) || 'claude'
     );
     const savedModelRef = useRef(options?.savedModel);
-    const [providerStatuses, setProviderStatuses] = useState<AIProviderStatuses>({
-        xai: { enabled: false, status: 'unchecked' },
-        claude: { enabled: false, status: 'unchecked' },
-        openai: { enabled: false, status: 'unchecked' },
-        gemini: { enabled: false, status: 'unchecked' },
-    });
+    const hasAutoSelectedRef = useRef(false);
 
     // Model state
     const [models, setModels] = useState<AIModelOption[]>([]);
@@ -63,82 +67,75 @@ export function useAIChat(options?: UseAIChatOptions) {
     const [error, setError] = useState<string | null>(null);
     const activeRequestIdRef = useRef<string | null>(null);
 
-    // Fetch provider statuses on mount
+    // Auto-select provider when statuses load or change
     useEffect(() => {
-        const checkProviderStatuses = async () => {
-            setProviderStatuses({
-                xai: { enabled: false, status: 'checking' },
-                claude: { enabled: false, status: 'checking' },
-                openai: { enabled: false, status: 'checking' },
-                gemini: { enabled: false, status: 'checking' },
-            });
+        if (!isStatusesLoaded) return;
 
-            try {
-                const statuses = await window.electronAPI.getAIProviderStatuses();
-                setProviderStatuses(statuses);
-
-                // Use saved provider if it's enabled, otherwise fall back to first enabled
-                const saved = options?.savedProvider as AIProvider | undefined;
-                if (saved && statuses[saved]?.enabled) {
-                    setProvider(saved);
-                } else if (statuses.claude.enabled) {
-                    setProvider('claude');
-                } else if (statuses.openai.enabled) {
-                    setProvider('openai');
-                } else if (statuses.gemini.enabled) {
-                    setProvider('gemini');
-                } else if (statuses.xai.enabled) {
-                    setProvider('xai');
-                }
-            } catch (err) {
-                console.error('Failed to check provider statuses:', err);
+        // Auto-select on initial load or when current provider becomes unavailable
+        if (!hasAutoSelectedRef.current || !providerStatuses[provider]?.enabled) {
+            const saved = options?.savedProvider as AIProvider | undefined;
+            if (saved && providerStatuses[saved]?.enabled) {
+                setProvider(saved);
+            } else if (providerStatuses.claude.enabled) {
+                setProvider('claude');
+            } else if (providerStatuses.openai.enabled) {
+                setProvider('openai');
+            } else if (providerStatuses.gemini.enabled) {
+                setProvider('gemini');
+            } else if (providerStatuses.xai.enabled) {
+                setProvider('xai');
             }
-        };
+            hasAutoSelectedRef.current = true;
+        }
+    }, [isStatusesLoaded, providerStatuses, provider, options?.savedProvider]);
 
-        checkProviderStatuses();
-    }, []);
-
-    // Fetch models when provider changes
+    // Fetch models when provider changes — cache-aware
     useEffect(() => {
-        const fetchModels = async () => {
+        let cancelled = false;
+
+        const loadModels = async () => {
+            // Try cached models first (synchronous)
+            const cached = getCachedModels(provider);
+            if (cached && cached.length > 0) {
+                setModels(cached);
+                const saved = savedModelRef.current;
+                const match = saved && cached.find(m => m.id === saved);
+                setSelectedModel(match ? match.id : cached[0].id);
+                savedModelRef.current = undefined;
+                return;
+            }
+
             setIsLoadingModels(true);
             setError(null);
 
             try {
-                let response;
-                if (provider === 'xai') {
-                    response = await window.electronAPI.listAIModels();
-                } else if (provider === 'claude') {
-                    response = await window.electronAPI.listClaudeModels();
-                } else if (provider === 'openai') {
-                    response = await window.electronAPI.listOpenAIModels();
-                } else {
-                    response = await window.electronAPI.listGeminiModels();
-                }
+                const fetchedModels = await cacheFetchModels(provider);
+                if (cancelled) return;
 
-                if (response.success && response.models) {
-                    setModels(response.models);
-                    if (response.models.length > 0) {
-                        // Prefer saved model if it exists in the list
-                        const saved = savedModelRef.current;
-                        const match = saved && response.models.find(m => m.id === saved);
-                        setSelectedModel(match ? match.id : response.models[0].id);
-                        // Only use saved model for the initial load
-                        savedModelRef.current = undefined;
-                    }
+                setModels(fetchedModels);
+                if (fetchedModels.length > 0) {
+                    const saved = savedModelRef.current;
+                    const match = saved && fetchedModels.find(m => m.id === saved);
+                    setSelectedModel(match ? match.id : fetchedModels[0].id);
+                    savedModelRef.current = undefined;
                 } else {
-                    setError(response.error || 'Failed to load models');
+                    setError('No models available');
                 }
             } catch (err) {
+                if (cancelled) return;
                 console.error('Failed to fetch models:', err);
                 setError('Failed to load models');
             } finally {
-                setIsLoadingModels(false);
+                if (!cancelled) {
+                    setIsLoadingModels(false);
+                }
             }
         };
 
-        fetchModels();
-    }, [provider]);
+        loadModels();
+
+        return () => { cancelled = true; };
+    }, [provider, cacheFetchModels, getCachedModels]);
 
     // Send message
     const sendMessage = useCallback(async (attachedFiles?: Array<{ name: string; path: string; type: string; size: number }>) => {
@@ -303,6 +300,7 @@ export function useAIChat(options?: UseAIChatOptions) {
         provider,
         setProvider,
         providerStatuses,
+        isStatusesLoaded,
         getProviderOptions,
 
         // Models

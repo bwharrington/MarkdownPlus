@@ -8,3 +8,5 @@ export { useImagePaste } from './useImagePaste';
 export { useContentEditable } from './useContentEditable';
 export { useEditorKeyboard } from './useEditorKeyboard';
 export { useDraggableDialog } from './useDraggableDialog';
+export { useAIProviderCache } from './useAIProviderCache';
+export type { AIProviderCacheValue } from './useAIProviderCache';
