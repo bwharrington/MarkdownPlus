@@ -8,10 +8,13 @@ import {
     EditIcon,
     FolderOpenIcon,
     FileDiffIcon,
+    PlusIcon,
+    MinusIcon,
 } from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
 import type { IFile } from '../types';
+import type { AttachedFile } from './FileAttachmentsList';
 
 const TabContainer = styled(Box)(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
@@ -121,7 +124,12 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
     );
 });
 
-export function TabBar() {
+interface TabBarProps {
+    attachedFiles: AttachedFile[];
+    onToggleFileAttachment: (file: IFile) => void;
+}
+
+export function TabBar({ attachedFiles, onToggleFileAttachment }: TabBarProps) {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
@@ -188,6 +196,16 @@ export function TabBar() {
         setContextMenu(null);
     }, [contextMenu, state.openFiles]);
 
+    const handleAttachToggleClick = useCallback(() => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file) {
+                onToggleFileAttachment(file);
+            }
+        }
+        setContextMenu(null);
+    }, [contextMenu, state.openFiles, onToggleFileAttachment]);
+
     const handleRenameDialogClose = useCallback(() => {
         setRenameDialog({ open: false, fileId: '', currentName: '' });
         setNewFileName('');
@@ -248,13 +266,34 @@ export function TabBar() {
                     <EditIcon size={18} sx={{ mr: 1 }} />
                     Rename
                 </MenuItem>
-                <MenuItem 
+                <MenuItem
                     onClick={handleOpenLocationClick}
                     disabled={!state.openFiles.find(f => f.id === contextMenu?.fileId)?.path}
                 >
                     <FolderOpenIcon size={18} sx={{ mr: 1 }} />
                     Open File Location
                 </MenuItem>
+                {(() => {
+                    const contextFile = contextMenu
+                        ? state.openFiles.find(f => f.id === contextMenu.fileId)
+                        : null;
+                    const isAttached = contextFile?.path
+                        ? attachedFiles.some(af => af.path === contextFile.path && !af.isContextDoc)
+                        : false;
+                    return (
+                        <MenuItem
+                            onClick={handleAttachToggleClick}
+                            disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
+                        >
+                            {isAttached ? (
+                                <MinusIcon size={18} sx={{ mr: 1, color: 'error.main' }} />
+                            ) : (
+                                <PlusIcon size={18} sx={{ mr: 1, color: 'success.main' }} />
+                            )}
+                            {isAttached ? `Remove "${contextFile?.name}"` : `Attach "${contextFile?.name}"`}
+                        </MenuItem>
+                    );
+                })()}
             </Menu>
             <Dialog open={renameDialog.open} onClose={handleRenameDialogClose}>
                 <DialogTitle>Rename File</DialogTitle>

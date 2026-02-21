@@ -29,6 +29,7 @@ import { useAIResearch } from '../hooks/useAIResearch';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
 import type { AIChatMode } from '../types/global';
+import type { IFile } from '../types';
 import { isProviderRestrictedFromMode } from '../aiProviderModeRestrictions';
 
 const AI_GREETINGS = [
@@ -88,9 +89,24 @@ const NoProvidersContainer = styled(Box)({
 interface AIChatDialogProps {
     open: boolean;
     onClose: () => void;
+    attachedFiles: AttachedFile[];
+    setAttachedFiles: React.Dispatch<React.SetStateAction<AttachedFile[]>>;
+    onAddAttachedFiles: (files: AttachedFile[]) => void;
+    onRemoveAttachedFile: (filePath: string) => void;
+    onToggleFileAttachment: (file: IFile) => void;
+    onToggleContextDoc: (filePath: string) => void;
 }
 
-export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
+export function AIChatDialog({
+    open,
+    onClose,
+    attachedFiles,
+    setAttachedFiles,
+    onAddAttachedFiles,
+    onRemoveAttachedFile,
+    onToggleFileAttachment,
+    onToggleContextDoc,
+}: AIChatDialogProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -105,8 +121,7 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
     // Collapse/Expand state
     const [isCollapsed, setIsCollapsed] = useState(false);
 
-    // File attachments state
-    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+    // Glow animation state for context doc
     const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
     // Mode state - persisted in config (chat | edit | research)
@@ -196,25 +211,52 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         }
     }, [open]);
 
-    // Attach current document when dialog opens
+    // Track the enabled state of the context doc across active-file changes
+    const contextDocEnabledRef = useRef(true);
+
+    // Update context doc chip when the active file changes (while open or on open)
     useEffect(() => {
-        if (open && editorState.activeFileId) {
-            const activeFile = editorState.openFiles.find(f => f.id === editorState.activeFileId);
-            if (activeFile && activeFile.path && (activeFile.fileType === 'markdown' || activeFile.fileType === 'text')) {
-                const hasContextDoc = attachedFiles.some(f => f.isContextDoc);
-                if (!hasContextDoc) {
-                    const contextDoc: AttachedFile = {
-                        name: activeFile.name,
-                        path: activeFile.path,
-                        type: activeFile.fileType,
-                        size: 0,
-                        isContextDoc: true,
-                        enabled: true,
-                    };
-                    setAttachedFiles([contextDoc]);
-                }
+        if (!open) return;
+
+        const activeFile = editorState.activeFileId
+            ? editorState.openFiles.find(f => f.id === editorState.activeFileId)
+            : null;
+
+        const isValidContextFile = activeFile &&
+            activeFile.path &&
+            (activeFile.fileType === 'markdown' || activeFile.fileType === 'text');
+
+        setAttachedFiles(prev => {
+            const currentContextDoc = prev.find(f => f.isContextDoc);
+
+            if (!isValidContextFile) {
+                // No valid active file — remove the context doc if present
+                if (!currentContextDoc) return prev;
+                return prev.filter(f => !f.isContextDoc);
             }
-        }
+
+            if (currentContextDoc?.path === activeFile.path) {
+                // Same file — no change needed
+                return prev;
+            }
+
+            // Preserve the enabled state the user set on the previous context doc
+            if (currentContextDoc) {
+                contextDocEnabledRef.current = currentContextDoc.enabled !== false;
+            }
+
+            const newContextDoc: AttachedFile = {
+                name: activeFile.name,
+                path: activeFile.path!,
+                type: activeFile.fileType,
+                size: 0,
+                isContextDoc: true,
+                enabled: contextDocEnabledRef.current,
+            };
+
+            // Replace existing context doc, keep all manually attached files
+            return [newContextDoc, ...prev.filter(f => !f.isContextDoc)];
+        });
     }, [open, editorState.activeFileId, editorState.openFiles]);
 
     // Detect when context document is saved and trigger glow animation
@@ -247,8 +289,8 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
         }
     }, [provider, mode, handleModeChange]);
 
-    // File attachment handlers
-    const handleAttachFile = useCallback(async () => {
+    // Open native file picker and add results as attachments
+    const handleAttachFromDisk = useCallback(async () => {
         const result = await window.electronAPI.openFileDialog({
             properties: ['openFile', 'multiSelections'],
         });
@@ -267,21 +309,9 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                     size: 0,
                 };
             });
-            setAttachedFiles(prev => [...prev, ...newFiles]);
+            onAddAttachedFiles(newFiles);
         }
-    }, []);
-
-    const handleRemoveFile = useCallback((filePath: string) => {
-        setAttachedFiles(prev => prev.filter(file => file.path !== filePath));
-    }, []);
-
-    const handleToggleContextDoc = useCallback((filePath: string) => {
-        setAttachedFiles(prev => prev.map(file =>
-            file.path === filePath && file.isContextDoc
-                ? { ...file, enabled: !file.enabled }
-                : file
-        ));
-    }, []);
+    }, [onAddAttachedFiles]);
 
     const handleSendMessage = useCallback(async () => {
         setEditModeError(null);
@@ -440,8 +470,8 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                     <FileAttachmentsList
                         files={attachedFiles}
                         glowingFile={glowingFile}
-                        onRemove={handleRemoveFile}
-                        onToggleContextDoc={handleToggleContextDoc}
+                        onRemove={onRemoveAttachedFile}
+                        onToggleContextDoc={onToggleContextDoc}
                     />
 
                     <MessageInput
@@ -453,10 +483,13 @@ export function AIChatDialog({ open, onClose }: AIChatDialogProps) {
                         isResearchLoading={isResearchLoading}
                         hasDiffTab={hasDiffTab}
                         hasActiveRequest={hasActiveRequest}
+                        openFiles={editorState.openFiles}
+                        attachedFiles={attachedFiles}
+                        onAttachFromDisk={handleAttachFromDisk}
+                        onToggleFileAttachment={onToggleFileAttachment}
                         onInputChange={setInputValue}
                         onSend={handleSendMessage}
                         onCancel={handleCancelRequest}
-                        onAttachFile={handleAttachFile}
                         onClose={onClose}
                     />
                 </>

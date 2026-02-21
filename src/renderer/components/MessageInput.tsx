@@ -1,7 +1,10 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Box, TextField, Button, IconButton, CircularProgress, styled } from '@mui/material';
 import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
+import { AttachFilePopover } from './AttachFilePopover';
+import type { AttachedFile } from './FileAttachmentsList';
 import type { AIChatMode } from '../types/global';
+import type { IFile } from '../types';
 
 const InputContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -20,10 +23,13 @@ interface MessageInputProps {
     isResearchLoading: boolean;
     hasDiffTab: boolean;
     hasActiveRequest: boolean;
+    openFiles: IFile[];
+    attachedFiles: AttachedFile[];
+    onAttachFromDisk: () => void;
+    onToggleFileAttachment: (file: IFile) => void;
     onInputChange: (value: string) => void;
     onSend: () => void;
     onCancel: () => void;
-    onAttachFile: () => void;
     onClose: () => void;
 }
 
@@ -36,12 +42,17 @@ export function MessageInput({
     isResearchLoading,
     hasDiffTab,
     hasActiveRequest,
+    openFiles,
+    attachedFiles,
+    onAttachFromDisk,
+    onToggleFileAttachment,
     onInputChange,
     onSend,
     onCancel,
-    onAttachFile,
     onClose,
 }: MessageInputProps) {
+    const [attachAnchorEl, setAttachAnchorEl] = useState<HTMLElement | null>(null);
+
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -51,17 +62,33 @@ export function MessageInput({
         }
     }, [onSend, onClose]);
 
+    const handleAttachClick = useCallback((e: React.MouseEvent<HTMLElement>) => {
+        setAttachAnchorEl(e.currentTarget);
+    }, []);
+
+    const handleAttachPopoverClose = useCallback(() => {
+        setAttachAnchorEl(null);
+    }, []);
+
     return (
         <InputContainer>
             <IconButton
                 size="small"
-                onClick={onAttachFile}
+                onClick={handleAttachClick}
                 disabled={isLoading}
                 title="Attach files"
                 sx={{ color: 'text.secondary' }}
             >
                 <AttachFileIcon fontSize="small" />
             </IconButton>
+            <AttachFilePopover
+                anchorEl={attachAnchorEl}
+                onClose={handleAttachPopoverClose}
+                openFiles={openFiles}
+                attachedFiles={attachedFiles}
+                onAttachFromDisk={onAttachFromDisk}
+                onToggleFileAttachment={onToggleFileAttachment}
+            />
             <TextField
                 inputRef={inputRef}
                 multiline

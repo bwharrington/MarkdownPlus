@@ -4,6 +4,8 @@ import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider, AIPro
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog } from './components';
 import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType } from './hooks';
 import { SplitDivider } from './styles/editor.styles';
+import type { AttachedFile } from './components/FileAttachmentsList';
+import type { IFile } from './types';
 
 // Intercept console methods and send to main process
 const originalConsole = {
@@ -108,6 +110,43 @@ function AppContent() {
 
     const handleCloseSettings = useCallback(() => {
         setSettingsOpen(false);
+    }, []);
+
+    // AI Chat attached files state (lifted here so TabBar can also access it)
+    const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+
+    const handleAddAttachedFiles = useCallback((newFiles: AttachedFile[]) => {
+        setAttachedFiles(prev => [...prev, ...newFiles]);
+    }, []);
+
+    const handleRemoveAttachedFile = useCallback((filePath: string) => {
+        setAttachedFiles(prev => prev.filter(f => f.path !== filePath));
+    }, []);
+
+    const handleToggleFileAttachment = useCallback((file: IFile) => {
+        const filePath = file.path;
+        if (!filePath) return;
+        setAttachedFiles(prev => {
+            const existing = prev.find(f => f.path === filePath && !f.isContextDoc);
+            if (existing) {
+                return prev.filter(f => f !== existing);
+            }
+            const newAttachment: AttachedFile = {
+                name: file.name,
+                path: filePath,
+                type: file.fileType,
+                size: 0,
+            };
+            return [...prev, newAttachment];
+        });
+    }, []);
+
+    const handleToggleContextDoc = useCallback((filePath: string) => {
+        setAttachedFiles(prev => prev.map(f =>
+            f.path === filePath && f.isContextDoc
+                ? { ...f, enabled: !f.enabled }
+                : f
+        ));
     }, []);
 
     // Set up window title management
@@ -460,25 +499,30 @@ function AppContent() {
     return (
         <AppContainer>
             <Toolbar />
-            <TabBar />
+            <TabBar
+                attachedFiles={attachedFiles}
+                onToggleFileAttachment={handleToggleFileAttachment}
+            />
             <MainContent ref={mainContentRef}>
                 <EditorArea>
                     {hasOpenFiles ? <EditorPane /> : <EmptyState />}
                 </EditorArea>
-                {aiChatOpen && (
-                    <>
-                        <SplitDivider
-                            onMouseDown={handleAiDockResizeStart}
-                            sx={{ flexShrink: 0, zIndex: 2 }}
-                        />
-                        <DockedAIPanel sx={{ width: aiDockWidth }}>
-                            <AIChatDialog
-                                open={aiChatOpen}
-                                onClose={handleCloseAIChat}
-                            />
-                        </DockedAIPanel>
-                    </>
-                )}
+                <SplitDivider
+                    onMouseDown={handleAiDockResizeStart}
+                    sx={{ flexShrink: 0, zIndex: 2, display: aiChatOpen ? undefined : 'none' }}
+                />
+                <DockedAIPanel sx={{ width: aiDockWidth, display: aiChatOpen ? undefined : 'none' }}>
+                    <AIChatDialog
+                        open={aiChatOpen}
+                        onClose={handleCloseAIChat}
+                        attachedFiles={attachedFiles}
+                        setAttachedFiles={setAttachedFiles}
+                        onAddAttachedFiles={handleAddAttachedFiles}
+                        onRemoveAttachedFile={handleRemoveAttachedFile}
+                        onToggleFileAttachment={handleToggleFileAttachment}
+                        onToggleContextDoc={handleToggleContextDoc}
+                    />
+                </DockedAIPanel>
                 <SettingsDialog open={settingsOpen} onClose={handleCloseSettings} />
             </MainContent>
             <NotificationSnackbar />

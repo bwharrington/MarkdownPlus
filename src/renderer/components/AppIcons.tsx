@@ -182,3 +182,5 @@ export const UndockIcon = createIcon(PanelRightClose);
 export const FileDiffIcon = createIcon(FileDiff);
 export const RefreshIcon = createIcon(RefreshCw);
 export const ResearchIcon = createIcon(Telescope);
+export const PlusIcon = createIcon(Plus);
+export const MinusIcon = createIcon(Minus);
