@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark Mode Version (White Inverse) - Lucide-style clean icon -->
+  <!-- Hexagon container (transparent fill, bold white stroke) -->
+  <path d="M512 185 L812 340 L812 685 L512 840 L212 685 L212 340 Z" 
+        fill="transparent" stroke="#F1F5F9" stroke-width="48" stroke-linejoin="round"/>
+  
+  <!-- Central energy ball (solid white circle - simplified orb) -->
+  <circle cx="512" cy="512" r="118" fill="#F1F5F9"/>
+</svg>

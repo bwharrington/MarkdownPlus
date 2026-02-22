@@ -47,7 +47,7 @@ export function EmptyState() {
         <Container>
             <WelcomeCard>
                 <Typography variant="h4" component="h1" gutterBottom>
-                    Welcome to MarkdownPlus
+                    Welcome to Markdown Nexus
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                     A simple, elegant Markdown editor for creating and editing your documents.

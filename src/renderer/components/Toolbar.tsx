@@ -14,11 +14,12 @@ import {
     CropSquareIcon,
     BugReportIcon,
     DescriptionIcon,
-    SmartToyIcon,
 } from './AppIcons';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile, useTheme, useEditorDispatch } from '../contexts';
-import AppIcon from '../../../assets/brand-mark.svg';
+import AppIcon from '../../../assets/markdown-nexus.svg';
+import NexusIconLight from '../../../assets/markdown-nexus-light-mode.svg';
+import NexusIconDark from '../../../assets/markdown-nexus-dark-mode.svg';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
@@ -140,9 +141,9 @@ export function Toolbar() {
         <StyledAppBar position="static">
             <StyledToolbar variant="dense">
                 <AppLogo>
-                    <img src={AppIcon} alt="MarkdownPlus" width={28} height={28} />
+                    <img src={AppIcon} alt="Markdown Nexus" width={28} height={28} />
                     <Typography variant="subtitle1" fontWeight={600}>
-                        MarkdownPlus
+                        Markdown Nexus
                     </Typography>
                 </AppLogo>
 
@@ -203,13 +204,18 @@ export function Toolbar() {
 
                 <ToolbarDivider orientation="vertical" flexItem />
 
-                <Tooltip title="AI Chat (Ctrl+Shift+A)">
+                <Tooltip title="Nexus (Ctrl+Shift+A)">
                     <IconButton
                         onClick={handleOpenAIChat}
                         color="inherit"
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
-                        <SmartToyIcon />
+                        <img
+                            src={mode === 'dark' ? NexusIconDark : NexusIconLight}
+                            alt="Nexus"
+                            width={24}
+                            height={24}
+                        />
                     </IconButton>
                 </Tooltip>
 

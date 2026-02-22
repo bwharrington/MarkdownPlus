@@ -12,11 +12,11 @@ export function initLogger() {
         ? path.dirname(app.getPath('exe'))
         : app.getAppPath();
     
-    logFilePath = path.join(appPath, 'markdownplus-debug.log');
-    
+    logFilePath = path.join(appPath, 'markdown-nexus-debug.log');
+
     // Clear old log file on startup
     try {
-        fs.writeFile(logFilePath, `=== MarkdownPlus Debug Log ===\n`, 'utf-8').catch(() => {});
+        fs.writeFile(logFilePath, `=== Markdown Nexus Debug Log ===\n`, 'utf-8').catch(() => {});
     } catch {
         // Ignore errors
     }

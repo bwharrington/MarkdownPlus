@@ -1,6 +1,6 @@
-# AI Chat Feature Documentation 1.2
+# Nexus Feature Documentation 1.2
 
-This document describes the AI Chat feature in MarkdownPlus, covering configuration, the chat dialog, edit mode, diff visualization, and the underlying architecture.
+This document describes the Nexus feature in Markdown Nexus, covering configuration, the chat dialog, edit mode, diff visualization, and the underlying architecture.
 
 ---
 
@@ -46,7 +46,7 @@ This document describes the AI Chat feature in MarkdownPlus, covering configurat
 
 ## Overview
 
-The AI Chat feature allows users to interact with AI language models directly within the MarkdownPlus editor. It supports three modes:
+The Nexus feature allows users to interact with AI language models directly within the Markdown Nexus editor. It supports three modes:
 
 - **Chat Mode**: A conversational interface for asking questions, brainstorming, or getting help with writing. The AI sees the current document as context and responds in a chat bubble format.
 - **Edit Mode**: The AI modifies the current markdown document based on user instructions. Changes are presented in a **dedicated diff tab** with a unified inline diff view, where the user can accept or reject changes on a per-hunk basis.
@@ -468,7 +468,7 @@ This prevents conflicts between manual edits and the pending diff changes. Once 
 
 ### Activating Research Mode
 
-- Select **Research** from the Mode dropdown in the AI Chat panel
+- Select **Research** from the Mode dropdown in the Nexus panel
 - Research mode is supported for **Claude** and **OpenAI** providers only (xAI is restricted from research mode; Gemini is not yet wired for research)
 - The input placeholder changes to "Enter a research topic..." and the send button shows a telescope icon with an info-blue color
 

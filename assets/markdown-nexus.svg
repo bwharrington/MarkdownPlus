@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Rich warm gold-yellow metallic gradient (same palette) -->
+    <linearGradient id="goldMetal" x1="20%" y1="15%" x2="80%" y2="85%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#FFF6D0"/>
+      <stop offset="28%" stop-color="#F4D878"/>
+      <stop offset="52%" stop-color="#E8C048"/>
+      <stop offset="74%" stop-color="#C8A028"/>
+      <stop offset="100%" stop-color="#9C6F1C"/>
+    </linearGradient>
+
+    <linearGradient id="goldDark" x1="30%" y1="20%" x2="70%" y2="80%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#E8C85A"/>
+      <stop offset="100%" stop-color="#A07828"/>
+    </linearGradient>
+
+    <!-- Ultra-vibrant blue energy orb -->
+    <radialGradient id="energyCore" cx="50%" cy="50%" r="48%" fx="36%" fy="36%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="18%" stop-color="#F0FFFF"/>
+      <stop offset="35%" stop-color="#A0F8FF"/>
+      <stop offset="52%" stop-color="#78E8FF"/>
+      <stop offset="72%" stop-color="#40D0FF"/>
+      <stop offset="100%" stop-color="#0A68C8"/>
+    </radialGradient>
+
+    <radialGradient id="orbAura1" cx="50%" cy="50%" r="65%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#C8FFFF" stop-opacity="0.95"/>
+      <stop offset="42%" stop-color="#78E8FF" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#1A8CFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="orbAura2" cx="50%" cy="50%" r="82%" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#78E8FF" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#1A8CFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Powerful multi-pass energy glow -->
+    <filter id="energyGlow" x="-90%" y="-90%" width="280%" height="280%">
+      <feGaussianBlur stdDeviation="24" result="glow1"/>
+      <feFlood flood-color="#78E8FF" flood-opacity="0.85"/>
+      <feComposite in="glow1" in2="SourceGraphic" operator="out"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- LARGE ORNATE GOLD HEXAGON CONTAINER -->
+  <!-- Main gold body -->
+  <path d="M512 185 L812 340 L812 685 L512 840 L212 685 L212 340 Z" 
+        fill="url(#goldDark)" stroke="url(#goldMetal)" stroke-width="58" stroke-linejoin="round"/>
+
+  <!-- Inner metallic trim / bevel -->
+  <path d="M512 218 L780 365 L780 660 L512 807 L244 660 L244 365 Z" 
+        fill="none" stroke="#FFF6D0" stroke-width="24" stroke-linejoin="round" opacity="0.75"/>
+
+  <!-- Subtle inner gold highlight ring -->
+  <path d="M512 245 L755 385 L755 640 L512 780 L269 640 L269 385 Z" 
+        fill="none" stroke="#F4D878" stroke-width="12" stroke-linejoin="round" opacity="0.6"/>
+
+  <!-- BLUE ENERGY BALL -->
+  <g filter="url(#energyGlow)">
+    <!-- Largest soft aura -->
+    <circle cx="512" cy="512" r="212" fill="url(#orbAura2)"/>
+    <!-- Medium aura -->
+    <circle cx="512" cy="512" r="168" fill="url(#orbAura1)"/>
+    <!-- Medium bright shell -->
+    <circle cx="512" cy="512" r="118" fill="#40C8FF" opacity="0.55"/>
+    <!-- Main glowing orb core -->
+    <circle cx="512" cy="512" r="96" fill="url(#energyCore)"/>
+  </g>
+
+  <!-- Bright central core highlight -->
+  <circle cx="512" cy="512" r="48" fill="#F8FFFF"/>
+  <circle cx="512" cy="512" r="29" fill="#FFFFFF"/>
+
+</svg>

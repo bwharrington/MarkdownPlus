@@ -423,7 +423,7 @@ export function AIChatDialog({
             <PanelHeader>
                 <HeaderControls>
                     <Typography variant="subtitle2" fontWeight={600}>
-                        AI Chat
+                        Nexus
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>

@@ -1,0 +1,1711 @@
+=== Markdown Nexus Debug Log ===
+[2026-02-22T02:43:28.257Z] Logger initialized
+{
+  "appPath": "C:\\Projects\\MarkdownPlus",
+  "logFilePath": "C:\\Projects\\MarkdownPlus\\markdown-nexus-debug.log",
+  "isPackaged": false
+}
+
+[2026-02-22T02:43:28.259Z] === App Starting ===
+
+[2026-02-22T02:43:28.259Z] Electron app ready
+
+[2026-02-22T02:43:28.259Z] Config file location
+{
+  "path": "C:\\Users\\Devel\\AppData\\Roaming\\markdown-nexus\\config.json"
+}
+
+[2026-02-22T02:43:28.259Z] Secure Storage: No encrypted keys file found (first run)
+
+[2026-02-22T02:43:28.259Z] Command line arguments received
+{
+  "args": [
+    "."
+  ],
+  "length": 1
+}
+
+[2026-02-22T02:43:28.259Z] Filtering argument
+{
+  "arg": ".",
+  "isMarkdown": false,
+  "isNotFlag": true,
+  "included": false
+}
+
+[2026-02-22T02:43:28.259Z] Pending files to open after filtering
+{
+  "pendingFilesToOpen": [],
+  "count": 0
+}
+
+[2026-02-22T02:43:28.259Z] Registering IPC handlers
+
+[2026-02-22T02:43:28.260Z] Registering AI IPC handlers
+
+[2026-02-22T02:43:28.260Z] AI IPC handlers registered
+
+[2026-02-22T02:43:28.260Z] Registering Secure Storage IPC handlers
+
+[2026-02-22T02:43:28.260Z] Syncing AI models config
+
+[2026-02-22T02:43:28.267Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T02:43:28.267Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T02:43:28.267Z] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-02-22T02:43:28.521Z] xAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:28.529Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:28.529Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:28.529Z] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-02-22T02:43:28.859Z] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:28.860Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T02:43:28.860Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T02:43:28.860Z] OpenAI List Models Request
+{
+  "url": "https://api.openai.com/v1/models"
+}
+
+[2026-02-22T02:43:29.309Z] OpenAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:29.311Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T02:43:29.311Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T02:43:29.311Z] Gemini List Models Request
+{
+  "url": "https://generativelanguage.googleapis.com/v1beta/models"
+}
+
+[2026-02-22T02:43:29.431Z] Gemini List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:29.433Z] Gemini List Models Raw Response
+{
+  "totalCount": 43,
+  "models": [
+    {
+      "name": "models/gemini-2.5-flash",
+      "displayName": "Gemini 2.5 Flash",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-pro",
+      "displayName": "Gemini 2.5 Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash",
+      "displayName": "Gemini 2.0 Flash",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-001",
+      "displayName": "Gemini 2.0 Flash 001",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-exp-image-generation",
+      "displayName": "Gemini 2.0 Flash (Image Generation) Experimental",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-lite-001",
+      "displayName": "Gemini 2.0 Flash-Lite 001",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-lite",
+      "displayName": "Gemini 2.0 Flash-Lite",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-preview-tts",
+      "displayName": "Gemini 2.5 Flash Preview TTS",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "generateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-pro-preview-tts",
+      "displayName": "Gemini 2.5 Pro Preview TTS",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "generateContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemma-3-1b-it",
+      "displayName": "Gemma 3 1B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-4b-it",
+      "displayName": "Gemma 3 4B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-12b-it",
+      "displayName": "Gemma 3 12B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-27b-it",
+      "displayName": "Gemma 3 27B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3n-e4b-it",
+      "displayName": "Gemma 3n E4B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3n-e2b-it",
+      "displayName": "Gemma 3n E2B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-flash-latest",
+      "displayName": "Gemini Flash Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-flash-lite-latest",
+      "displayName": "Gemini Flash-Lite Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-pro-latest",
+      "displayName": "Gemini Pro Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-lite",
+      "displayName": "Gemini 2.5 Flash-Lite",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-image",
+      "displayName": "Nano Banana",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-lite-preview-09-2025",
+      "displayName": "Gemini 2.5 Flash-Lite Preview Sep 2025",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-pro-preview",
+      "displayName": "Gemini 3 Pro Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-flash-preview",
+      "displayName": "Gemini 3 Flash Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3.1-pro-preview",
+      "displayName": "Gemini 3.1 Pro Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3.1-pro-preview-customtools",
+      "displayName": "Gemini 3.1 Pro Preview Custom Tools",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-pro-image-preview",
+      "displayName": "Nano Banana Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/nano-banana-pro-preview",
+      "displayName": "Nano Banana Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-robotics-er-1.5-preview",
+      "displayName": "Gemini Robotics-ER 1.5 Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-computer-use-preview-10-2025",
+      "displayName": "Gemini 2.5 Computer Use Preview 10-2025",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/deep-research-pro-preview-12-2025",
+      "displayName": "Deep Research Pro Preview (Dec-12-2025)",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-embedding-001",
+      "displayName": "Gemini Embedding 001",
+      "supportedGenerationMethods": [
+        "embedContent",
+        "countTextTokens",
+        "countTokens",
+        "asyncBatchEmbedContent"
+      ]
+    },
+    {
+      "name": "models/aqa",
+      "displayName": "Model that performs Attributed Question Answering.",
+      "supportedGenerationMethods": [
+        "generateAnswer"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-generate-001",
+      "displayName": "Imagen 4",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-ultra-generate-001",
+      "displayName": "Imagen 4 Ultra",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-fast-generate-001",
+      "displayName": "Imagen 4 Fast",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/veo-2.0-generate-001",
+      "displayName": "Veo 2",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.0-generate-001",
+      "displayName": "Veo 3",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.0-fast-generate-001",
+      "displayName": "Veo 3 fast",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.1-generate-preview",
+      "displayName": "Veo 3.1",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.1-fast-generate-preview",
+      "displayName": "Veo 3.1 fast",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-latest",
+      "displayName": "Gemini 2.5 Flash Native Audio Latest",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-preview-09-2025",
+      "displayName": "Gemini 2.5 Flash Native Audio Preview 09-2025",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-preview-12-2025",
+      "displayName": "Gemini 2.5 Flash Native Audio Preview 12-2025",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    }
+  ]
+}
+
+[2026-02-22T02:43:29.434Z] Gemini List Models Filtered Result
+{
+  "filteredCount": 12,
+  "models": [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-pro-preview-tts",
+    "gemini-2.5-flash-lite",
+    "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
+    "gemini-3.1-pro-preview",
+    "gemini-3.1-pro-preview-customtools",
+    "gemini-robotics-er-1.5-preview"
+  ]
+}
+
+[2026-02-22T02:43:29.434Z] Creating main window
+
+[2026-02-22T02:43:29.491Z] Opening DevTools
+{
+  "isDev": true
+}
+
+[2026-02-22T02:43:29.601Z] Main window created
+
+[2026-02-22T02:43:29.939Z] DevTools opened via native UI
+
+[2026-02-22T02:43:31.168Z] AI IPC: list-claude-models
+
+[2026-02-22T02:43:31.168Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:31.168Z] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-02-22T02:43:31.170Z] [RENDERER LOG] [App] Setting up file opening from command line
+
+[2026-02-22T02:43:31.170Z] [RENDERER LOG] [App] Setting up onOpenFilesFromArgs listener
+
+[2026-02-22T02:43:31.170Z] [RENDERER LOG] [App] Calling loadInitialFiles...
+
+[2026-02-22T02:43:31.171Z] [RENDERER LOG] [App] Signaling renderer ready to main process
+
+[2026-02-22T02:43:31.171Z] IPC: renderer-ready called
+{
+  "pendingFiles": []
+}
+
+[2026-02-22T02:43:31.171Z] No files to send from renderer-ready
+
+[2026-02-22T02:43:31.171Z] AI IPC: get-provider-status
+
+[2026-02-22T02:43:31.171Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T02:43:31.171Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T02:43:31.171Z] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Setting up file opening from command line
+
+[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Setting up onOpenFilesFromArgs listener
+
+[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Calling loadInitialFiles...
+
+[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Signaling renderer ready to main process
+
+[2026-02-22T02:43:31.175Z] IPC: renderer-ready called
+{
+  "pendingFiles": []
+}
+
+[2026-02-22T02:43:31.175Z] No files to send from renderer-ready
+
+[2026-02-22T02:43:31.175Z] AI IPC: get-provider-status
+
+[2026-02-22T02:43:31.175Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T02:43:31.175Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T02:43:31.175Z] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-02-22T02:43:31.271Z] [RENDERER LOG] [App] Renderer ready response - initial files: []
+
+[2026-02-22T02:43:31.271Z] [RENDERER LOG] [App] No command line files from renderer-ready, checking via getInitialFiles...
+
+[2026-02-22T02:43:31.271Z] IPC: get-initial-files called
+{
+  "pendingFiles": []
+}
+
+[2026-02-22T02:43:31.271Z] IPC: Returning files and clearing pending
+{
+  "files": []
+}
+
+[2026-02-22T02:43:31.272Z] [RENDERER LOG] [App] Renderer ready response - initial files: []
+
+[2026-02-22T02:43:31.272Z] [RENDERER LOG] [App] No command line files from renderer-ready, checking via getInitialFiles...
+
+[2026-02-22T02:43:31.272Z] IPC: get-initial-files called
+{
+  "pendingFiles": []
+}
+
+[2026-02-22T02:43:31.272Z] IPC: Returning files and clearing pending
+{
+  "files": []
+}
+
+[2026-02-22T02:43:31.275Z] xAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.275Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:31.275Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:31.275Z] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-02-22T02:43:31.324Z] xAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.324Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:31.324Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T02:43:31.324Z] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] getInitialFiles response: []
+
+[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] No command line files, restoring recent files from config...
+
+[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] getInitialFiles response: []
+
+[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] No command line files, restoring recent files from config...
+
+[2026-02-22T02:43:31.339Z] [RENDERER LOG] [App] Config loaded {"openFilesCount":1}
+
+[2026-02-22T02:43:31.339Z] [RENDERER LOG] [App] Restoring recent file: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md with mode: edit
+
+[2026-02-22T02:43:31.339Z] IPC: file:read called
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+}
+
+[2026-02-22T02:43:31.340Z] [RENDERER LOG] [App] Config loaded {"openFilesCount":1}
+
+[2026-02-22T02:43:31.340Z] [RENDERER LOG] [App] Restoring recent file: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md with mode: edit
+
+[2026-02-22T02:43:31.340Z] IPC: file:read called
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+}
+
+[2026-02-22T02:43:31.340Z] IPC: file:read success
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md",
+  "contentLength": 60137,
+  "lineEnding": "CRLF"
+}
+
+[2026-02-22T02:43:31.341Z] IPC: file:read success
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md",
+  "contentLength": 60137,
+  "lineEnding": "CRLF"
+}
+
+[2026-02-22T02:43:31.353Z] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.355Z] Filtered claude models
+{
+  "total": 8,
+  "enabled": 8
+}
+
+[2026-02-22T02:43:31.392Z] [RENDERER LOG] [App] Recent file restored: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md
+
+[2026-02-22T02:43:31.393Z] [RENDERER LOG] [App] Recent file restored: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md
+
+[2026-02-22T02:43:31.393Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211392-jwa8bxy9p","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":0}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] Adding new file to state {"fileId":"file-1771728211392-jwa8bxy9p","newOpenFilesCount":1}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211392-jwa8bxy9p","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":0}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] Adding new file to state {"fileId":"file-1771728211392-jwa8bxy9p","newOpenFilesCount":1}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211393-xma8siuog","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":1}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] File already open, switching to it {"existingFileId":"file-1771728211392-jwa8bxy9p"}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211393-xma8siuog","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":1}
+
+[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] File already open, switching to it {"existingFileId":"file-1771728211392-jwa8bxy9p"}
+
+[2026-02-22T02:43:31.453Z] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.453Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T02:43:31.453Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T02:43:31.453Z] OpenAI List Models Request
+{
+  "url": "https://api.openai.com/v1/models"
+}
+
+[2026-02-22T02:43:31.603Z] Started watching file
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+}
+
+[2026-02-22T02:43:31.604Z] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.605Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T02:43:31.605Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T02:43:31.605Z] OpenAI List Models Request
+{
+  "url": "https://api.openai.com/v1/models"
+}
+
+[2026-02-22T02:43:31.741Z] OpenAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.743Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T02:43:31.743Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T02:43:31.743Z] Gemini List Models Request
+{
+  "url": "https://generativelanguage.googleapis.com/v1beta/models"
+}
+
+[2026-02-22T02:43:31.807Z] Gemini List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.808Z] Gemini List Models Raw Response
+{
+  "totalCount": 43,
+  "models": [
+    {
+      "name": "models/gemini-2.5-flash",
+      "displayName": "Gemini 2.5 Flash",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-pro",
+      "displayName": "Gemini 2.5 Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash",
+      "displayName": "Gemini 2.0 Flash",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-001",
+      "displayName": "Gemini 2.0 Flash 001",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-exp-image-generation",
+      "displayName": "Gemini 2.0 Flash (Image Generation) Experimental",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-lite-001",
+      "displayName": "Gemini 2.0 Flash-Lite 001",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-lite",
+      "displayName": "Gemini 2.0 Flash-Lite",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-preview-tts",
+      "displayName": "Gemini 2.5 Flash Preview TTS",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "generateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-pro-preview-tts",
+      "displayName": "Gemini 2.5 Pro Preview TTS",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "generateContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemma-3-1b-it",
+      "displayName": "Gemma 3 1B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-4b-it",
+      "displayName": "Gemma 3 4B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-12b-it",
+      "displayName": "Gemma 3 12B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-27b-it",
+      "displayName": "Gemma 3 27B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3n-e4b-it",
+      "displayName": "Gemma 3n E4B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3n-e2b-it",
+      "displayName": "Gemma 3n E2B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-flash-latest",
+      "displayName": "Gemini Flash Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-flash-lite-latest",
+      "displayName": "Gemini Flash-Lite Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-pro-latest",
+      "displayName": "Gemini Pro Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-lite",
+      "displayName": "Gemini 2.5 Flash-Lite",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-image",
+      "displayName": "Nano Banana",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-lite-preview-09-2025",
+      "displayName": "Gemini 2.5 Flash-Lite Preview Sep 2025",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-pro-preview",
+      "displayName": "Gemini 3 Pro Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-flash-preview",
+      "displayName": "Gemini 3 Flash Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3.1-pro-preview",
+      "displayName": "Gemini 3.1 Pro Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3.1-pro-preview-customtools",
+      "displayName": "Gemini 3.1 Pro Preview Custom Tools",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-pro-image-preview",
+      "displayName": "Nano Banana Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/nano-banana-pro-preview",
+      "displayName": "Nano Banana Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-robotics-er-1.5-preview",
+      "displayName": "Gemini Robotics-ER 1.5 Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-computer-use-preview-10-2025",
+      "displayName": "Gemini 2.5 Computer Use Preview 10-2025",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/deep-research-pro-preview-12-2025",
+      "displayName": "Deep Research Pro Preview (Dec-12-2025)",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-embedding-001",
+      "displayName": "Gemini Embedding 001",
+      "supportedGenerationMethods": [
+        "embedContent",
+        "countTextTokens",
+        "countTokens",
+        "asyncBatchEmbedContent"
+      ]
+    },
+    {
+      "name": "models/aqa",
+      "displayName": "Model that performs Attributed Question Answering.",
+      "supportedGenerationMethods": [
+        "generateAnswer"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-generate-001",
+      "displayName": "Imagen 4",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-ultra-generate-001",
+      "displayName": "Imagen 4 Ultra",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-fast-generate-001",
+      "displayName": "Imagen 4 Fast",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/veo-2.0-generate-001",
+      "displayName": "Veo 2",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.0-generate-001",
+      "displayName": "Veo 3",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.0-fast-generate-001",
+      "displayName": "Veo 3 fast",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.1-generate-preview",
+      "displayName": "Veo 3.1",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.1-fast-generate-preview",
+      "displayName": "Veo 3.1 fast",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-latest",
+      "displayName": "Gemini 2.5 Flash Native Audio Latest",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-preview-09-2025",
+      "displayName": "Gemini 2.5 Flash Native Audio Preview 09-2025",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-preview-12-2025",
+      "displayName": "Gemini 2.5 Flash Native Audio Preview 12-2025",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    }
+  ]
+}
+
+[2026-02-22T02:43:31.809Z] Gemini List Models Filtered Result
+{
+  "filteredCount": 12,
+  "models": [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-pro-preview-tts",
+    "gemini-2.5-flash-lite",
+    "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
+    "gemini-3.1-pro-preview",
+    "gemini-3.1-pro-preview-customtools",
+    "gemini-robotics-er-1.5-preview"
+  ]
+}
+
+[2026-02-22T02:43:31.809Z] AI IPC: provider status result
+{
+  "xai": {
+    "enabled": true,
+    "status": "success"
+  },
+  "claude": {
+    "enabled": true,
+    "status": "success"
+  },
+  "openai": {
+    "enabled": true,
+    "status": "success"
+  },
+  "gemini": {
+    "enabled": true,
+    "status": "success"
+  }
+}
+
+[2026-02-22T02:43:31.909Z] OpenAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.911Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T02:43:31.911Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T02:43:31.911Z] Gemini List Models Request
+{
+  "url": "https://generativelanguage.googleapis.com/v1beta/models"
+}
+
+[2026-02-22T02:43:31.965Z] Gemini List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T02:43:31.968Z] Gemini List Models Raw Response
+{
+  "totalCount": 43,
+  "models": [
+    {
+      "name": "models/gemini-2.5-flash",
+      "displayName": "Gemini 2.5 Flash",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-pro",
+      "displayName": "Gemini 2.5 Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash",
+      "displayName": "Gemini 2.0 Flash",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-001",
+      "displayName": "Gemini 2.0 Flash 001",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-exp-image-generation",
+      "displayName": "Gemini 2.0 Flash (Image Generation) Experimental",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-lite-001",
+      "displayName": "Gemini 2.0 Flash-Lite 001",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.0-flash-lite",
+      "displayName": "Gemini 2.0 Flash-Lite",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-preview-tts",
+      "displayName": "Gemini 2.5 Flash Preview TTS",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "generateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-pro-preview-tts",
+      "displayName": "Gemini 2.5 Pro Preview TTS",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "generateContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemma-3-1b-it",
+      "displayName": "Gemma 3 1B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-4b-it",
+      "displayName": "Gemma 3 4B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-12b-it",
+      "displayName": "Gemma 3 12B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3-27b-it",
+      "displayName": "Gemma 3 27B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3n-e4b-it",
+      "displayName": "Gemma 3n E4B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemma-3n-e2b-it",
+      "displayName": "Gemma 3n E2B",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-flash-latest",
+      "displayName": "Gemini Flash Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-flash-lite-latest",
+      "displayName": "Gemini Flash-Lite Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-pro-latest",
+      "displayName": "Gemini Pro Latest",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-lite",
+      "displayName": "Gemini 2.5 Flash-Lite",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-image",
+      "displayName": "Nano Banana",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-lite-preview-09-2025",
+      "displayName": "Gemini 2.5 Flash-Lite Preview Sep 2025",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-pro-preview",
+      "displayName": "Gemini 3 Pro Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-flash-preview",
+      "displayName": "Gemini 3 Flash Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3.1-pro-preview",
+      "displayName": "Gemini 3.1 Pro Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3.1-pro-preview-customtools",
+      "displayName": "Gemini 3.1 Pro Preview Custom Tools",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "createCachedContent",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-3-pro-image-preview",
+      "displayName": "Nano Banana Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/nano-banana-pro-preview",
+      "displayName": "Nano Banana Pro",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens",
+        "batchGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-robotics-er-1.5-preview",
+      "displayName": "Gemini Robotics-ER 1.5 Preview",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-computer-use-preview-10-2025",
+      "displayName": "Gemini 2.5 Computer Use Preview 10-2025",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/deep-research-pro-preview-12-2025",
+      "displayName": "Deep Research Pro Preview (Dec-12-2025)",
+      "supportedGenerationMethods": [
+        "generateContent",
+        "countTokens"
+      ]
+    },
+    {
+      "name": "models/gemini-embedding-001",
+      "displayName": "Gemini Embedding 001",
+      "supportedGenerationMethods": [
+        "embedContent",
+        "countTextTokens",
+        "countTokens",
+        "asyncBatchEmbedContent"
+      ]
+    },
+    {
+      "name": "models/aqa",
+      "displayName": "Model that performs Attributed Question Answering.",
+      "supportedGenerationMethods": [
+        "generateAnswer"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-generate-001",
+      "displayName": "Imagen 4",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-ultra-generate-001",
+      "displayName": "Imagen 4 Ultra",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/imagen-4.0-fast-generate-001",
+      "displayName": "Imagen 4 Fast",
+      "supportedGenerationMethods": [
+        "predict"
+      ]
+    },
+    {
+      "name": "models/veo-2.0-generate-001",
+      "displayName": "Veo 2",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.0-generate-001",
+      "displayName": "Veo 3",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.0-fast-generate-001",
+      "displayName": "Veo 3 fast",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.1-generate-preview",
+      "displayName": "Veo 3.1",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/veo-3.1-fast-generate-preview",
+      "displayName": "Veo 3.1 fast",
+      "supportedGenerationMethods": [
+        "predictLongRunning"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-latest",
+      "displayName": "Gemini 2.5 Flash Native Audio Latest",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-preview-09-2025",
+      "displayName": "Gemini 2.5 Flash Native Audio Preview 09-2025",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    },
+    {
+      "name": "models/gemini-2.5-flash-native-audio-preview-12-2025",
+      "displayName": "Gemini 2.5 Flash Native Audio Preview 12-2025",
+      "supportedGenerationMethods": [
+        "countTokens",
+        "bidiGenerateContent"
+      ]
+    }
+  ]
+}
+
+[2026-02-22T02:43:31.969Z] Gemini List Models Filtered Result
+{
+  "filteredCount": 12,
+  "models": [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash-preview-tts",
+    "gemini-2.5-pro-preview-tts",
+    "gemini-2.5-flash-lite",
+    "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
+    "gemini-3.1-pro-preview",
+    "gemini-3.1-pro-preview-customtools",
+    "gemini-robotics-er-1.5-preview"
+  ]
+}
+
+[2026-02-22T02:43:31.969Z] AI IPC: provider status result
+{
+  "xai": {
+    "enabled": true,
+    "status": "success"
+  },
+  "claude": {
+    "enabled": true,
+    "status": "success"
+  },
+  "openai": {
+    "enabled": true,
+    "status": "success"
+  },
+  "gemini": {
+    "enabled": true,
+    "status": "success"
+  }
+}
+
+[2026-02-22T02:43:35.607Z] DevTools closed via native UI
+
+[2026-02-22T02:43:45.385Z] Stopped watching file
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+}
+
+[2026-02-22T02:43:45.390Z] Started watching file
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+}
+

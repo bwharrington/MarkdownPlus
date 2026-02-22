@@ -4,7 +4,7 @@ import type { IFile } from '../types';
 /**
  * Custom hook that handles external file change detection and reload behavior.
  * 
- * When a file is modified outside of MarkdownPlus, this hook determines whether
+ * When a file is modified outside of Markdown Nexus, this hook determines whether
  * to reload it silently or prompt the user, based on the `silentFileUpdates`
  * config setting:
  * 

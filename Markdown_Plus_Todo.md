@@ -1,4 +1,4 @@
-# MarkdownPlus - Feature Roadmap
+# Markdown Nexus - Feature Roadmap
 
 ## Top Priority Features
 

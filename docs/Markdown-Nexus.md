@@ -1,9 +1,9 @@
-# MarkdownPlus Documentation
+# Markdown Nexus Documentation
 
 **Version:** 1.0.0
 **A multi-tab Markdown editor with live preview**
 
-MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, React, and Material UI (MUI). It provides a seamless editing experience with dual viewing modes, extensive keyboard shortcuts, and a clean, intuitive interface.
+Markdown Nexus is a modern, feature-rich Markdown editor built with Electron, React, and Material UI (MUI). It provides a seamless editing experience with dual viewing modes, extensive keyboard shortcuts, and a clean, intuitive interface.
 
 ---
 
@@ -25,7 +25,7 @@ MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, Reac
    - [Visual Configuration Menu](#visual-configuration-menu)
    - [Logging](#logging)
 4. [AI Features](#ai-features)
-   - [AI Chat Assistant](#ai-chat-assistant)
+   - [Nexus Assistant](#ai-chat-assistant)
    - [AI Edit Mode](#ai-edit-mode)
    - [AI Inline Edit Window](#ai-inline-edit-window)
    - [AI Provider Configuration](#ai-provider-configuration)
@@ -38,7 +38,7 @@ MarkdownPlus is a modern, feature-rich Markdown editor built with Electron, Reac
 
 ## Overview
 
-MarkdownPlus is a desktop Markdown editor designed for writers, developers, and anyone who works with Markdown documents. It features:
+Markdown Nexus is a desktop Markdown editor designed for writers, developers, and anyone who works with Markdown documents. It features:
 
 - **Dual viewing modes** - Switch between raw Markdown editing and rendered preview
 - **Multi-tab interface** - Work on multiple documents simultaneously
@@ -57,13 +57,13 @@ MarkdownPlus is a desktop Markdown editor designed for writers, developers, and 
 
 Download the appropriate installer for your platform from the releases page:
 
-- **Windows:** `MarkdownPlus-Setup.exe` (installer) or `MarkdownPlus-Portable.exe` (portable)
-- **macOS:** `MarkdownPlus.dmg`
-- **Linux:** `MarkdownPlus.AppImage` or `MarkdownPlus.deb`
+- **Windows:** `Markdown Nexus-Setup.exe` (installer) or `Markdown Nexus-Portable.exe` (portable)
+- **macOS:** `Markdown Nexus.dmg`
+- **Linux:** `Markdown Nexus.AppImage` or `Markdown Nexus.deb`
 
 ### File Associations
 
-MarkdownPlus automatically registers as the default handler for markup files:
+Markdown Nexus automatically registers as the default handler for markup files:
 
 **Markdown:**
 
@@ -73,7 +73,7 @@ MarkdownPlus automatically registers as the default handler for markup files:
 
 - `.rst`, `.rest`
 
-Double-clicking any of these file types will open them in MarkdownPlus.
+Double-clicking any of these file types will open them in Markdown Nexus.
 
 ---
 
@@ -81,7 +81,7 @@ Double-clicking any of these file types will open them in MarkdownPlus.
 
 ### Dual View Modes
 
-MarkdownPlus provides two viewing modes for each document:
+Markdown Nexus provides two viewing modes for each document:
 
 #### Edit Mode
 
@@ -212,7 +212,7 @@ In Edit mode, a comprehensive formatting toolbar provides quick access to Markdo
 
 ### reStructuredText Support
 
-MarkdownPlus provides full support for reStructuredText (RST) files with live preview rendering and a dedicated formatting toolbar.
+Markdown Nexus provides full support for reStructuredText (RST) files with live preview rendering and a dedicated formatting toolbar.
 
 #### Supported RST Elements
 
@@ -256,7 +256,7 @@ When editing RST files, a specialized toolbar appears with RST-specific formatti
 
 ### Mermaid Diagrams
 
-MarkdownPlus supports embedded Mermaid diagrams in both Markdown and RST files. Diagrams are rendered live in preview mode.
+Markdown Nexus supports embedded Mermaid diagrams in both Markdown and RST files. Diagrams are rendered live in preview mode.
 
 #### Mermaid in Markdown
 
@@ -299,7 +299,7 @@ Use the `code-block` directive with `mermaid` as the language:
 
 ### Link Navigation
 
-MarkdownPlus supports clickable link navigation in Preview mode, allowing you to follow both internal and external links directly from the rendered document.
+Markdown Nexus supports clickable link navigation in Preview mode, allowing you to follow both internal and external links directly from the rendered document.
 
 #### Supported Link Types
 
@@ -318,13 +318,13 @@ Clicking a link that starts with `#` navigates to the matching heading within th
 
 #### External URLs
 
-Clicking a link that starts with `http://` or `https://` opens the URL in your system's default web browser. The link opens externally so you stay in MarkdownPlus without interruption.
+Clicking a link that starts with `http://` or `https://` opens the URL in your system's default web browser. The link opens externally so you stay in Markdown Nexus without interruption.
 
 > **Note:** Link navigation is available in Preview mode only. In Edit mode, links are displayed as raw Markdown syntax.
 
 ### PDF Export
 
-MarkdownPlus can export documents to PDF format:
+Markdown Nexus can export documents to PDF format:
 
 - Click the **PDF export** icon in the toolbar while viewing a document
 - The rendered preview content is exported to a PDF file
@@ -333,7 +333,7 @@ MarkdownPlus can export documents to PDF format:
 
 ### Theme Support
 
-MarkdownPlus supports both light and dark themes:
+Markdown Nexus supports both light and dark themes:
 
 - **Toggle Theme** - Click the sun/moon icon in the toolbar
 - **Persistent preference** - Theme choice is remembered across sessions
@@ -341,7 +341,7 @@ MarkdownPlus supports both light and dark themes:
 
 ### Visual Configuration Menu
 
-MarkdownPlus provides a visual Settings dialog for configuring the application without manually editing files.
+Markdown Nexus provides a visual Settings dialog for configuring the application without manually editing files.
 
 #### Opening the Settings Dialog
 
@@ -399,7 +399,7 @@ Securely manage API keys for AI providers:
 
 #### Configuration Storage
 
-MarkdownPlus stores its configuration in `config.json` located in the user data directory:
+Markdown Nexus stores its configuration in `config.json` located in the user data directory:
 
 - **Windows:** `C:\Users\<user>\AppData\Roaming\markdownplus\config.json`
 - **macOS:** `~/Library/Application Support/markdownplus/config.json`
@@ -409,7 +409,7 @@ Settings are preserved across application updates and reinstalls. While direct e
 
 ### Logging
 
-MarkdownPlus maintains a debug log file for troubleshooting:
+Markdown Nexus maintains a debug log file for troubleshooting:
 
 - **Location:** `markdownplus-debug.log` (next to executable)
 - **View Log:** Click the document icon in the toolbar
@@ -430,11 +430,11 @@ All console output from the renderer process is captured and written to the log 
 
 ## AI Features
 
-MarkdownPlus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, and xAI.
+Markdown Nexus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, and xAI.
 
-### AI Chat Assistant
+### Nexus Assistant
 
-Access the AI Chat Assistant by clicking the **AI** button in the toolbar. The chat assistant provides a conversational interface for getting help with your documents.
+Access the Nexus Assistant by clicking the **AI** button in the toolbar. The chat assistant provides a conversational interface for getting help with your documents.
 
 #### Features
 
@@ -467,7 +467,7 @@ AI Edit Mode allows you to make AI-powered edits directly to your document with 
 
 #### Enabling Edit Mode
 
-1. Open the AI Chat dialog
+1. Open the Nexus dialog
 2. Click the **pencil icon** next to the model selector to toggle Edit Mode
 3. The button turns green when Edit Mode is active
 
@@ -516,7 +516,7 @@ When the AI returns edits, a **dedicated diff tab** opens in the tab bar (simila
 
 ### AI Inline Edit Window
 
-The AI Inline Edit Window provides a streamlined interface for making AI-powered edits directly within your document. It combines the AI Chat dialog with an inline editing workflow, allowing you to describe changes in natural language and review them visually in the editor.
+The AI Inline Edit Window provides a streamlined interface for making AI-powered edits directly within your document. It combines the Nexus dialog with an inline editing workflow, allowing you to describe changes in natural language and review them visually in the editor.
 
 #### Opening the Inline Edit Window
 
@@ -604,7 +604,7 @@ For development purposes, you can use a `.env` file to override secure storage:
 
 #### Provider Status Indicators
 
-The AI Chat dialog and Settings show the status of each provider:
+The Nexus dialog and Settings show the status of each provider:
 
 - **Green indicator** - Provider is configured, connected, and available
 - **Red indicator** - Provider has an error (invalid key or API issue)
@@ -659,7 +659,7 @@ When editing lists, pressing `Enter` automatically continues the list:
 
 | Shortcut         | Action                                     |
 | ---------------- | ------------------------------------------ |
-| `Ctrl+Shift+A` | Open/close AI Chat dialog                  |
+| `Ctrl+Shift+A` | Open/close Nexus dialog                  |
 | `Enter`        | Send message or submit edit (in AI dialog) |
 | `Shift+Enter`  | New line in AI dialog input                |
 
@@ -898,7 +898,7 @@ Double-click any word in the editor to highlight all occurrences:
 
 ### External File Change Detection
 
-When a file is modified outside of MarkdownPlus, the application detects the change in real-time via file system watching. The behavior depends on the **Silent File Updates** setting in Settings:
+When a file is modified outside of Markdown Nexus, the application detects the change in real-time via file system watching. The behavior depends on the **Silent File Updates** setting in Settings:
 
 #### Silent File Updates ON (default)
 
@@ -914,7 +914,7 @@ When a file is modified outside of MarkdownPlus, the application detects the cha
 
 ### Line Ending Support
 
-MarkdownPlus preserves line endings when saving files:
+Markdown Nexus preserves line endings when saving files:
 
 - Detects original line ending style (CRLF or LF)
 - Maintains consistency throughout the file
@@ -922,14 +922,14 @@ MarkdownPlus preserves line endings when saving files:
 
 ### Single Instance Lock
 
-Only one instance of MarkdownPlus runs at a time:
+Only one instance of Markdown Nexus runs at a time:
 
 - Opening files while the app is running focuses the existing window
 - New files are opened in tabs within the running instance
 
 ### Frameless Window
 
-MarkdownPlus uses a custom frameless window:
+Markdown Nexus uses a custom frameless window:
 
 - Draggable title bar area
 - Custom minimize, maximize, and close buttons
@@ -943,4 +943,4 @@ For issues, feature requests, or contributions, please visit the project reposit
 
 ---
 
-*MarkdownPlus - Write Markdown, Beautifully.*
+*Markdown Nexus - Write Markdown, Beautifully.*

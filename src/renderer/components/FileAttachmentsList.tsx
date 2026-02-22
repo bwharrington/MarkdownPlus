@@ -15,14 +15,29 @@ const AttachmentsContainer = styled(Box)(({ theme }) => ({
 
 const GlowingChip = styled(Chip)({
     '@keyframes chipGlow': {
-        '0%, 100%': {
-            boxShadow: '0 0 2px rgba(33, 150, 243, 0.3)',
+        '0%': {
+            boxShadow: '0 0 6px rgba(64, 208, 255, 0.6), 0 0 14px rgba(10, 104, 200, 0.4)',
+        },
+        '20%': {
+            boxShadow: '0 0 12px rgba(120, 232, 255, 1.0), 0 0 24px rgba(64, 208, 255, 0.7), 0 0 36px rgba(10, 104, 200, 0.4)',
+        },
+        '35%': {
+            boxShadow: '0 0 6px rgba(64, 208, 255, 0.6), 0 0 14px rgba(10, 104, 200, 0.4)',
         },
         '50%': {
-            boxShadow: '0 0 12px rgba(33, 150, 243, 0.8), 0 0 20px rgba(33, 150, 243, 0.4)',
+            boxShadow: '0 0 6px rgba(244, 200, 60, 0.6), 0 0 14px rgba(200, 140, 20, 0.4)',
+        },
+        '70%': {
+            boxShadow: '0 0 12px rgba(255, 220, 80, 1.0), 0 0 24px rgba(232, 180, 40, 0.7), 0 0 36px rgba(180, 120, 10, 0.4)',
+        },
+        '85%': {
+            boxShadow: '0 0 6px rgba(244, 200, 60, 0.6), 0 0 14px rgba(200, 140, 20, 0.4)',
+        },
+        '100%': {
+            boxShadow: '0 0 6px rgba(64, 208, 255, 0.6), 0 0 14px rgba(10, 104, 200, 0.4)',
         },
     },
-    animation: 'chipGlow 1.5s ease-in-out infinite',
+    animation: 'chipGlow 2.4s linear infinite',
     transition: 'box-shadow 0.3s ease-in-out',
 });
 

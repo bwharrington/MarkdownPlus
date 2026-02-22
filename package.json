@@ -1,5 +1,5 @@
 {
-  "name": "markdownplus",
+  "name": "markdown-nexus",
   "version": "1.0.0",
   "main": "dist/main.js",
   "scripts": {
@@ -58,8 +58,8 @@
     "remark-gfm": "^4.0.1"
   },
   "build": {
-    "appId": "com.markdownplus.app",
-    "productName": "MarkdownPlus",
+    "appId": "com.markdownnexus.app",
+    "productName": "Markdown Nexus",
     "files": [
       "dist/**/*",
       "node_modules/**/*",
