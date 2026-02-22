@@ -212,6 +212,12 @@ async function callChatApi(
     if (provider === 'claude') {
         return window.electronAPI.claudeChatRequest(messages, model, requestId);
     }
+    if (provider === 'xai') {
+        return window.electronAPI.aiChatRequest(messages, model, requestId);
+    }
+    if (provider === 'gemini') {
+        return window.electronAPI.geminiChatRequest(messages, model, requestId);
+    }
     return window.electronAPI.openaiChatRequest(messages, model, requestId);
 }
 
@@ -235,10 +241,6 @@ export function useAIResearch() {
     ) => {
         if (!topic.trim()) {
             throw new Error('Please enter a research topic');
-        }
-
-        if (provider === 'xai') {
-            throw new Error('Research mode is not supported for xAI');
         }
 
         activeRequestIdRef.current = requestId;

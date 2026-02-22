@@ -1,6 +1,6 @@
 
 
-# How React Works: A Comprehensive Research Report for Software Developers
+# How React Works: A Comprehensive Research Report for Software Developers 
 
 ## Executive Summary
 
