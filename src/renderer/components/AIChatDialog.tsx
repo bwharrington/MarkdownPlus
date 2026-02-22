@@ -66,6 +66,35 @@ const DialogContainer = styled(Box)(({ theme }) => ({
     height: '100%',
 }));
 
+const BorderAnimation = styled(Box)({
+    '@keyframes borderSpin': {
+        '0%':   { '--border-angle': '0deg' },
+        '100%': { '--border-angle': '360deg' },
+    },
+    '@property --border-angle': {
+        syntax: '"<angle>"',
+        inherits: 'false',
+        initialValue: '0deg',
+    },
+    position: 'absolute',
+    inset: 0,
+    borderRadius: 'inherit',
+    pointerEvents: 'none',
+    zIndex: 10,
+    '&::before': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        borderRadius: 'inherit',
+        padding: '3px',
+        background: 'conic-gradient(from var(--border-angle), #0A68C8, #40D0FF, #78E8FF, #FFFFFF, #F4D878, #E8B830, #C8810A, #E8B830, #F4D878, #FFFFFF, #78E8FF, #40D0FF, #0A68C8)',
+        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+        WebkitMaskComposite: 'xor',
+        maskComposite: 'exclude',
+        animation: 'borderSpin 2s linear infinite',
+    },
+});
+
 const PanelHeader = styled(Box)(({ theme }) => ({
     display: 'flex',
     alignItems: 'center',
@@ -420,6 +449,7 @@ export function AIChatDialog({
 
     return (
         <DialogContainer ref={dialogRef}>
+            {hasActiveRequest && <BorderAnimation />}
             <PanelHeader>
                 <HeaderControls>
                     <Typography variant="subtitle2" fontWeight={600}>

@@ -1,23 +1,26 @@
 === Markdown Nexus Debug Log ===
-[2026-02-22T02:43:28.257Z] Logger initialized
+[2026-02-22T03:04:54.763Z] Logger initialized
 {
   "appPath": "C:\\Projects\\MarkdownPlus",
   "logFilePath": "C:\\Projects\\MarkdownPlus\\markdown-nexus-debug.log",
   "isPackaged": false
 }
 
-[2026-02-22T02:43:28.259Z] === App Starting ===
+[2026-02-22T03:04:54.765Z] === App Starting ===
 
-[2026-02-22T02:43:28.259Z] Electron app ready
+[2026-02-22T03:04:54.765Z] Electron app ready
 
-[2026-02-22T02:43:28.259Z] Config file location
+[2026-02-22T03:04:54.765Z] Config file location
 {
   "path": "C:\\Users\\Devel\\AppData\\Roaming\\markdown-nexus\\config.json"
 }
 
-[2026-02-22T02:43:28.259Z] Secure Storage: No encrypted keys file found (first run)
+[2026-02-22T03:04:54.765Z] Secure Storage: Loaded encrypted keys from disk
+{
+  "count": 3
+}
 
-[2026-02-22T02:43:28.259Z] Command line arguments received
+[2026-02-22T03:04:54.765Z] Command line arguments received
 {
   "args": [
     "."
@@ -25,7 +28,7 @@
   "length": 1
 }
 
-[2026-02-22T02:43:28.259Z] Filtering argument
+[2026-02-22T03:04:54.765Z] Filtering argument
 {
   "arg": ".",
   "isMarkdown": false,
@@ -33,107 +36,107 @@
   "included": false
 }
 
-[2026-02-22T02:43:28.259Z] Pending files to open after filtering
+[2026-02-22T03:04:54.766Z] Pending files to open after filtering
 {
   "pendingFilesToOpen": [],
   "count": 0
 }
 
-[2026-02-22T02:43:28.259Z] Registering IPC handlers
+[2026-02-22T03:04:54.766Z] Registering IPC handlers
 
-[2026-02-22T02:43:28.260Z] Registering AI IPC handlers
+[2026-02-22T03:04:54.766Z] Registering AI IPC handlers
 
-[2026-02-22T02:43:28.260Z] AI IPC handlers registered
+[2026-02-22T03:04:54.766Z] AI IPC handlers registered
 
-[2026-02-22T02:43:28.260Z] Registering Secure Storage IPC handlers
+[2026-02-22T03:04:54.766Z] Registering Secure Storage IPC handlers
 
-[2026-02-22T02:43:28.260Z] Syncing AI models config
+[2026-02-22T03:04:54.766Z] Syncing AI models config
 
-[2026-02-22T02:43:28.267Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:54.772Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "xai"
 }
 
-[2026-02-22T02:43:28.267Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:54.773Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "xai"
 }
 
-[2026-02-22T02:43:28.267Z] xAI List Models Request
+[2026-02-22T03:04:54.773Z] xAI List Models Request
 {
   "url": "https://api.x.ai/v1/models"
 }
 
-[2026-02-22T02:43:28.521Z] xAI List Models Response Status
+[2026-02-22T03:04:55.032Z] xAI List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:28.529Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:55.035Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "claude"
 }
 
-[2026-02-22T02:43:28.529Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:55.035Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "claude"
 }
 
-[2026-02-22T02:43:28.529Z] Claude List Models Request
+[2026-02-22T03:04:55.035Z] Claude List Models Request
 {
   "url": "https://api.anthropic.com/v1/models"
 }
 
-[2026-02-22T02:43:28.859Z] Claude List Models Response Status
+[2026-02-22T03:04:55.478Z] Claude List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:28.860Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:55.479Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "openai"
 }
 
-[2026-02-22T02:43:28.860Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:55.479Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "openai"
 }
 
-[2026-02-22T02:43:28.860Z] OpenAI List Models Request
+[2026-02-22T03:04:55.479Z] OpenAI List Models Request
 {
   "url": "https://api.openai.com/v1/models"
 }
 
-[2026-02-22T02:43:29.309Z] OpenAI List Models Response Status
+[2026-02-22T03:04:56.043Z] OpenAI List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:29.311Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:56.047Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "gemini"
 }
 
-[2026-02-22T02:43:29.311Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:56.047Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "gemini"
 }
 
-[2026-02-22T02:43:29.311Z] Gemini List Models Request
+[2026-02-22T03:04:56.047Z] Gemini List Models Request
 {
   "url": "https://generativelanguage.googleapis.com/v1beta/models"
 }
 
-[2026-02-22T02:43:29.431Z] Gemini List Models Response Status
+[2026-02-22T03:04:56.227Z] Gemini List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:29.433Z] Gemini List Models Raw Response
+[2026-02-22T03:04:56.229Z] Gemini List Models Raw Response
 {
   "totalCount": 43,
   "models": [
@@ -512,7 +515,7 @@
   ]
 }
 
-[2026-02-22T02:43:29.434Z] Gemini List Models Filtered Result
+[2026-02-22T03:04:56.231Z] Gemini List Models Filtered Result
 {
   "filteredCount": 12,
   "models": [
@@ -531,310 +534,331 @@
   ]
 }
 
-[2026-02-22T02:43:29.434Z] Creating main window
+[2026-02-22T03:04:56.231Z] Creating main window
 
-[2026-02-22T02:43:29.491Z] Opening DevTools
+[2026-02-22T03:04:56.286Z] Opening DevTools
 {
   "isDev": true
 }
 
-[2026-02-22T02:43:29.601Z] Main window created
+[2026-02-22T03:04:56.289Z] Main window created
 
-[2026-02-22T02:43:29.939Z] DevTools opened via native UI
+[2026-02-22T03:04:56.596Z] DevTools opened via native UI
 
-[2026-02-22T02:43:31.168Z] AI IPC: list-claude-models
+[2026-02-22T03:04:57.413Z] AI IPC: list-claude-models
 
-[2026-02-22T02:43:31.168Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.413Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "claude"
 }
 
-[2026-02-22T02:43:31.168Z] Claude List Models Request
+[2026-02-22T03:04:57.413Z] Claude List Models Request
 {
   "url": "https://api.anthropic.com/v1/models"
 }
 
-[2026-02-22T02:43:31.170Z] [RENDERER LOG] [App] Setting up file opening from command line
+[2026-02-22T03:04:57.414Z] [RENDERER LOG] [App] Setting up file opening from command line
 
-[2026-02-22T02:43:31.170Z] [RENDERER LOG] [App] Setting up onOpenFilesFromArgs listener
+[2026-02-22T03:04:57.414Z] [RENDERER LOG] [App] Setting up onOpenFilesFromArgs listener
 
-[2026-02-22T02:43:31.170Z] [RENDERER LOG] [App] Calling loadInitialFiles...
+[2026-02-22T03:04:57.415Z] [RENDERER LOG] [App] Calling loadInitialFiles...
 
-[2026-02-22T02:43:31.171Z] [RENDERER LOG] [App] Signaling renderer ready to main process
+[2026-02-22T03:04:57.415Z] [RENDERER LOG] [App] Signaling renderer ready to main process
 
-[2026-02-22T02:43:31.171Z] IPC: renderer-ready called
+[2026-02-22T03:04:57.415Z] IPC: renderer-ready called
 {
   "pendingFiles": []
 }
 
-[2026-02-22T02:43:31.171Z] No files to send from renderer-ready
+[2026-02-22T03:04:57.415Z] No files to send from renderer-ready
 
-[2026-02-22T02:43:31.171Z] AI IPC: get-provider-status
+[2026-02-22T03:04:57.415Z] AI IPC: get-provider-status
 
-[2026-02-22T02:43:31.171Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.416Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "xai"
 }
 
-[2026-02-22T02:43:31.171Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.416Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "xai"
 }
 
-[2026-02-22T02:43:31.171Z] xAI List Models Request
+[2026-02-22T03:04:57.416Z] xAI List Models Request
 {
   "url": "https://api.x.ai/v1/models"
 }
 
-[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Setting up file opening from command line
+[2026-02-22T03:04:57.420Z] [RENDERER LOG] [App] Setting up file opening from command line
 
-[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Setting up onOpenFilesFromArgs listener
+[2026-02-22T03:04:57.420Z] [RENDERER LOG] [App] Setting up onOpenFilesFromArgs listener
 
-[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Calling loadInitialFiles...
+[2026-02-22T03:04:57.420Z] [RENDERER LOG] [App] Calling loadInitialFiles...
 
-[2026-02-22T02:43:31.175Z] [RENDERER LOG] [App] Signaling renderer ready to main process
+[2026-02-22T03:04:57.420Z] [RENDERER LOG] [App] Signaling renderer ready to main process
 
-[2026-02-22T02:43:31.175Z] IPC: renderer-ready called
+[2026-02-22T03:04:57.420Z] IPC: renderer-ready called
 {
   "pendingFiles": []
 }
 
-[2026-02-22T02:43:31.175Z] No files to send from renderer-ready
+[2026-02-22T03:04:57.420Z] No files to send from renderer-ready
 
-[2026-02-22T02:43:31.175Z] AI IPC: get-provider-status
+[2026-02-22T03:04:57.420Z] AI IPC: get-provider-status
 
-[2026-02-22T02:43:31.175Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.420Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "xai"
 }
 
-[2026-02-22T02:43:31.175Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.420Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "xai"
 }
 
-[2026-02-22T02:43:31.175Z] xAI List Models Request
+[2026-02-22T03:04:57.420Z] xAI List Models Request
 {
   "url": "https://api.x.ai/v1/models"
 }
 
-[2026-02-22T02:43:31.271Z] [RENDERER LOG] [App] Renderer ready response - initial files: []
-
-[2026-02-22T02:43:31.271Z] [RENDERER LOG] [App] No command line files from renderer-ready, checking via getInitialFiles...
-
-[2026-02-22T02:43:31.271Z] IPC: get-initial-files called
-{
-  "pendingFiles": []
-}
-
-[2026-02-22T02:43:31.271Z] IPC: Returning files and clearing pending
-{
-  "files": []
-}
-
-[2026-02-22T02:43:31.272Z] [RENDERER LOG] [App] Renderer ready response - initial files: []
-
-[2026-02-22T02:43:31.272Z] [RENDERER LOG] [App] No command line files from renderer-ready, checking via getInitialFiles...
-
-[2026-02-22T02:43:31.272Z] IPC: get-initial-files called
-{
-  "pendingFiles": []
-}
-
-[2026-02-22T02:43:31.272Z] IPC: Returning files and clearing pending
-{
-  "files": []
-}
-
-[2026-02-22T02:43:31.275Z] xAI List Models Response Status
+[2026-02-22T03:04:57.487Z] xAI List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:31.275Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.488Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "claude"
 }
 
-[2026-02-22T02:43:31.275Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.488Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "claude"
 }
 
-[2026-02-22T02:43:31.275Z] Claude List Models Request
+[2026-02-22T03:04:57.488Z] Claude List Models Request
 {
   "url": "https://api.anthropic.com/v1/models"
 }
 
-[2026-02-22T02:43:31.324Z] xAI List Models Response Status
+[2026-02-22T03:04:57.513Z] [RENDERER LOG] [App] Renderer ready response - initial files: []
+
+[2026-02-22T03:04:57.513Z] [RENDERER LOG] [App] No command line files from renderer-ready, checking via getInitialFiles...
+
+[2026-02-22T03:04:57.513Z] IPC: get-initial-files called
 {
-  "status": 200,
-  "statusText": "OK"
+  "pendingFiles": []
 }
 
-[2026-02-22T02:43:31.324Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.513Z] IPC: Returning files and clearing pending
 {
-  "provider": "claude"
+  "files": []
 }
 
-[2026-02-22T02:43:31.324Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.514Z] [RENDERER LOG] [App] Renderer ready response - initial files: []
+
+[2026-02-22T03:04:57.514Z] [RENDERER LOG] [App] No command line files from renderer-ready, checking via getInitialFiles...
+
+[2026-02-22T03:04:57.514Z] IPC: get-initial-files called
 {
-  "provider": "claude"
+  "pendingFiles": []
 }
 
-[2026-02-22T02:43:31.324Z] Claude List Models Request
+[2026-02-22T03:04:57.514Z] IPC: Returning files and clearing pending
 {
-  "url": "https://api.anthropic.com/v1/models"
+  "files": []
 }
 
-[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] getInitialFiles response: []
+[2026-02-22T03:04:57.578Z] [RENDERER LOG] [App] getInitialFiles response: []
 
-[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] No command line files, restoring recent files from config...
+[2026-02-22T03:04:57.579Z] [RENDERER LOG] [App] No command line files, restoring recent files from config...
 
-[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] getInitialFiles response: []
+[2026-02-22T03:04:57.579Z] [RENDERER LOG] [App] getInitialFiles response: []
 
-[2026-02-22T02:43:31.331Z] [RENDERER LOG] [App] No command line files, restoring recent files from config...
+[2026-02-22T03:04:57.579Z] [RENDERER LOG] [App] No command line files, restoring recent files from config...
 
-[2026-02-22T02:43:31.339Z] [RENDERER LOG] [App] Config loaded {"openFilesCount":1}
+[2026-02-22T03:04:57.589Z] [RENDERER LOG] [App] Config loaded {"openFilesCount":1}
 
-[2026-02-22T02:43:31.339Z] [RENDERER LOG] [App] Restoring recent file: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md with mode: edit
+[2026-02-22T03:04:57.589Z] [RENDERER LOG] [App] Restoring recent file: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md with mode: edit
 
-[2026-02-22T02:43:31.339Z] IPC: file:read called
-{
-  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
-}
-
-[2026-02-22T02:43:31.340Z] [RENDERER LOG] [App] Config loaded {"openFilesCount":1}
-
-[2026-02-22T02:43:31.340Z] [RENDERER LOG] [App] Restoring recent file: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md with mode: edit
-
-[2026-02-22T02:43:31.340Z] IPC: file:read called
+[2026-02-22T03:04:57.589Z] IPC: file:read called
 {
   "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
 }
 
-[2026-02-22T02:43:31.340Z] IPC: file:read success
+[2026-02-22T03:04:57.590Z] [RENDERER LOG] [App] Config loaded {"openFilesCount":1}
+
+[2026-02-22T03:04:57.590Z] [RENDERER LOG] [App] Restoring recent file: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md with mode: edit
+
+[2026-02-22T03:04:57.590Z] IPC: file:read called
+{
+  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+}
+
+[2026-02-22T03:04:57.590Z] IPC: file:read success
 {
   "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md",
   "contentLength": 60137,
   "lineEnding": "CRLF"
 }
 
-[2026-02-22T02:43:31.341Z] IPC: file:read success
+[2026-02-22T03:04:57.592Z] IPC: file:read success
 {
   "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md",
   "contentLength": 60137,
   "lineEnding": "CRLF"
 }
 
-[2026-02-22T02:43:31.353Z] Claude List Models Response Status
+[2026-02-22T03:04:57.600Z] xAI List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:31.355Z] Filtered claude models
+[2026-02-22T03:04:57.601Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T03:04:57.601Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "claude"
+}
+
+[2026-02-22T03:04:57.601Z] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-02-22T03:04:57.647Z] [RENDERER LOG] [App] Recent file restored: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md
+
+[2026-02-22T03:04:57.648Z] [RENDERER LOG] [App] Recent file restored: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md
+
+[2026-02-22T03:04:57.650Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771729497647-c2kmv9tz9","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":0}
+
+[2026-02-22T03:04:57.650Z] [RENDERER LOG] [EditorContext] Adding new file to state {"fileId":"file-1771729497647-c2kmv9tz9","newOpenFilesCount":1}
+
+[2026-02-22T03:04:57.650Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771729497647-c2kmv9tz9","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":0}
+
+[2026-02-22T03:04:57.651Z] [RENDERER LOG] [EditorContext] Adding new file to state {"fileId":"file-1771729497647-c2kmv9tz9","newOpenFilesCount":1}
+
+[2026-02-22T03:04:57.651Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771729497648-lx7jfa16h","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":1}
+
+[2026-02-22T03:04:57.651Z] [RENDERER LOG] [EditorContext] File already open, switching to it {"existingFileId":"file-1771729497647-c2kmv9tz9"}
+
+[2026-02-22T03:04:57.651Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771729497648-lx7jfa16h","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":1}
+
+[2026-02-22T03:04:57.651Z] [RENDERER LOG] [EditorContext] File already open, switching to it {"existingFileId":"file-1771729497647-c2kmv9tz9"}
+
+[2026-02-22T03:04:57.662Z] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T03:04:57.662Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T03:04:57.663Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "openai"
+}
+
+[2026-02-22T03:04:57.663Z] OpenAI List Models Request
+{
+  "url": "https://api.openai.com/v1/models"
+}
+
+[2026-02-22T03:04:57.758Z] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T03:04:57.760Z] Filtered claude models
 {
   "total": 8,
   "enabled": 8
 }
 
-[2026-02-22T02:43:31.392Z] [RENDERER LOG] [App] Recent file restored: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md
-
-[2026-02-22T02:43:31.393Z] [RENDERER LOG] [App] Recent file restored: C:\Projects\MarkdownPlus\docs\React Best Practices And Core Concepts Guide.md
-
-[2026-02-22T02:43:31.393Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211392-jwa8bxy9p","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":0}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] Adding new file to state {"fileId":"file-1771728211392-jwa8bxy9p","newOpenFilesCount":1}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211392-jwa8bxy9p","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":0}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] Adding new file to state {"fileId":"file-1771728211392-jwa8bxy9p","newOpenFilesCount":1}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211393-xma8siuog","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":1}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] File already open, switching to it {"existingFileId":"file-1771728211392-jwa8bxy9p"}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] OPEN_FILE action received {"id":"file-1771728211393-xma8siuog","path":"C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md","name":"React Best Practices And Core Concepts Guide.md","currentOpenFilesCount":1}
-
-[2026-02-22T02:43:31.394Z] [RENDERER LOG] [EditorContext] File already open, switching to it {"existingFileId":"file-1771728211392-jwa8bxy9p"}
-
-[2026-02-22T02:43:31.453Z] Claude List Models Response Status
+[2026-02-22T03:04:57.779Z] Claude List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:31.453Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.780Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "openai"
 }
 
-[2026-02-22T02:43:31.453Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:57.780Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "openai"
 }
 
-[2026-02-22T02:43:31.453Z] OpenAI List Models Request
+[2026-02-22T03:04:57.780Z] OpenAI List Models Request
 {
   "url": "https://api.openai.com/v1/models"
 }
 
-[2026-02-22T02:43:31.603Z] Started watching file
+[2026-02-22T03:04:57.861Z] Started watching file
 {
   "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
 }
 
-[2026-02-22T02:43:31.604Z] Claude List Models Response Status
+[2026-02-22T03:04:58.167Z] OpenAI List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:31.605Z] Secure Storage: Using API key from .env (development override)
-{
-  "provider": "openai"
-}
-
-[2026-02-22T02:43:31.605Z] Secure Storage: Using API key from .env (development override)
-{
-  "provider": "openai"
-}
-
-[2026-02-22T02:43:31.605Z] OpenAI List Models Request
-{
-  "url": "https://api.openai.com/v1/models"
-}
-
-[2026-02-22T02:43:31.741Z] OpenAI List Models Response Status
-{
-  "status": 200,
-  "statusText": "OK"
-}
-
-[2026-02-22T02:43:31.743Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:58.168Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "gemini"
 }
 
-[2026-02-22T02:43:31.743Z] Secure Storage: Using API key from .env (development override)
+[2026-02-22T03:04:58.168Z] Secure Storage: Using API key from .env (development override)
 {
   "provider": "gemini"
 }
 
-[2026-02-22T02:43:31.743Z] Gemini List Models Request
+[2026-02-22T03:04:58.168Z] Gemini List Models Request
 {
   "url": "https://generativelanguage.googleapis.com/v1beta/models"
 }
 
-[2026-02-22T02:43:31.807Z] Gemini List Models Response Status
+[2026-02-22T03:04:58.187Z] OpenAI List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:31.808Z] Gemini List Models Raw Response
+[2026-02-22T03:04:58.188Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T03:04:58.188Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "gemini"
+}
+
+[2026-02-22T03:04:58.188Z] Gemini List Models Request
+{
+  "url": "https://generativelanguage.googleapis.com/v1beta/models"
+}
+
+[2026-02-22T03:04:58.234Z] Gemini List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-02-22T03:04:58.236Z] Gemini List Models Raw Response
 {
   "totalCount": 43,
   "models": [
@@ -1213,7 +1237,7 @@
   ]
 }
 
-[2026-02-22T02:43:31.809Z] Gemini List Models Filtered Result
+[2026-02-22T03:04:58.236Z] Gemini List Models Filtered Result
 {
   "filteredCount": 12,
   "models": [
@@ -1232,7 +1256,7 @@
   ]
 }
 
-[2026-02-22T02:43:31.809Z] AI IPC: provider status result
+[2026-02-22T03:04:58.236Z] AI IPC: provider status result
 {
   "xai": {
     "enabled": true,
@@ -1252,34 +1276,25 @@
   }
 }
 
-[2026-02-22T02:43:31.909Z] OpenAI List Models Response Status
+[2026-02-22T03:04:58.238Z] AI IPC: list-models
+
+[2026-02-22T03:04:58.238Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T03:04:58.238Z] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-02-22T03:04:58.318Z] Gemini List Models Response Status
 {
   "status": 200,
   "statusText": "OK"
 }
 
-[2026-02-22T02:43:31.911Z] Secure Storage: Using API key from .env (development override)
-{
-  "provider": "gemini"
-}
-
-[2026-02-22T02:43:31.911Z] Secure Storage: Using API key from .env (development override)
-{
-  "provider": "gemini"
-}
-
-[2026-02-22T02:43:31.911Z] Gemini List Models Request
-{
-  "url": "https://generativelanguage.googleapis.com/v1beta/models"
-}
-
-[2026-02-22T02:43:31.965Z] Gemini List Models Response Status
-{
-  "status": 200,
-  "statusText": "OK"
-}
-
-[2026-02-22T02:43:31.968Z] Gemini List Models Raw Response
+[2026-02-22T03:04:58.320Z] Gemini List Models Raw Response
 {
   "totalCount": 43,
   "models": [
@@ -1658,7 +1673,7 @@
   ]
 }
 
-[2026-02-22T02:43:31.969Z] Gemini List Models Filtered Result
+[2026-02-22T03:04:58.320Z] Gemini List Models Filtered Result
 {
   "filteredCount": 12,
   "models": [
@@ -1677,7 +1692,7 @@
   ]
 }
 
-[2026-02-22T02:43:31.969Z] AI IPC: provider status result
+[2026-02-22T03:04:58.320Z] AI IPC: provider status result
 {
   "xai": {
     "enabled": true,
@@ -1697,15 +1712,41 @@
   }
 }
 
-[2026-02-22T02:43:35.607Z] DevTools closed via native UI
-
-[2026-02-22T02:43:45.385Z] Stopped watching file
+[2026-02-22T03:04:58.368Z] xAI List Models Response Status
 {
-  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+  "status": 200,
+  "statusText": "OK"
 }
 
-[2026-02-22T02:43:45.390Z] Started watching file
+[2026-02-22T03:04:58.370Z] Filtered xai models
 {
-  "filePath": "C:\\Projects\\MarkdownPlus\\docs\\React Best Practices And Core Concepts Guide.md"
+  "total": 9,
+  "enabled": 9
+}
+
+[2026-02-22T03:04:59.143Z] DevTools closed via native UI
+
+[2026-02-22T03:05:24.483Z] AI IPC: chat-request
+{
+  "model": "grok-4-1-fast-reasoning",
+  "messageCount": 1
+}
+
+[2026-02-22T03:05:24.484Z] Secure Storage: Using API key from .env (development override)
+{
+  "provider": "xai"
+}
+
+[2026-02-22T03:05:24.484Z] xAI API Request
+{
+  "url": "https://api.x.ai/v1/chat/completions",
+  "model": "grok-4-1-fast-reasoning",
+  "messageCount": 1
+}
+
+[2026-02-22T03:05:33.359Z] xAI API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
 }
 
