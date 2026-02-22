@@ -156,7 +156,9 @@ interface ChatMessagesProps {
     goDeepComplete: boolean;
     goDeepError: string | null;
     goDeepFileName: string | null;
+    documentTopics?: string[];
     onGoDeeper: () => void;
+    onTopicsContinue?: (topics: string[]) => void;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
@@ -182,7 +184,9 @@ export function ChatMessages({
     goDeepComplete,
     goDeepError,
     goDeepFileName,
+    documentTopics,
     onGoDeeper,
+    onTopicsContinue,
     hasDiffTab,
     loadingDisplayText,
     error,
@@ -243,6 +247,8 @@ export function ChatMessages({
                     goDeepProgress={goDeepProgress}
                     goDeepAnalysis={goDeepAnalysis}
                     fileName={goDeepFileName ?? undefined}
+                    documentTopics={documentTopics}
+                    onTopicsContinue={onTopicsContinue}
                 />
             )}
             {!isGoDeepLoading && !goDeepComplete && (isResearchLoading || researchComplete) && (

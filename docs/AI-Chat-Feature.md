@@ -32,12 +32,20 @@ This document describes the Nexus feature in Markdown Nexus, covering configurat
    - [Activating Research Mode](#activating-research-mode)
    - [How Research Works](#how-research-works)
    - [Research Output](#research-output)
-6. [Supported AI Providers](#supported-ai-providers)
+6. [Go Deeper Mode](#go-deeper-mode)
+   - [Activating Go Deeper](#activating-go-deeper)
+   - [How Go Deeper Works](#how-go-deeper-works)
+   - [Topic Selection](#topic-selection)
+   - [Go Deeper Output](#go-deeper-output)
+   - [Loading States — Visual Progress Stepper](#loading-states--visual-progress-stepper-1)
+   - [Cancellation](#cancellation-1)
+   - [Debugging & Logging](#debugging--logging-1)
+7. [Supported AI Providers](#supported-ai-providers)
    - [Claude (Anthropic)](#claude-anthropic)
    - [OpenAI](#openai)
    - [Google Gemini](#google-gemini)
    - [xAI (Grok)](#xai-grok)
-7. [Architecture](#architecture)
+8. [Architecture](#architecture)
    - [File Structure](#file-structure)
    - [IPC Communication](#ipc-communication)
    - [State Management](#state-management)
@@ -46,13 +54,14 @@ This document describes the Nexus feature in Markdown Nexus, covering configurat
 
 ## Overview
 
-The Nexus feature allows users to interact with AI language models directly within the Markdown Nexus editor. It supports three modes:
+The Nexus feature allows users to interact with AI language models directly within the Markdown Nexus editor. It supports four modes:
 
 - **Chat Mode**: A conversational interface for asking questions, brainstorming, or getting help with writing. The AI sees the current document as context and responds in a chat bubble format.
 - **Edit Mode**: The AI modifies the current markdown document based on user instructions. Changes are presented in a **dedicated diff tab** with a unified inline diff view, where the user can accept or reject changes on a per-hunk basis.
-- **Research Mode**: Deep research on any topic. The AI performs a two-step process — first inferring the target audience and relevant fields, then generating a comprehensive, structured research report. The output opens as a new markdown file tab in preview mode.
+- **Research Mode**: Deep research on any topic. The AI performs a multi-phase process — first inferring the target audience and relevant fields, then generating a comprehensive, structured research report with automatic deepening passes. The output opens as a new markdown file tab in preview mode.
+- **Go Deeper Mode**: Expands and enriches an existing research report. The AI analyzes the document, suggests expansion topics, lets the user select which to pursue, then generates exhaustive addendums and merges them back into a versioned document.
 
-Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research mode is supported by Claude and OpenAI. xAI is restricted to chat mode only. Each provider's models are filtered at the API level to surface only the models relevant for chat use.
+Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research mode is supported by Claude and OpenAI. Go Deeper mode is supported by all four providers. xAI is restricted to chat mode only for Research. Each provider's models are filtered at the API level to surface only the models relevant for chat use.
 
 ---
 
@@ -591,6 +600,142 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 
 ---
 
+## Go Deeper Mode
+
+Go Deeper is a multi-phase AI workflow that **expands and enriches an existing research report**. Where Research Mode creates a new document from scratch, Go Deeper takes an open file and generates exhaustive addendums on selected topics, merges them structurally, and versions the file in place.
+
+### Activating Go Deeper
+
+Go Deeper is triggered by a **"Go Deeper" button** that appears in the chat panel after a Research Mode run completes. It operates on whichever file is currently active in the editor.
+
+### How Go Deeper Works
+
+Go Deeper runs four sequential AI phases:
+
+**Phase D1 — Report Analysis (Automatic):**
+
+When the user clicks "Go Deeper", the AI receives the full document content and topic to identify the best expansion opportunities. The AI returns structured JSON with:
+- **New focus areas** — 2-4 key angles to expand (comma-separated)
+- **Deep dive topics** — 5-8 high-value technical/strategic topics deserving exhaustive new coverage
+- **Suggested depth level** — `practitioner` or `expert`
+- **Changelog ideas** — 4-6 short bullets previewing what will be added
+
+After analysis completes, the workflow **pauses** at topic selection. The border animation and loading state remain active during this pause.
+
+**Phase D2 — Topic Selection (User Interaction):**
+
+The progress panel replaces the active step's typewriter message with an interactive `GoDeepTopicSelector` component. It presents two sections:
+
+- **AI-Suggested Topics** — topics from the Phase D1 analysis, all pre-checked by default
+- **Document Topics** — extracted from the document's `##` and `###` headings (up to 8), filtered to exclude structural headings (changelog, references, appendix, etc.) and deduplicated against AI suggestions. All unchecked by default.
+
+The user selects any combination and clicks **"Continue with N topic(s)"** to proceed. At least one topic must be selected.
+
+**Phase D3 — Deep Dive Expansion:**
+
+Selected topics are **batched into groups of 3** (up to 4 batches maximum, covering up to 12 topics). For each batch the AI generates a rich standalone addendum targeting:
+- Latest 2025–2026 developments and changes
+- Advanced internals, mechanics, and under-the-hood details
+- Production battle stories, failure modes, and edge cases with solutions
+- More sophisticated, production-ready code examples
+- Quantitative insights, benchmarks, or comparisons
+- Alternative implementations and trade-offs
+
+Each addendum starts with a `## Deep Dive Addendum — <date>` heading. Failed batches are skipped gracefully; successful results are still used.
+
+**Phase D4 — Integration:**
+
+Two sub-steps run in sequence:
+1. A lightweight AI call generates a concise changelog bullet list (4–8 bullets) summarizing what was added. Falls back to the `changelogIdeas` from Phase D1 if this call fails.
+2. The final document is assembled: `original report` + `---` + `addendums` + `---` + `## Changelog (Deepened vN)` section.
+
+**Phase D5 — Finalization (Filename & Versioning):**
+
+A final AI call generates a new descriptive filename (Title Case, max 60 chars, no extension) reflecting that the document has been deepened. The result is sanitized and a version suffix (`v2`, `v3`, etc.) is appended if not already present. The file is updated in-place via `EditorContext`:
+- Content replaced with the merged final document
+- Filename updated to the versioned name
+- Tab selected and brought into focus
+- Success notification shown
+
+### Topic Selection
+
+The `GoDeepTopicSelector` component uses the `extractDocumentTopics` utility ([src/renderer/utils/extractDocumentTopics.ts](src/renderer/utils/extractDocumentTopics.ts)) to parse `##` and `###` headings from the active document. It excludes structural sections matching 24 patterns (e.g., changelog, sources, references, appendix, executive summary, etc.) and deduplicates against AI-suggested topics using fuzzy substring matching. Results are capped at 8 document topics.
+
+### Go Deeper Output
+
+- The active file is **modified in-place** (not a new tab)
+- Filename is versioned: `Report Title v2.md`, `Report Title v3.md`, etc.
+- The file is marked dirty — save manually with Ctrl+S / Save As
+- Document structure: original content + deep dive addendums + changelog section, separated by `---` dividers
+
+### Loading States — Visual Progress Stepper
+
+During Go Deeper, the chat panel shows a **vertical stepper UI** (`GoDeepProgress` component) with six steps:
+
+```
+● Analyzing Report                   ✓ 3.2s
+  ┌──────────────────────────────────┐
+  │ Focus: latest developments, ...  │
+  │ Topics: [Chip] [Chip] [Chip]     │
+  │ Depth:  expert                   │
+  │ Changes: - Added section on ...  │
+  └──────────────────────────────────┘
+
+◉ Select Topics                      ⟳ active (user pause)
+  AI-Suggested Topics
+      ☑ React Server Components
+      ☑ Suspense Boundaries
+      ...
+  Document Topics
+      ☐ useCallback Deep Dive
+      ...
+  [ Continue with 4 topic(s) ]
+
+○ Expanding Depth (0/3)             pending
+
+○ Integrating Content               pending
+
+○ Finalizing Document               pending
+
+○ Go Deeper Complete                pending
+```
+
+**Step indicators:**
+- **Pending** (grey dot): Phase not yet started, label dimmed
+- **Active** (pulsing blue dot + glow): Currently running; shows rotating typewriter message with blinking cursor
+- **Complete** (green checkmark dot): Phase finished; shows elapsed time badge (e.g., `3.2s`)
+- **Select Topics**: No typewriter — replaced by the interactive `GoDeepTopicSelector`
+
+**After Analysis completes**, a metadata card appears under "Analyzing Report" showing focus areas, suggested topics as info-colored chips, suggested depth level, and a preview of changelog ideas.
+
+**Expanding Depth** shows a batch counter in the label: `Expanding Depth (1/4)`, `(2/4)`, etc.
+
+**Go Deeper Complete** shows the total elapsed time across all phases when finished.
+
+**Phase-specific typewriter messages** rotate every 5 seconds:
+- **Analyzing**: "Analyzing current report...", "Scanning for gaps and opportunities...", "Mapping expansion potential...", "Evaluating depth coverage...", "Identifying high-value topics..."
+- **Expanding**: "Expanding technical deep dive...", "Adding latest developments...", "Building advanced examples...", "Enriching with production insights...", "Deepening coverage..."
+- **Integrating**: "Merging new insights...", "Weaving content together...", "Building cohesive narrative...", "Integrating addendums...", "Polishing transitions..."
+- **Finalizing**: "Generating updated filename...", "Versioning the document...", "Preparing final output..."
+
+### Cancellation
+
+Go Deeper requests can be canceled at any time using the Cancel button. The cancel handler aborts all in-flight API calls: analysis, each expansion batch (up to 4), the integration/changelog call, and the naming call. The error state shows "Go Deeper request canceled".
+
+### Debugging & Logging
+
+All Go Deeper phases are logged to the browser console with `[GoDeeper]` prefix, including:
+- Phase transitions with elapsed time from start
+- Analysis results (focus areas, topics, depth level)
+- Expansion batch details (topics per batch, response lengths)
+- Integration and changelog generation results
+- Filename generation (raw AI response, sanitized result, final filename, version number)
+- Total elapsed time on completion
+
+Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
+
+---
+
 ## Supported AI Providers
 
 ### Claude (Anthropic)
@@ -639,6 +784,7 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 - **Default Fallback Models**: Grok 3 Fast, Grok 3, Grok 3 Mini
 - **Edit Mode**: Not supported (no structured output; restricted via `aiProviderModeRestrictions.ts`)
 - **Research Mode**: Not supported (explicitly blocked in `useAIResearch.ts`)
+- **Go Deeper Mode**: Supported
 - **Image Attachments**: Data URL format with `image_url` (same as OpenAI format)
 - **Text Attachments**: Inline text content format
 - **Model Filtering**: Only `grok-` models; excludes image, video, and image-generation variants
@@ -663,6 +809,8 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 | `src/renderer/components/TabBar.tsx`                    | File tabs with AI attachment context menu (attach/remove, show/hide)         |
 | `src/renderer/components/CodeBlock.tsx`                  | Syntax-highlighted code blocks using PrismLight (react-syntax-highlighter)   |
 | `src/renderer/components/ResearchProgress.tsx`          | Vertical stepper UI for research phase visualization with metadata cards     |
+| `src/renderer/components/GoDeepProgress.tsx`            | Vertical stepper UI for Go Deeper phase visualization with metadata cards and topic selector |
+| `src/renderer/components/GoDeepTopicSelector.tsx`       | Interactive checkbox component for selecting expansion topics during Go Deeper |
 | `src/renderer/components/DiffView.tsx`                  | Dedicated diff tab view with unified inline diff rendering                   |
 | `src/renderer/components/DiffNavigationToolbar.tsx`     | Floating toolbar for navigating and resolving diff hunks                     |
 | `src/renderer/components/DiffHunkControl.tsx`           | Per-hunk inline accept/reject buttons                                        |
@@ -670,7 +818,9 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 | `src/renderer/hooks/useAIProviderCache.ts`              | App-level provider status and model cache (shared across components)         |
 | `src/renderer/hooks/useAIDiffEdit.ts`                   | Edit mode logic, diff computation, opens diff tab                            |
 | `src/renderer/hooks/useAIResearch.ts`                   | Research mode logic, two-step inference + research, opens file tab           |
+| `src/renderer/hooks/useAIGoDeeper.ts`                   | Go Deeper orchestration: analysis, expansion batches, integration, versioning |
 | `src/renderer/hooks/useEditLoadingMessage.ts`           | Typewriter-animated loading messages                                         |
+| `src/renderer/utils/extractDocumentTopics.ts`           | Extracts `##`/`###` headings from markdown for Go Deeper topic selection     |
 | `src/renderer/aiProviderModeRestrictions.ts`            | Defines which providers are restricted from which chat modes                 |
 | `src/renderer/contexts/AIProviderCacheContext.tsx`      | React context for sharing provider cache across the component tree           |
 | `src/renderer/utils/diffUtils.ts`                       | Diff computation utilities (line ending normalization, hunk building)        |

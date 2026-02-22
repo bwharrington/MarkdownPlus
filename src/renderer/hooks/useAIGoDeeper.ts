@@ -6,7 +6,7 @@ const generateId = () => Math.random().toString(36).substring(2, 11);
 
 // --- Types ---
 
-export type GoDeepPhase = 'analyzing' | 'expanding' | 'integrating' | 'finalizing' | 'complete' | null;
+export type GoDeepPhase = 'analyzing' | 'topic_selection' | 'expanding' | 'integrating' | 'finalizing' | 'complete' | null;
 
 export interface GoDeepProgress {
     current: number;
@@ -26,6 +26,20 @@ const DEFAULT_ANALYSIS: GoDeepAnalysis = {
     suggestedDepthLevel: 'expert',
     changelogIdeas: [],
 };
+
+// Intermediate state held between submitAnalysis and submitExpansion
+interface PendingContext {
+    fileId: string;
+    originalContent: string;
+    topic: string;
+    provider: AIProvider;
+    model: string;
+    requestId: string;
+    startTime: number;
+    nextVersion: number;
+    versionLabel: string;
+    analysis: GoDeepAnalysis;
+}
 
 // --- Phase D1: Report Analysis ---
 
@@ -245,7 +259,11 @@ export function useAIGoDeeper() {
     const [goDeepComplete, setGoDeepComplete] = useState(false);
     const activeRequestIdRef = useRef<string | null>(null);
 
-    const submitGoDeeper = useCallback(async (
+    // Holds state between submitAnalysis and submitExpansion
+    const pendingContextRef = useRef<PendingContext | null>(null);
+
+    // --- Phase D1: Analysis only ---
+    const submitAnalysis = useCallback(async (
         fileId: string,
         originalContent: string,
         topic: string,
@@ -258,6 +276,7 @@ export function useAIGoDeeper() {
         }
 
         activeRequestIdRef.current = requestId;
+        pendingContextRef.current = null;
         setIsGoDeepLoading(true);
         setGoDeepError(null);
         setGoDeepProgress(null);
@@ -271,7 +290,7 @@ export function useAIGoDeeper() {
         const nextVersion = currentVersion + 1;
         const versionLabel = `v${nextVersion}`;
 
-        console.log('[GoDeeper] Starting', { topic, provider, model, requestId, currentVersion, nextVersion });
+        console.log('[GoDeeper] Starting analysis', { topic, provider, model, requestId, currentVersion, nextVersion });
 
         try {
             // Phase D1: Report Analysis
@@ -304,14 +323,65 @@ export function useAIGoDeeper() {
                 });
             }
 
+            // Pause here for topic selection — store context for submitExpansion
+            pendingContextRef.current = {
+                fileId,
+                originalContent,
+                topic,
+                provider,
+                model,
+                requestId,
+                startTime,
+                nextVersion,
+                versionLabel,
+                analysis,
+            };
+
+            // Switch to topic_selection phase — keep isGoDeepLoading true so border animation stays
+            setGoDeepPhase('topic_selection');
+            console.log('[GoDeeper] Waiting for topic selection');
+
+        } catch (err) {
+            if (activeRequestIdRef.current !== requestId) return;
+            const message = err instanceof Error ? err.message : 'Go Deeper analysis failed';
+            console.error('[GoDeeper] Analysis error', { error: message });
+            setGoDeepError(message);
+            setGoDeepPhase(null);
+            setGoDeepProgress(null);
+            setGoDeepAnalysis(null);
+            setGoDeepComplete(false);
+            activeRequestIdRef.current = null;
+            setIsGoDeepLoading(false);
+            throw err;
+        }
+        // Note: we intentionally do NOT call setIsGoDeepLoading(false) here —
+        // we stay in loading state through the topic_selection pause.
+    }, [state.openFiles]);
+
+    // --- Phases D2-D4: Expansion with user-selected topics ---
+    const submitExpansion = useCallback(async (selectedTopics: string[]) => {
+        const ctx = pendingContextRef.current;
+        if (!ctx) {
+            console.error('[GoDeeper] submitExpansion called with no pending context');
+            return;
+        }
+
+        const { fileId, originalContent, topic, provider, model, requestId, startTime, nextVersion, versionLabel, analysis } = ctx;
+        pendingContextRef.current = null;
+
+        if (activeRequestIdRef.current !== requestId) return;
+
+        console.log('[GoDeeper] Starting expansion with selected topics', { selectedTopics, requestId });
+
+        try {
             // Phase D2: Deep Dive Expansion
-            const batches = batchTopics(analysis.newDeepDiveTopics);
+            const batches = batchTopics(selectedTopics);
             const expansionResults: string[] = [];
 
             if (batches.length > 0) {
                 setGoDeepPhase('expanding');
                 console.log('[GoDeeper] Phase: expanding', {
-                    topics: analysis.newDeepDiveTopics,
+                    topics: selectedTopics,
                     batchCount: batches.length,
                 });
 
@@ -396,7 +466,7 @@ export function useAIGoDeeper() {
                     console.error('[GoDeeper] Changelog error, using analysis fallback', changelogErr);
                 }
 
-                // Structurally merge: changelog + original + addendums
+                // Structurally merge: original + addendums + changelog
                 finalContent = buildFinalDocument(originalContent, addendums, changelog, versionLabel);
                 console.log('[GoDeeper] Integration complete (structural merge)', {
                     elapsed: Date.now() - startTime,
@@ -415,7 +485,7 @@ export function useAIGoDeeper() {
 
             const currentFile = state.openFiles.find(f => f.id === fileId);
             const currentName = currentFile?.name ?? `${topic}.md`;
-            const { baseName } = parseVersion(currentName);
+            const { baseName, version: currentVersion } = parseVersion(currentName);
             let fileName = `${baseName} ${versionLabel}.md`;
 
             console.log('[GoDeeper] Phase: finalizing — calling API');
@@ -503,8 +573,8 @@ export function useAIGoDeeper() {
             });
         } catch (err) {
             if (activeRequestIdRef.current !== requestId) return;
-            const message = err instanceof Error ? err.message : 'Go Deeper request failed';
-            console.error('[GoDeeper] Error', { elapsed: Date.now() - startTime, error: message });
+            const message = err instanceof Error ? err.message : 'Go Deeper expansion failed';
+            console.error('[GoDeeper] Expansion error', { error: message });
             setGoDeepError(message);
             setGoDeepPhase(null);
             setGoDeepProgress(null);
@@ -520,6 +590,7 @@ export function useAIGoDeeper() {
     }, [dispatch, state.config.defaultLineEnding, state.openFiles]);
 
     const dismissGoDeepProgress = useCallback(() => {
+        pendingContextRef.current = null;
         setGoDeepPhase(null);
         setGoDeepProgress(null);
         setGoDeepAnalysis(null);
@@ -529,6 +600,7 @@ export function useAIGoDeeper() {
     const cancelGoDeeper = useCallback(async () => {
         const requestId = activeRequestIdRef.current;
         activeRequestIdRef.current = null;
+        pendingContextRef.current = null;
         setIsGoDeepLoading(false);
         setGoDeepPhase(null);
         setGoDeepProgress(null);
@@ -556,7 +628,8 @@ export function useAIGoDeeper() {
     }, []);
 
     return {
-        submitGoDeeper,
+        submitAnalysis,
+        submitExpansion,
         cancelGoDeeper,
         dismissGoDeepProgress,
         isGoDeepLoading,

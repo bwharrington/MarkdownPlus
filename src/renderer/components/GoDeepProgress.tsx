@@ -2,13 +2,22 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, Chip, styled, keyframes } from '@mui/material';
 import type { GoDeepPhase, GoDeepProgress as GoDeepProgressData, GoDeepAnalysis } from '../hooks/useAIGoDeeper';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
+import { GoDeepTopicSelector } from './GoDeepTopicSelector';
 
 type StepStatus = 'pending' | 'active' | 'complete';
 
-const PHASE_ORDER: Exclude<GoDeepPhase, 'complete' | null>[] = ['analyzing', 'expanding', 'integrating', 'finalizing'];
+// topic_selection is a pause step between analyzing and expanding
+const PHASE_ORDER: Exclude<GoDeepPhase, 'complete' | null>[] = [
+    'analyzing',
+    'topic_selection',
+    'expanding',
+    'integrating',
+    'finalizing',
+];
 
 const PHASE_LABELS: Record<string, string> = {
     analyzing: 'Analyzing Report',
+    topic_selection: 'Select Topics',
     expanding: 'Expanding Depth',
     integrating: 'Integrating Content',
     finalizing: 'Finalizing Document',
@@ -235,6 +244,8 @@ interface GoDeepProgressProps {
     goDeepProgress: GoDeepProgressData | null;
     goDeepAnalysis: GoDeepAnalysis | null;
     fileName?: string;
+    documentTopics?: string[];
+    onTopicsContinue?: (topics: string[]) => void;
 }
 
 export const GoDeepProgress = React.memo(function GoDeepProgress({
@@ -242,8 +253,11 @@ export const GoDeepProgress = React.memo(function GoDeepProgress({
     goDeepProgress,
     goDeepAnalysis,
     fileName,
+    documentTopics = [],
+    onTopicsContinue,
 }: GoDeepProgressProps) {
-    const isWorking = goDeepPhase !== null && goDeepPhase !== 'complete';
+    // topic_selection is a UI pause — don't run typewriter animation during it
+    const isWorking = goDeepPhase !== null && goDeepPhase !== 'complete' && goDeepPhase !== 'topic_selection';
     const messagePool = useMemo(() => getMessagePool(goDeepPhase), [goDeepPhase]);
     const { displayText } = useEditLoadingMessage(isWorking, messagePool);
 
@@ -256,10 +270,10 @@ export const GoDeepProgress = React.memo(function GoDeepProgress({
         const curr = goDeepPhase;
 
         if (prev !== curr) {
-            if (prev && prev !== 'complete' && timingsRef.current[prev] && !timingsRef.current[prev].end) {
+            if (prev && prev !== 'complete' && prev !== 'topic_selection' && timingsRef.current[prev] && !timingsRef.current[prev].end) {
                 timingsRef.current[prev].end = Date.now();
             }
-            if (curr && curr !== 'complete') {
+            if (curr && curr !== 'complete' && curr !== 'topic_selection') {
                 timingsRef.current[curr] = { start: Date.now() };
             }
             if (curr === 'analyzing' && prev !== 'analyzing') {
@@ -346,12 +360,25 @@ export const GoDeepProgress = React.memo(function GoDeepProgress({
                                     </Typography>
                                     {elapsed && <TimeBadge>{elapsed}</TimeBadge>}
                                 </StepLabelRow>
-                                {isActive && (
+
+                                {/* Typewriter for working phases (not topic_selection) */}
+                                {isActive && stepPhase !== 'topic_selection' && (
                                     <TypewriterText>
                                         {displayText}
                                         <LoadingCursor />
                                     </TypewriterText>
                                 )}
+
+                                {/* Topic selector rendered inline when topic_selection is active */}
+                                {stepPhase === 'topic_selection' && isActive && onTopicsContinue && (
+                                    <GoDeepTopicSelector
+                                        aiTopics={goDeepAnalysis?.newDeepDiveTopics ?? []}
+                                        documentTopics={documentTopics}
+                                        onContinue={onTopicsContinue}
+                                    />
+                                )}
+
+                                {/* Analysis metadata card shown after analyzing completes */}
                                 {stepPhase === 'analyzing' && status === 'complete' && goDeepAnalysis && (
                                     <MetadataCard>
                                         <MetadataRow>

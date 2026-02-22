@@ -108,7 +108,7 @@ const RESEARCH_PROMPT_TEMPLATE = `You are an elite, multidisciplinary research s
 - **Key Debates & Risks**: Pros/cons, stakeholder views, controversies.
 - **Engineering & Implementation Guide**:
   - Core architectures and system designs (with diagrams described in text).
-  - **Deep Dive Sections** (NEW): Dedicated subsections for {DEEP_DIVE_TOPICS} — provide internals, mechanics, lifecycle details, dependency management, async patterns, common pitfalls, and production-ready code examples for each.
+  - Dedicated subsections for {DEEP_DIVE_TOPICS} — provide internals, mechanics, lifecycle details, dependency management, async patterns, common pitfalls, and production-ready code examples for each. Use the topic name directly as the subsection heading (e.g., "### useEffect" not "### Deep Dive: useEffect").
   - Step-by-step "how-to" implementations, including code examples (e.g., full functions, setup scripts) with inline explanations.
   - Recommended tools, libraries, frameworks, and deployment strategies.
   - Common pitfalls, optimizations, and debugging tips.

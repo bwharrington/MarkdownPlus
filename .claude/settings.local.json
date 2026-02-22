@@ -13,7 +13,8 @@
       "WebFetch(domain:fabianhertwig.com)",
       "WebFetch(domain:githubnext.com)",
       "Bash(wc:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(find:*)"
     ]
   }
 }

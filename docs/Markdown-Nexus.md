@@ -28,6 +28,8 @@ Markdown Nexus is a modern, feature-rich Markdown editor built with Electron, Re
    - [Nexus Assistant](#ai-chat-assistant)
    - [AI Edit Mode](#ai-edit-mode)
    - [AI Inline Edit Window](#ai-inline-edit-window)
+   - [AI Research Mode](#ai-research-mode)
+   - [Go Deeper Mode](#go-deeper-mode)
    - [AI Provider Configuration](#ai-provider-configuration)
 5. [Keyboard Shortcuts](#keyboard-shortcuts)
 6. [Supported File Formats](#supported-file-formats)
@@ -430,7 +432,7 @@ All console output from the renderer process is captured and written to the log 
 
 ## AI Features
 
-Markdown Nexus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, and xAI.
+Markdown Nexus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, Google Gemini, and xAI.
 
 ### Nexus Assistant
 
@@ -514,6 +516,77 @@ When the AI returns edits, a **dedicated diff tab** opens in the tab bar (simila
 | `Ctrl+Shift+A`       | Accept all changes             |
 | `Escape`             | Cancel and discard all changes |
 
+### AI Research Mode
+
+Research Mode generates comprehensive, structured research reports on any topic directly inside Markdown Nexus.
+
+#### Activating Research Mode
+
+1. Open the Nexus dialog (`Ctrl+Shift+A`)
+2. Select **Research** from the Mode dropdown
+3. Type a research topic in the input field and press **Enter**
+
+#### How It Works
+
+Research Mode uses a multi-phase AI pipeline:
+
+1. **Inference** — A quick AI call identifies the target audience, relevant fields, and deep-dive topics for the research
+2. **Research** — The inferred context is used to generate a comprehensive, structured report
+3. **Deepening** — Automatic follow-up calls expand technical sections in batches for greater depth
+4. **Naming** — A descriptive filename is generated for the new tab
+
+The final report is opened as a new markdown file tab in **preview mode**, ready to read or save.
+
+#### Research Output Structure
+
+Reports follow a standardized format:
+- Executive Summary
+- Historical Evolution
+- Current State
+- Key Debates & Risks
+- Engineering & Implementation Guide (with deep-dive sections)
+- Future Horizons
+- Actionable Playbook
+- Sources & Rigor
+- Extended Technical Deep Dive (appended from deepening calls)
+
+> **Note:** Research Mode is available with Claude and OpenAI providers. xAI is restricted from Research Mode.
+
+---
+
+### Go Deeper Mode
+
+Go Deeper enriches an **existing** research report by expanding selected topics with exhaustive new content and merging it back into a versioned document.
+
+#### Activating Go Deeper
+
+After a Research Mode run completes, a **"Go Deeper"** button appears in the Nexus panel. Clicking it starts the Go Deeper workflow on the active file.
+
+#### How It Works
+
+Go Deeper runs a four-phase AI pipeline:
+
+1. **Analyzing Report** — The AI reads the full document and identifies the best expansion opportunities: new focus areas, high-value topics, suggested depth level, and a preview of planned additions
+2. **Select Topics** — The workflow pauses for user input. An interactive checklist shows:
+   - **AI-Suggested Topics** (pre-checked) — topics the AI identified during analysis
+   - **Document Topics** (unchecked) — headings extracted from the document's `##`/`###` hierarchy
+
+   Select any combination and click **"Continue"** to proceed.
+3. **Expanding Depth** — Selected topics are batched and sent to the AI for exhaustive addendum generation, covering latest developments, advanced internals, production edge cases, code examples, and benchmarks. A batch counter shows progress (e.g., "2/4").
+4. **Integrating Content** — Addendums are merged into the document with a generated changelog section
+5. **Finalizing Document** — The file is renamed with a version suffix (`v2`, `v3`, etc.) and updated in the editor
+
+#### Go Deeper Output
+
+- The **active file is updated in-place** — no new tab is created
+- The filename is versioned: `Report Title.md` → `Report Title v2.md`
+- Document structure: original content + deep-dive addendums + changelog, separated by `---` dividers
+- Save the result manually with `Ctrl+S`
+
+> **Note:** Go Deeper is available with all four providers: Claude, OpenAI, Google Gemini, and xAI.
+
+---
+
 ### AI Inline Edit Window
 
 The AI Inline Edit Window provides a streamlined interface for making AI-powered edits directly within your document. It combines the Nexus dialog with an inline editing workflow, allowing you to describe changes in natural language and review them visually in the editor.
@@ -563,12 +636,12 @@ Configure your AI providers by setting up API keys through the Settings dialog.
 
 #### Supported Providers
 
-| Provider                     | Models                                                     | Edit Mode Support |
-| ---------------------------- | ---------------------------------------------------------- | ----------------- |
-| **Claude** (Anthropic) | Claude Sonnet 4.5, Claude Sonnet 4, Claude Haiku 3.5, etc. | Yes               |
-| **OpenAI**             | GPT-4o, GPT-4o Mini, GPT-4 Turbo, etc.                     | Yes               |
-
-<!-- | **xAI** | Grok models | Chat only | -->
+| Provider                     | Models                                                      | Chat | Edit | Research | Go Deeper |
+| ---------------------------- | ----------------------------------------------------------- | ---- | ---- | -------- | --------- |
+| **Claude** (Anthropic) | Claude Sonnet 4.5, Claude Sonnet 4, Claude Haiku 3.5, etc.  | Yes  | Yes  | Yes      | Yes       |
+| **OpenAI**             | GPT-4o, GPT-4o Mini, GPT-4 Turbo, etc.                      | Yes  | Yes  | Yes      | Yes       |
+| **Google Gemini**      | Gemini 2.0 Flash, Gemini 1.5 Pro, etc.                      | Yes  | Yes  | No       | Yes       |
+| **xAI (Grok)**         | Grok 3, Grok 3 Fast, Grok 3 Mini, etc.                      | Yes  | No   | No       | Yes       |
 
 #### Setting Up API Keys
 
@@ -764,6 +837,8 @@ src/
 │   │   ├── ProviderSelector.tsx # Provider/model dropdowns
 │   │   ├── FileAttachmentsList.tsx # File attachment chips
 │   │   ├── MessageInput.tsx    # Chat input with send/edit controls
+│   │   ├── GoDeepProgress.tsx  # Go Deeper phase stepper UI
+│   │   ├── GoDeepTopicSelector.tsx # Go Deeper topic selection UI
 │   │   ├── DiffView.tsx        # Dedicated diff tab view
 │   │   ├── DiffNavigationToolbar.tsx  # Diff review controls
 │   │   ├── DiffHunkControl.tsx # Per-hunk accept/reject controls
@@ -783,6 +858,8 @@ src/
 │   │   ├── useExternalFileWatcher.ts  # External file change handling
 │   │   ├── useAIChat.ts        # AI chat state management
 │   │   ├── useAIDiffEdit.ts    # AI diff editing logic
+│   │   ├── useAIResearch.ts    # Research mode multi-phase pipeline
+│   │   ├── useAIGoDeeper.ts    # Go Deeper multi-phase pipeline
 │   │   ├── useEditLoadingMessage.ts  # Typewriter loading animations
 │   │   ├── useSettingsConfig.ts     # Settings configuration hook
 │   │   ├── useContentEditable.ts    # Content editable behavior
@@ -794,6 +871,7 @@ src/
 │   │   ├── diffUtils.ts        # Diff computation and normalization
 │   │   ├── fileHelpers.ts      # File operation helpers
 │   │   ├── domUtils.ts         # DOM manipulation utilities
+│   │   ├── extractDocumentTopics.ts  # Heading extraction for Go Deeper
 │   │   └── pdfExport.tsx       # PDF export functionality
 │   │
 │   ├── types/             # TypeScript type definitions

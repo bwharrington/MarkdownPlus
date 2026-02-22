@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import {
     Box,
     styled,
@@ -27,6 +27,7 @@ import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAIResearch } from '../hooks/useAIResearch';
 import { useAIGoDeeper } from '../hooks/useAIGoDeeper';
+import { extractDocumentTopics } from '../utils/extractDocumentTopics';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
 import type { AIChatMode } from '../types/global';
@@ -182,7 +183,8 @@ export function AIChatDialog({
 
     // AI Go Deeper hook
     const {
-        submitGoDeeper,
+        submitAnalysis,
+        submitExpansion,
         cancelGoDeeper,
         dismissGoDeepProgress,
         isGoDeepLoading,
@@ -443,7 +445,7 @@ export function AIChatDialog({
         dismissGoDeepProgress();
 
         try {
-            await submitGoDeeper(
+            await submitAnalysis(
                 activeFile.id,
                 activeFile.content,
                 topic,
@@ -454,7 +456,15 @@ export function AIChatDialog({
         } catch {
             // Error handled by hook state (goDeepError)
         }
-    }, [editorState.activeFileId, editorState.openFiles, provider, selectedModel, submitGoDeeper, dismissResearchProgress, dismissGoDeepProgress]);
+    }, [editorState.activeFileId, editorState.openFiles, provider, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress]);
+
+    const handleTopicsContinue = useCallback(async (selectedTopics: string[]) => {
+        try {
+            await submitExpansion(selectedTopics);
+        } catch {
+            // Error handled by hook state (goDeepError)
+        }
+    }, [submitExpansion]);
 
     const handleCancelRequest = useCallback(async () => {
         if (isLoading) {
@@ -493,8 +503,23 @@ export function AIChatDialog({
         dismissResearchProgress();
         dismissGoDeepProgress();
         setGoDeepFileName(null);
+        setAttachedFiles([]);
         setClearConfirmOpen(false);
-    }, [clearChat, dismissResearchProgress, dismissGoDeepProgress]);
+    }, [clearChat, dismissResearchProgress, dismissGoDeepProgress, setAttachedFiles]);
+
+    // Document headings extracted for topic selection (only computed during topic_selection pause)
+    // Must be above the early return to satisfy Rules of Hooks
+    const documentTopics = useMemo(() => {
+        if (goDeepPhase !== 'topic_selection') return [];
+        const activeFile = editorState.activeFileId
+            ? editorState.openFiles.find(f => f.id === editorState.activeFileId)
+            : null;
+        if (!activeFile?.content) return [];
+        return extractDocumentTopics(
+            activeFile.content,
+            goDeepAnalysis?.newDeepDiveTopics ?? [],
+        );
+    }, [goDeepPhase, editorState.activeFileId, editorState.openFiles, goDeepAnalysis]);
 
     if (!open) return null;
 
@@ -577,7 +602,9 @@ export function AIChatDialog({
                         goDeepComplete={goDeepComplete}
                         goDeepError={goDeepError}
                         goDeepFileName={goDeepFileName ?? activeFileName}
+                        documentTopics={documentTopics}
                         onGoDeeper={handleGoDeeper}
+                        onTopicsContinue={handleTopicsContinue}
                         hasDiffTab={hasDiffTab}
                         loadingDisplayText={loadingDisplayText}
                         error={error}
