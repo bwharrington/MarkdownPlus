@@ -102,7 +102,7 @@ const RESEARCH_PROMPT_TEMPLATE = `You are an elite, multidisciplinary research s
 4. **Forecast & Apply**: Project 1-5 year scenarios. Derive 4-6 actionable insights, including implementation roadmaps.
 
 **Output Format (Markdown, Scannable, 1500-3500 Words):**
-- **Executive Summary (250 words)**: 4-6 bullet takeaways + "Why this matters NOW for {AUDIENCE}".
+- **Opening section (250 words)**: Use a compelling, topic-specific heading (NOT "Executive Summary" — instead derive a heading from the topic, e.g., "The State of Quantum Computing in 2026" or "Why Dark Energy Changes Everything"). Include 4-6 bullet takeaways + "Why this matters NOW for {AUDIENCE}".
 - **Historical Evolution**: Timeline of milestones, paradigm shifts.
 - **Current State**: Landscape, leaders, metrics, adoption stats.
 - **Key Debates & Risks**: Pros/cons, stakeholder views, controversies.

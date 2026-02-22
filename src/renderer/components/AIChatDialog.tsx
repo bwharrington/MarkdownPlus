@@ -26,6 +26,7 @@ import { MessageInput } from './MessageInput';
 import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAIResearch } from '../hooks/useAIResearch';
+import { useAIGoDeeper } from '../hooks/useAIGoDeeper';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
 import type { AIChatMode } from '../types/global';
@@ -150,6 +151,9 @@ export function AIChatDialog({
     // Collapse/Expand state
     const [isCollapsed, setIsCollapsed] = useState(false);
 
+    // Track the filename being deepened (set when Go Deeper starts, cleared on dismiss)
+    const [goDeepFileName, setGoDeepFileName] = useState<string | null>(null);
+
     // Glow animation state for context doc
     const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
@@ -175,6 +179,19 @@ export function AIChatDialog({
         inferenceResult,
         researchComplete,
     } = useAIResearch();
+
+    // AI Go Deeper hook
+    const {
+        submitGoDeeper,
+        cancelGoDeeper,
+        dismissGoDeepProgress,
+        isGoDeepLoading,
+        goDeepError,
+        goDeepPhase,
+        goDeepProgress,
+        goDeepAnalysis,
+        goDeepComplete,
+    } = useAIGoDeeper();
 
     // Rotating loading messages with typewriter effect
     const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
@@ -215,7 +232,8 @@ export function AIChatDialog({
         setMode(newMode);
         persistConfig({ aiChatMode: newMode });
         dismissResearchProgress();
-    }, [persistConfig, dismissResearchProgress]);
+        dismissGoDeepProgress();
+    }, [persistConfig, dismissResearchProgress, dismissGoDeepProgress]);
 
     // Persist provider selection
     const handleProviderChange = useCallback((newProvider: AIProvider) => {
@@ -366,6 +384,7 @@ export function AIChatDialog({
     const handleSendMessage = useCallback(async () => {
         setEditModeError(null);
         dismissResearchProgress();
+        dismissGoDeepProgress();
 
         // Edit mode request
         if (mode === 'edit' && !isProviderRestrictedFromMode(provider, 'edit')) {
@@ -407,7 +426,35 @@ export function AIChatDialog({
         );
         await sendMessage(enabledFiles.length > 0 ? enabledFiles : undefined);
         setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
-    }, [mode, provider, selectedModel, inputValue, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress]);
+    }, [mode, provider, selectedModel, inputValue, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress]);
+
+    const handleGoDeeper = useCallback(async () => {
+        const activeFile = editorState.activeFileId
+            ? editorState.openFiles.find(f => f.id === editorState.activeFileId)
+            : null;
+
+        if (!activeFile || !activeFile.content.trim()) return;
+
+        const requestId = `ai-godeep-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const topic = activeFile.name.replace(/\.md$/i, '').replace(/\s+v\d+$/i, '');
+
+        setGoDeepFileName(activeFile.name);
+        dismissResearchProgress();
+        dismissGoDeepProgress();
+
+        try {
+            await submitGoDeeper(
+                activeFile.id,
+                activeFile.content,
+                topic,
+                provider,
+                selectedModel,
+                requestId,
+            );
+        } catch {
+            // Error handled by hook state (goDeepError)
+        }
+    }, [editorState.activeFileId, editorState.openFiles, provider, selectedModel, submitGoDeeper, dismissResearchProgress, dismissGoDeepProgress]);
 
     const handleCancelRequest = useCallback(async () => {
         if (isLoading) {
@@ -433,19 +480,32 @@ export function AIChatDialog({
 
         if (isResearchLoading) {
             await cancelResearch();
+            return;
         }
-    }, [isLoading, isEditLoading, isResearchLoading, cancelCurrentRequest, cancelResearch]);
+
+        if (isGoDeepLoading) {
+            await cancelGoDeeper();
+        }
+    }, [isLoading, isEditLoading, isResearchLoading, isGoDeepLoading, cancelCurrentRequest, cancelResearch, cancelGoDeeper]);
 
     const handleClearChatConfirm = useCallback(() => {
         clearChat();
+        dismissResearchProgress();
+        dismissGoDeepProgress();
+        setGoDeepFileName(null);
         setClearConfirmOpen(false);
-    }, [clearChat]);
+    }, [clearChat, dismissResearchProgress, dismissGoDeepProgress]);
 
     if (!open) return null;
 
     const providerOptions = getProviderOptions();
     const hasProviders = providerOptions.length > 0;
-    const hasActiveRequest = isLoading || isEditLoading || isResearchLoading;
+    const hasActiveRequest = isLoading || isEditLoading || isResearchLoading || isGoDeepLoading;
+
+    // The file that would be targeted if the user clicks Go Deeper right now
+    const activeFileName = editorState.activeFileId
+        ? (editorState.openFiles.find(f => f.id === editorState.activeFileId)?.name ?? null)
+        : null;
 
     return (
         <DialogContainer ref={dialogRef}>
@@ -510,6 +570,14 @@ export function AIChatDialog({
                         deepeningProgress={deepeningProgress}
                         inferenceResult={inferenceResult}
                         researchComplete={researchComplete}
+                        isGoDeepLoading={isGoDeepLoading}
+                        goDeepPhase={goDeepPhase}
+                        goDeepProgress={goDeepProgress}
+                        goDeepAnalysis={goDeepAnalysis}
+                        goDeepComplete={goDeepComplete}
+                        goDeepError={goDeepError}
+                        goDeepFileName={goDeepFileName ?? activeFileName}
+                        onGoDeeper={handleGoDeeper}
                         hasDiffTab={hasDiffTab}
                         loadingDisplayText={loadingDisplayText}
                         error={error}

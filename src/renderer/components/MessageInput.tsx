@@ -108,7 +108,7 @@ export function MessageInput({
                 onChange={(e) => onInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
                 fullWidth
-                disabled={isLoading || isEditLoading || isResearchLoading || hasDiffTab}
+                disabled={hasActiveRequest || hasDiffTab}
                 slotProps={{
                     input: {
                         sx: { fontSize: '0.875rem' }
@@ -129,7 +129,7 @@ export function MessageInput({
                 variant="contained"
                 size="small"
                 onClick={onSend}
-                disabled={!inputValue.trim() || isLoading || isEditLoading || isResearchLoading || hasDiffTab}
+                disabled={!inputValue.trim() || hasActiveRequest || hasDiffTab}
                 color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : 'primary'}
                 sx={{ minWidth: 'auto', px: 2 }}
             >

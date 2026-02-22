@@ -3,8 +3,11 @@ import { Box, Typography, CircularProgress, styled } from '@mui/material';
 import ReactMarkdown, { Components } from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
 import type { ResearchPhase, DeepeningProgress, InferenceResult } from '../hooks/useAIResearch';
+import type { GoDeepPhase, GoDeepProgress as GoDeepProgressData, GoDeepAnalysis } from '../hooks/useAIGoDeeper';
 import { CodeBlock } from './CodeBlock';
 import { ResearchProgress } from './ResearchProgress';
+import { GoDeepProgress } from './GoDeepProgress';
+import { GoDeepButton } from './GoDeepButton';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
     flex: 1,
@@ -146,6 +149,14 @@ interface ChatMessagesProps {
     deepeningProgress: DeepeningProgress | null;
     inferenceResult: InferenceResult | null;
     researchComplete: boolean;
+    isGoDeepLoading: boolean;
+    goDeepPhase: GoDeepPhase;
+    goDeepProgress: GoDeepProgressData | null;
+    goDeepAnalysis: GoDeepAnalysis | null;
+    goDeepComplete: boolean;
+    goDeepError: string | null;
+    goDeepFileName: string | null;
+    onGoDeeper: () => void;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
@@ -164,6 +175,14 @@ export function ChatMessages({
     deepeningProgress,
     inferenceResult,
     researchComplete,
+    isGoDeepLoading,
+    goDeepPhase,
+    goDeepProgress,
+    goDeepAnalysis,
+    goDeepComplete,
+    goDeepError,
+    goDeepFileName,
+    onGoDeeper,
     hasDiffTab,
     loadingDisplayText,
     error,
@@ -175,7 +194,7 @@ export function ChatMessages({
         DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
     );
 
-    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !hasDiffTab;
+    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !isGoDeepLoading && !goDeepComplete && !researchComplete && !hasDiffTab;
 
     return (
         <MessagesContainer>
@@ -218,12 +237,23 @@ export function ChatMessages({
                     </Typography>
                 </EditLoadingContainer>
             )}
-            {(isResearchLoading || researchComplete) && (
+            {(isGoDeepLoading || goDeepComplete) && (
+                <GoDeepProgress
+                    goDeepPhase={goDeepPhase}
+                    goDeepProgress={goDeepProgress}
+                    goDeepAnalysis={goDeepAnalysis}
+                    fileName={goDeepFileName ?? undefined}
+                />
+            )}
+            {!isGoDeepLoading && !goDeepComplete && (isResearchLoading || researchComplete) && (
                 <ResearchProgress
                     researchPhase={researchPhase}
                     deepeningProgress={deepeningProgress}
                     inferenceResult={inferenceResult}
                 />
+            )}
+            {(researchComplete || goDeepComplete) && !isResearchLoading && !isGoDeepLoading && (
+                <GoDeepButton onClick={onGoDeeper} fileName={goDeepFileName ?? undefined} />
             )}
             {error && (
                 <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
@@ -238,6 +268,11 @@ export function ChatMessages({
             {researchError && (
                 <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
                     {researchError}
+                </Typography>
+            )}
+            {goDeepError && (
+                <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
+                    {goDeepError}
                 </Typography>
             )}
             {hasDiffTab && (

@@ -122,7 +122,8 @@ type EditorAction =
     | { type: 'PUSH_UNDO'; payload: { id: string; content: string } }
     | { type: 'OPEN_DIFF_TAB'; payload: { sourceFileId: string; originalContent: string; modifiedContent: string; hunks: DiffHunk[]; summary?: string } }
     | { type: 'UPDATE_DIFF_SESSION'; payload: { diffTabId: string; hunks: DiffHunk[]; currentHunkIndex?: number } }
-    | { type: 'CLOSE_DIFF_TAB'; payload: { diffTabId: string } };
+    | { type: 'CLOSE_DIFF_TAB'; payload: { diffTabId: string } }
+    | { type: 'UPDATE_FILE_NAME'; payload: { id: string; name: string } };
 
 // Reducer
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
@@ -353,6 +354,17 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                             redoStack: [],
                             undoStackPointer: 0,
                         }
+                        : f
+                ),
+            };
+        }
+
+        case 'UPDATE_FILE_NAME': {
+            return {
+                ...state,
+                openFiles: state.openFiles.map(f =>
+                    f.id === action.payload.id
+                        ? { ...f, name: action.payload.name }
                         : f
                 ),
             };
