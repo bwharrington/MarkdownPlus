@@ -10,6 +10,8 @@ import {
     FileDiffIcon,
     PlusIcon,
     MinusIcon,
+    VisibilityIcon,
+    VisibilityOffIcon,
 } from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
@@ -127,9 +129,10 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
 interface TabBarProps {
     attachedFiles: AttachedFile[];
     onToggleFileAttachment: (file: IFile) => void;
+    onToggleContextDoc: (filePath: string) => void;
 }
 
-export function TabBar({ attachedFiles, onToggleFileAttachment }: TabBarProps) {
+export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextDoc }: TabBarProps) {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
     const [draggedIndex, setDraggedIndex] = React.useState<number | null>(null);
@@ -206,6 +209,16 @@ export function TabBar({ attachedFiles, onToggleFileAttachment }: TabBarProps) {
         setContextMenu(null);
     }, [contextMenu, state.openFiles, onToggleFileAttachment]);
 
+    const handleContextDocToggleClick = useCallback(() => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file?.path) {
+                onToggleContextDoc(file.path);
+            }
+        }
+        setContextMenu(null);
+    }, [contextMenu, state.openFiles, onToggleContextDoc]);
+
     const handleRenameDialogClose = useCallback(() => {
         setRenameDialog({ open: false, fileId: '', currentName: '' });
         setNewFileName('');
@@ -277,20 +290,40 @@ export function TabBar({ attachedFiles, onToggleFileAttachment }: TabBarProps) {
                     const contextFile = contextMenu
                         ? state.openFiles.find(f => f.id === contextMenu.fileId)
                         : null;
-                    const isAttached = contextFile?.path
-                        ? attachedFiles.some(af => af.path === contextFile.path && !af.isContextDoc)
-                        : false;
+                    const attachedEntry = contextFile?.path
+                        ? attachedFiles.find(af => af.path === contextFile.path)
+                        : undefined;
+                    const isContextDoc = attachedEntry?.isContextDoc === true;
+                    const isContextDocEnabled = attachedEntry?.enabled !== false;
+                    const isManuallyAttached = attachedEntry !== undefined && !isContextDoc;
+
+                    if (isContextDoc) {
+                        return (
+                            <MenuItem
+                                onClick={handleContextDocToggleClick}
+                                disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
+                            >
+                                {isContextDocEnabled ? (
+                                    <VisibilityIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                                ) : (
+                                    <VisibilityOffIcon fontSize="small" sx={{ mr: 1, color: 'text.disabled' }} />
+                                )}
+                                {isContextDocEnabled ? `Hide "${contextFile?.name}" from AI` : `Show "${contextFile?.name}" to AI`}
+                            </MenuItem>
+                        );
+                    }
+
                     return (
                         <MenuItem
                             onClick={handleAttachToggleClick}
                             disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
                         >
-                            {isAttached ? (
+                            {isManuallyAttached ? (
                                 <MinusIcon size={18} sx={{ mr: 1, color: 'error.main' }} />
                             ) : (
                                 <PlusIcon size={18} sx={{ mr: 1, color: 'success.main' }} />
                             )}
-                            {isAttached ? `Remove "${contextFile?.name}"` : `Attach "${contextFile?.name}"`}
+                            {isManuallyAttached ? `Remove "${contextFile?.name}"` : `Attach "${contextFile?.name}"`}
                         </MenuItem>
                     );
                 })()}

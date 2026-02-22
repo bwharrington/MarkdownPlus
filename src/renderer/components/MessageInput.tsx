@@ -27,6 +27,7 @@ interface MessageInputProps {
     attachedFiles: AttachedFile[];
     onAttachFromDisk: () => void;
     onToggleFileAttachment: (file: IFile) => void;
+    onToggleContextDoc: (filePath: string) => void;
     onInputChange: (value: string) => void;
     onSend: () => void;
     onCancel: () => void;
@@ -46,6 +47,7 @@ export function MessageInput({
     attachedFiles,
     onAttachFromDisk,
     onToggleFileAttachment,
+    onToggleContextDoc,
     onInputChange,
     onSend,
     onCancel,
@@ -88,6 +90,7 @@ export function MessageInput({
                 attachedFiles={attachedFiles}
                 onAttachFromDisk={onAttachFromDisk}
                 onToggleFileAttachment={onToggleFileAttachment}
+                onToggleContextDoc={onToggleContextDoc}
             />
             <TextField
                 inputRef={inputRef}

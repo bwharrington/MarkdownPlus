@@ -502,6 +502,7 @@ function AppContent() {
             <TabBar
                 attachedFiles={attachedFiles}
                 onToggleFileAttachment={handleToggleFileAttachment}
+                onToggleContextDoc={handleToggleContextDoc}
             />
             <MainContent ref={mainContentRef}>
                 <EditorArea>

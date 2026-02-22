@@ -1,15 +1,16 @@
-# AI Chat Feature Documentation 1.1
+# AI Chat Feature Documentation 1.2
 
 This document describes the AI Chat feature in MarkdownPlus, covering configuration, the chat dialog, edit mode, diff visualization, and the underlying architecture.
 
 ---
 
-## Table of Contents 1.1
+## Table of Contents 1.2
 
 1. [Overview](#overview)
 2. [Configuration](#configuration)
    - [API Key Setup](#api-key-setup)
    - [Model Selection](#model-selection)
+   - [Model Filtering](#model-filtering)
    - [Secure Storage](#secure-storage)
 3. [Chat Dialog](#chat-dialog)
    - [Opening and Closing](#opening-and-closing)
@@ -34,6 +35,7 @@ This document describes the AI Chat feature in MarkdownPlus, covering configurat
 6. [Supported AI Providers](#supported-ai-providers)
    - [Claude (Anthropic)](#claude-anthropic)
    - [OpenAI](#openai)
+   - [Google Gemini](#google-gemini)
    - [xAI (Grok)](#xai-grok)
 7. [Architecture](#architecture)
    - [File Structure](#file-structure)
@@ -50,7 +52,7 @@ The AI Chat feature allows users to interact with AI language models directly wi
 - **Edit Mode**: The AI modifies the current markdown document based on user instructions. Changes are presented in a **dedicated diff tab** with a unified inline diff view, where the user can accept or reject changes on a per-hunk basis.
 - **Research Mode**: Deep research on any topic. The AI performs a two-step process — first inferring the target audience and relevant fields, then generating a comprehensive, structured research report. The output opens as a new markdown file tab in preview mode.
 
-Three AI providers are supported: **Claude (Anthropic)**, **OpenAI**, and **xAI (Grok)** (xAI is currently disabled in the UI). Research and Edit modes require Claude or OpenAI.
+Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research mode is supported by Claude and OpenAI. xAI is restricted to chat mode only. Each provider's models are filtered at the API level to surface only the models relevant for chat use.
 
 ---
 
@@ -62,7 +64,8 @@ API keys are configured in **Settings** (gear icon in the toolbar). The AI API K
 
 - **Claude** - Requires an Anthropic API key
 - **OpenAI** - Requires an OpenAI API key
-- **xAI** - Requires an xAI API key (currently disabled)
+- **Google Gemini** - Requires a Google Gemini API key
+- **xAI** - Requires an xAI API key
 
 For each provider:
 
@@ -81,6 +84,7 @@ Provider statuses are automatically refreshed whenever you set or clear an API k
 
 - `ANTHROPIC_API_KEY` for Claude
 - `OPENAI_API_KEY` for OpenAI
+- `GEMINI_API_KEY` for Google Gemini
 - `XAI_API_KEY` for xAI
 
 Environment variable values take precedence over keys stored in secure storage.
@@ -89,15 +93,41 @@ Environment variable values take precedence over keys stored in secure storage.
 
 Once an API key is configured for a provider, an **AI Models** section appears in Settings. Each provider has an expandable accordion containing checkboxes to enable or disable individual models.
 
-**Default available models:**
+**Default fallback models** (used when the provider API cannot be reached):
 
-| Provider | Models                                                        |
-| -------- | ------------------------------------------------------------- |
-| Claude   | Claude Sonnet 4.5, Claude Sonnet 4, Claude Haiku 3.5          |
-| OpenAI   | GPT-4 Omni Latest, GPT-4 Omni Mini Latest, GPT-4 Turbo Latest |
-| xAI      | Grok 3 Fast, Grok 3, Grok 3 Mini                              |
+| Provider | Models                                                      |
+| -------- | ----------------------------------------------------------- |
+| Claude   | Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5       |
+| OpenAI   | GPT-4o Latest, GPT-4o Mini Latest, o3, o4 Mini             |
+| Gemini   | Gemini 3 Pro Preview, Gemini 3 Flash Preview                |
+| xAI      | Grok 3 Fast, Grok 3, Grok 3 Mini                           |
 
-The application also queries each provider's API for dynamically available models. Models are filtered based on the enabled/disabled configuration stored in `config.json` under the `aiModels` key.
+The application queries each provider's API for dynamically available models. Models returned from the API are first filtered at the provider level to remove irrelevant variants (see [Model Filtering](#model-filtering) below), then further filtered based on the user's enabled/disabled configuration stored in `config.json` under the `aiModels` key.
+
+### Model Filtering
+
+Each provider applies automatic filtering to its API model list to surface only models useful for chat interactions. This prevents embedding models, image-generation variants, dated snapshots, and other non-chat models from cluttering the model dropdown.
+
+**Claude:**
+
+- Only models starting with `claude-` are included
+- Old Claude 3 base generation (pre-3.5) models are excluded — models starting with `claude-3-` are filtered out, keeping `claude-3-5+`, `claude-3-7+`, `claude-4+`, etc.
+
+**OpenAI:**
+
+- GPT chat models are included only when they use the `-latest` rolling alias (e.g., `gpt-4o-latest`); dated snapshots and audio/search variants are excluded
+- O-series reasoning models are included only as base IDs (e.g., `o1`, `o3`, `o4-mini`, `o3-mini`)
+
+**Google Gemini:**
+
+- Only models that support `generateContent` and start with `gemini-` are included (drops PaLM, Gemma, LearnLM, Imagen, AQA, etc.)
+- Embedding models, image-generation variants (`-image`), and image-only models are excluded
+- Pinned dated snapshots (e.g., `exp-03-25`, `exp-0827`), numbered versions (`-001`, `-002`), and `-latest` aliases are excluded (the bare model name already serves as the rolling alias)
+
+**xAI:**
+
+- Only models starting with `grok-` are included
+- Image, video, and image-generation variants (`image`, `video`, `imagine`) are excluded
 
 ### Secure Storage
 
@@ -159,7 +189,7 @@ At the top of the chat dialog, two dropdowns allow selecting the AI provider and
   - Red: Error (invalid key or API issue)
   - Orange: Currently checking connection
   - Grey: Unchecked
-- Provider defaults to Claude if available, otherwise OpenAI
+- Provider auto-selection priority: saved provider → Claude → OpenAI → Gemini → xAI
 
 **Model Dropdown:**
 
@@ -204,35 +234,65 @@ The message area automatically scrolls to the latest message using smooth scroll
 
 ### File Attachments
 
-The chat supports file attachments for providing additional context:
+The chat supports file attachments for providing additional context. Files can be attached automatically, from the attachment popover, or from the tab bar context menu.
 
-**Current Document (auto-attached):**
+**Context Document (auto-attached active file):**
 
-- When the chat dialog opens, the active document is automatically attached as a context file
-- A chip labeled with the file name and a visibility icon appears in the attachments area
-- The context document can be toggled on/off via its visibility icon
-- When the document is saved while attached, the attachment chip shows a blue glow animation to indicate the context has been updated
+- When the chat dialog opens, the currently active file is automatically attached as the **context document**
+- A chip labeled with the file name and a visibility (eye) icon appears in the attachments area
+- The context document can be toggled visible/hidden via its eye icon — hidden context documents are not sent to the AI
+- When the active file changes (by switching tabs), the newly active file becomes the context document and inherits the eye icon. The previously active file remains in the attachment list as a regular attachment that can be removed
+- When the context document is saved while attached, the attachment chip shows a blue glow animation to indicate the content has been updated
 
-**Manual Attachments:**
+**Attach File Popover:**
 
-- Click the attachment icon (paperclip) next to the text input
-- Select files via the system file dialog
-- Attached files appear as removable chips
-- **Text files**: Sent inline as `[File: filename]\ncontent` in the message
-- **Images**: Base64-encoded and sent with their MIME type using provider-specific image formats
+Clicking the attachment icon (paperclip) next to the text input opens a popover with two sections:
+
+1. **"Files and Folders"** — Opens the native file dialog to browse and select files from the computer (multi-select supported)
+2. **Open Files List** — Shows all currently open editor tabs (excluding diff tabs) with per-file actions:
+   - **Context document**: Displays an eye icon (filled when visible, outline when hidden). Clicking toggles visibility on/off
+   - **Already manually attached**: The file is hidden from the list since it already appears as a removable chip below the input
+   - **Available to attach**: Displays a green plus (+) icon. Clicking attaches the file
+   - **Unsaved files** (no path on disk): Shown as disabled/greyed out and cannot be attached
+
+The popover has a maximum height of 360px and scrolls when the file list is long. A close button (X) appears in the top-right corner.
+
+**Tab Bar Context Menu:**
+
+Right-clicking a file tab shows AI attachment options:
+
+- **For the context document**: A "Hide/Show *filename* from AI" option with the corresponding eye icon. This toggles the context document's visibility without removing it
+- **For other files**: An "Attach/Remove *filename*" option. Files not yet attached show a green plus icon; already-attached files show a red minus icon
+- Diff tabs and unsaved files (no path) are excluded from these options
+
+**Supported File Types:**
+
+- **Text files**: `.txt`, `.md`, `.markdown`, `.json`, `.js`, `.ts`, `.tsx`, `.jsx`, `.css`, `.html`, `.xml`, `.yaml`, `.yml`, `.log` — sent inline as `[File: filename]\ncontent` in the message
+- **Images**: `.jpg`, `.jpeg`, `.png`, `.gif`, `.bmp`, `.webp` — Base64-encoded and sent with their MIME type using provider-specific image formats
 
 ### Loading Indicators
 
 **Chat Mode:**
 
-- A centered `CircularProgress` spinner appears while waiting for a response
+- A centered `CircularProgress` spinner appears in the messages area while waiting for a response
 
 **Edit Mode:**
 
-- A green `CircularProgress` spinner appears with a typewriter-animated loading message
+- A green `CircularProgress` spinner appears in the messages area with a typewriter-animated loading message
+- The send button itself also shows a spinner while the edit request is in progress
 - Messages rotate every 5 seconds from a pool of 15 playful messages (e.g., "Boldly formatting my thoughts...", "Markdown magic in progress...", "Syntax sorcery loading...")
 - Each character appears with a 30ms delay for a typewriter effect
 - Messages use a shuffle-bag pattern so no message repeats until all have been shown
+
+**Research Mode:**
+
+- The send button shows a spinner while research is in progress
+- A multi-phase progress stepper is displayed in the messages area (see [Loading States — Visual Progress Stepper](#loading-states--visual-progress-stepper) in the Research Mode section)
+
+**Provider/Model Loading:**
+
+- When provider statuses are being fetched on startup, a centered spinner appears in place of the chat UI
+- When models are being loaded for a selected provider, a loading indicator is shown in the model dropdown
 
 ---
 
@@ -243,7 +303,7 @@ The chat supports file attachments for providing additional context:
 - Toggle the **Edit Mode** switch in the chat dialog (between the model dropdown and the input area)
 - When active, the send button turns green and shows an edit icon instead of a send icon
 - The placeholder text changes to "Describe the changes..."
-- Edit mode is only supported for **Claude** and **OpenAI** providers. When xAI is selected, edit mode is disabled and a warning chip is displayed
+- Edit mode is supported for **Claude**, **OpenAI**, and **Google Gemini** providers. When xAI is selected, edit mode is disabled and a warning chip is displayed
 - Edit mode is disabled while a diff tab is already open
 
 ### How Edits Are Requested
@@ -283,7 +343,7 @@ When the user sends a message in edit mode:
    - **Strategy 1**: Parse the response as-is (pure JSON)
    - **Strategy 2**: Strip markdown code fences (` ```json ... ``` `) and parse
    - **Strategy 3**: Extract JSON by finding the first `{` and last `}` in the response
-4. Claude uses `max_tokens: 16384` for edit requests (vs 4096 for chat) to accommodate full document rewrites. OpenAI uses `response_format: { type: 'json_object' }` to enforce JSON output.
+4. Claude uses `max_tokens: 16384` for edit requests (vs 4096 for chat) to accommodate full document rewrites. OpenAI uses `response_format: { type: 'json_object' }` to enforce JSON output. Gemini uses `response_mime_type: 'application/json'` for guaranteed JSON responses, with the system prompt prepended as the first user message (Gemini's `generateContent` API does not have a dedicated system role).
 
 ### Diff Computation
 
@@ -409,7 +469,7 @@ This prevents conflicts between manual edits and the pending diff changes. Once 
 ### Activating Research Mode
 
 - Select **Research** from the Mode dropdown in the AI Chat panel
-- Research mode is supported for **Claude** and **OpenAI** providers only (disabled for xAI)
+- Research mode is supported for **Claude** and **OpenAI** providers only (xAI is restricted from research mode; Gemini is not yet wired for research)
 - The input placeholder changes to "Enter a research topic..." and the send button shows a telescope icon with an info-blue color
 
 ### How Research Works
@@ -538,11 +598,13 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 - **API Endpoint**: `https://api.anthropic.com/v1/messages`
 - **Authentication**: `X-Api-Key` header
 - **API Version**: `2023-06-01`
-- **Default Model**: `claude-sonnet-4-5-20250514`
+- **Default Fallback Models**: Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5
 - **Chat Token Limit**: 4,096 max output tokens
 - **Edit Token Limit**: 16,384 max output tokens
 - **Edit Mode**: Supported (uses system prompt for structured JSON output)
+- **Research Mode**: Supported
 - **Image Attachments**: Native format with `media_type` and base64 `data`
+- **Model Filtering**: Only `claude-` models are included; old Claude 3 base generation (pre-3.5) models are excluded
 - **Validation**: Test call to `/v1/models` endpoint
 - **Error Logging**: Full error response body is captured and logged for debugging API issues
 
@@ -550,19 +612,37 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 
 - **API Endpoint**: `https://api.openai.com/v1/chat/completions`
 - **Authentication**: `Bearer` token in `Authorization` header
-- **Default Model**: `gpt-4o-mini-latest`
+- **Default Fallback Models**: GPT-4o Latest, GPT-4o Mini Latest, o3, o4 Mini
 - **Edit Mode**: Supported (uses `response_format: { type: 'json_object' }`)
+- **Research Mode**: Supported
 - **Image Attachments**: Data URL format with `image_url`
-- **Model Filtering**: Only models with `-latest` suffix are listed
+- **Model Filtering**: GPT models included only with `-latest` suffix; o-series reasoning models included as base IDs only (e.g., `o1`, `o3`, `o4-mini`)
 - **Validation**: Test call to list models endpoint
+
+### Google Gemini
+
+- **API Endpoint**: `https://generativelanguage.googleapis.com/v1beta`
+- **Authentication**: `x-goog-api-key` header
+- **Default Fallback Models**: Gemini 3 Pro Preview, Gemini 3 Flash Preview
+- **Edit Mode**: Supported (uses `response_mime_type: 'application/json'` for JSON mode; system prompt prepended as first user message since Gemini lacks a dedicated system role)
+- **Research Mode**: Not yet wired (only Claude and OpenAI dispatch research calls)
+- **Image Attachments**: Inline data format with `mimeType` and base64 `data` in Gemini's `inlineData` part
+- **Text Attachments**: Appended as text parts in the Gemini `parts` array
+- **Model Filtering**: Only `gemini-` branded chat models that support `generateContent`; excludes embedding, image-generation, dated snapshot, numbered version, and `-latest` alias variants
+- **Validation**: Test call to list models endpoint
+- **Role Mapping**: Gemini uses `model` instead of `assistant` for the assistant role
 
 ### xAI (Grok)
 
 - **API Endpoint**: `https://api.x.ai/v1/chat/completions`
 - **Authentication**: `Bearer` token in `Authorization` header
-- **Default Model**: N/A (currently disabled)
-- **Edit Mode**: Not supported
-- **Status**: Temporarily disabled in the UI
+- **Default Fallback Models**: Grok 3 Fast, Grok 3, Grok 3 Mini
+- **Edit Mode**: Not supported (no structured output; restricted via `aiProviderModeRestrictions.ts`)
+- **Research Mode**: Not supported (explicitly blocked in `useAIResearch.ts`)
+- **Image Attachments**: Data URL format with `image_url` (same as OpenAI format)
+- **Text Attachments**: Inline text content format
+- **Model Filtering**: Only `grok-` models; excludes image, video, and image-generation variants
+- **Validation**: Test call to list models endpoint
 
 ---
 
@@ -572,61 +652,77 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 
 **Renderer (React UI):**
 
-| File                                                  | Purpose                                                                      |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------- |
-| `src/renderer/components/AIChatDialog.tsx`          | Main chat dialog component, orchestrates sub-components                      |
-| `src/renderer/components/ChatMessages.tsx`          | Chat message bubbles with Markdown rendering and sci-fi diff review messages |
-| `src/renderer/components/ProviderSelector.tsx`      | Provider and model dropdown selectors with status indicators                 |
-| `src/renderer/components/FileAttachmentsList.tsx`   | File attachment chips and context document management                        |
-| `src/renderer/components/MessageInput.tsx`          | Message text input, send/edit button, cancel, and attachment trigger         |
-| `src/renderer/components/CodeBlock.tsx`              | Syntax-highlighted code blocks using PrismLight (react-syntax-highlighter)   |
-| `src/renderer/components/ResearchProgress.tsx`      | Vertical stepper UI for research phase visualization with metadata cards     |
-| `src/renderer/components/DiffView.tsx`              | Dedicated diff tab view with unified inline diff rendering                   |
-| `src/renderer/components/DiffNavigationToolbar.tsx` | Floating toolbar for navigating and resolving diff hunks                     |
-| `src/renderer/components/DiffHunkControl.tsx`       | Per-hunk inline accept/reject buttons                                        |
-| `src/renderer/hooks/useAIChat.ts`                   | Chat state management, message sending, provider/model loading               |
-| `src/renderer/hooks/useAIDiffEdit.ts`               | Edit mode logic, diff computation, opens diff tab                            |
-| `src/renderer/hooks/useAIResearch.ts`               | Research mode logic, two-step inference + research, opens file tab           |
-| `src/renderer/hooks/useEditLoadingMessage.ts`       | Typewriter-animated loading messages                                         |
-| `src/renderer/utils/diffUtils.ts`                   | Diff computation utilities (line ending normalization, hunk building)        |
-| `src/renderer/types/diffTypes.ts`                   | TypeScript interfaces for DiffHunk and DiffSession                           |
-| `src/renderer/contexts/EditorContext.tsx`           | State reducer for diff tab actions (open, update, close)                     |
+| File                                                      | Purpose                                                                      |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `src/renderer/components/AIChatDialog.tsx`              | Main chat dialog component, orchestrates sub-components                      |
+| `src/renderer/components/ChatMessages.tsx`              | Chat message bubbles with Markdown rendering and sci-fi diff review messages |
+| `src/renderer/components/ProviderSelector.tsx`          | Provider and model dropdown selectors with status indicators                 |
+| `src/renderer/components/FileAttachmentsList.tsx`       | File attachment chips and context document management                        |
+| `src/renderer/components/AttachFilePopover.tsx`         | Popover for attaching open files or browsing from disk                       |
+| `src/renderer/components/MessageInput.tsx`              | Message text input, send/edit button, cancel, and attachment popover trigger |
+| `src/renderer/components/TabBar.tsx`                    | File tabs with AI attachment context menu (attach/remove, show/hide)         |
+| `src/renderer/components/CodeBlock.tsx`                  | Syntax-highlighted code blocks using PrismLight (react-syntax-highlighter)   |
+| `src/renderer/components/ResearchProgress.tsx`          | Vertical stepper UI for research phase visualization with metadata cards     |
+| `src/renderer/components/DiffView.tsx`                  | Dedicated diff tab view with unified inline diff rendering                   |
+| `src/renderer/components/DiffNavigationToolbar.tsx`     | Floating toolbar for navigating and resolving diff hunks                     |
+| `src/renderer/components/DiffHunkControl.tsx`           | Per-hunk inline accept/reject buttons                                        |
+| `src/renderer/hooks/useAIChat.ts`                       | Chat state management, message sending, provider/model loading               |
+| `src/renderer/hooks/useAIProviderCache.ts`              | App-level provider status and model cache (shared across components)         |
+| `src/renderer/hooks/useAIDiffEdit.ts`                   | Edit mode logic, diff computation, opens diff tab                            |
+| `src/renderer/hooks/useAIResearch.ts`                   | Research mode logic, two-step inference + research, opens file tab           |
+| `src/renderer/hooks/useEditLoadingMessage.ts`           | Typewriter-animated loading messages                                         |
+| `src/renderer/aiProviderModeRestrictions.ts`            | Defines which providers are restricted from which chat modes                 |
+| `src/renderer/contexts/AIProviderCacheContext.tsx`      | React context for sharing provider cache across the component tree           |
+| `src/renderer/utils/diffUtils.ts`                       | Diff computation utilities (line ending normalization, hunk building)        |
+| `src/renderer/types/diffTypes.ts`                       | TypeScript interfaces for DiffHunk and DiffSession                           |
+| `src/renderer/contexts/EditorContext.tsx`               | State reducer for diff tab actions (open, update, close)                     |
 
 **Main Process (Electron Backend):**
 
-| File                                     | Purpose                                                             |
-| ---------------------------------------- | ------------------------------------------------------------------- |
-| `src/main/aiIpcHandlers.ts`            | IPC handlers for all AI requests, JSON parsing, model filtering     |
-| `src/main/services/claudeApi.ts`       | Claude API integration (chat, edit, model listing, validation)      |
-| `src/main/services/openaiApi.ts`       | OpenAI API integration (chat, JSON mode, model listing, validation) |
-| `src/main/services/xaiApi.ts`          | xAI API integration (chat, model listing, validation)               |
-| `src/main/services/secureStorage.ts`   | Encrypted API key storage using Electron safeStorage                |
-| `src/main/secureStorageIpcHandlers.ts` | IPC handlers for API key operations                                 |
+| File                                     | Purpose                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------- |
+| `src/main/aiIpcHandlers.ts`            | IPC handlers for all AI requests, JSON parsing, model filtering      |
+| `src/main/services/claudeApi.ts`       | Claude API integration (chat, edit, model listing, validation)       |
+| `src/main/services/openaiApi.ts`       | OpenAI API integration (chat, JSON mode, model listing, validation)  |
+| `src/main/services/geminiApi.ts`       | Gemini API integration (chat, JSON mode, model listing, validation)  |
+| `src/main/services/xaiApi.ts`          | xAI API integration (chat, model listing, validation)                |
+| `src/main/services/secureStorage.ts`   | Encrypted API key storage using Electron safeStorage                 |
+| `src/main/secureStorageIpcHandlers.ts` | IPC handlers for API key operations                                  |
 
 ### IPC Communication
 
 All AI operations communicate between the renderer and main process via Electron IPC channels:
 
-| Channel                           | Direction        | Purpose                                |
-| --------------------------------- | ---------------- | -------------------------------------- |
-| `ai:claude-chat-request`        | Renderer → Main | Send chat message to Claude            |
-| `ai:openai-chat-request`        | Renderer → Main | Send chat message to OpenAI            |
-| `ai:chat-request`               | Renderer → Main | Send chat message to xAI               |
-| `ai:edit-request`               | Renderer → Main | Send edit request (Claude/OpenAI only) |
-| `ai:cancel-request`             | Renderer → Main | Cancel an active chat request          |
-| `ai:cancel-edit-request`        | Renderer → Main | Cancel an active edit request          |
-| `ai:list-claude-models`         | Renderer → Main | List available Claude models           |
-| `ai:list-openai-models`         | Renderer → Main | List available OpenAI models           |
-| `ai:list-models`                | Renderer → Main | List available xAI models              |
-| `ai:get-provider-status`        | Renderer → Main | Check all provider connection statuses |
-| `secure-storage:set-api-key`    | Renderer → Main | Validate and store an API key          |
-| `secure-storage:has-api-key`    | Renderer → Main | Check if a provider has a stored key   |
-| `secure-storage:delete-api-key` | Renderer → Main | Remove a stored API key                |
-| `secure-storage:get-key-status` | Renderer → Main | Get storage status of all providers    |
+| Channel                           | Direction        | Purpose                                          |
+| --------------------------------- | ---------------- | ------------------------------------------------ |
+| `ai:claude-chat-request`        | Renderer → Main | Send chat message to Claude                      |
+| `ai:openai-chat-request`        | Renderer → Main | Send chat message to OpenAI                      |
+| `ai:gemini-chat-request`        | Renderer → Main | Send chat message to Google Gemini               |
+| `ai:chat-request`               | Renderer → Main | Send chat message to xAI                         |
+| `ai:edit-request`               | Renderer → Main | Send edit request (Claude, OpenAI, or Gemini)    |
+| `ai:cancel-request`             | Renderer → Main | Cancel an active chat request                    |
+| `ai:cancel-edit-request`        | Renderer → Main | Cancel an active edit request                    |
+| `ai:list-claude-models`         | Renderer → Main | List available Claude models                     |
+| `ai:list-openai-models`         | Renderer → Main | List available OpenAI models                     |
+| `ai:list-gemini-models`         | Renderer → Main | List available Gemini models                     |
+| `ai:list-models`                | Renderer → Main | List available xAI models                        |
+| `ai:get-provider-status`        | Renderer → Main | Check all provider connection statuses (4 total) |
+| `secure-storage:set-api-key`    | Renderer → Main | Validate and store an API key                    |
+| `secure-storage:has-api-key`    | Renderer → Main | Check if a provider has a stored key             |
+| `secure-storage:delete-api-key` | Renderer → Main | Remove a stored API key                          |
+| `secure-storage:get-key-status` | Renderer → Main | Get storage status of all providers              |
 
 Request cancellation uses `AbortController` instances tracked by unique request IDs. Each active request is stored in a `Map` and can be aborted by calling the corresponding cancel channel.
 
 ### State Management
+
+**Provider Cache** (managed by `useAIProviderCache` hook, shared via `AIProviderCacheContext`):
+
+- `providerStatuses: AIProviderStatuses` - Connection status for all four providers (xai, claude, openai, gemini)
+- `isStatusesLoaded: boolean` - Whether the initial status fetch has completed
+- Model cache per provider (stored in a ref, not in React state) with deduplication of in-flight fetches
+- `isLoadingModelsFor(provider)` - Whether models are currently being fetched for a given provider
+- `invalidateModelsForProvider(provider)` - Clears cached models when a provider's enabled state changes
 
 **Chat State** (managed by `useAIChat` hook):
 
@@ -634,10 +730,10 @@ Request cancellation uses `AbortController` instances tracked by unique request 
 - `inputValue: string` - Current text input
 - `isLoading: boolean` - Whether a chat request is in progress
 - `error: string | null` - Current error message
-- `selectedProvider` - Active AI provider
+- `selectedProvider` - Active AI provider (one of `xai`, `claude`, `openai`, `gemini`)
 - `selectedModel` - Active AI model
-- `availableModels` - Models loaded for the current provider
-- `providerStatuses` - Connection status of each provider
+- `availableModels` - Models loaded for the current provider (cache-aware)
+- Provider auto-selection priority: saved provider → Claude → OpenAI → Gemini → xAI
 
 **Diff State** (stored on diff tab's `IFile` entry):
 
@@ -663,9 +759,16 @@ Diff state is no longer global — it lives on each diff tab's `IFile` object:
 
 **Configuration State** (persisted in `config.json`):
 
-- `aiModels` - Per-provider model enable/disable flags
+- `aiModels` - Per-provider model enable/disable flags (providers: `xai`, `claude`, `openai`, `gemini`)
 - `aiChatDocked` - Whether the chat panel is docked
 - `aiChatDockWidth` - Width of the docked chat panel
 - `aiChatMode` - Current AI chat mode (`'chat'`, `'edit'`, or `'research'`). Migrated from legacy `aiChatEditMode` boolean
 - `aiChatProvider` - Last selected AI provider
 - `aiChatModel` - Last selected AI model
+
+**Provider Mode Restrictions** (defined in `aiProviderModeRestrictions.ts`):
+
+- A static map defines which providers are restricted from which modes
+- Currently: xAI is restricted from `edit` mode
+- The UI disables restricted mode options and auto-resets to `chat` when switching to a restricted provider
+- The send handler also enforces restrictions at runtime as a safety net

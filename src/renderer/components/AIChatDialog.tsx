@@ -228,11 +228,18 @@ export function AIChatDialog({
 
         setAttachedFiles(prev => {
             const currentContextDoc = prev.find(f => f.isContextDoc);
+            const manualFiles = prev.filter(f => !f.isContextDoc);
 
             if (!isValidContextFile) {
-                // No valid active file — remove the context doc if present
+                // No valid active file — demote context doc to regular attached file if present
                 if (!currentContextDoc) return prev;
-                return prev.filter(f => !f.isContextDoc);
+                const demoted: AttachedFile = {
+                    name: currentContextDoc.name,
+                    path: currentContextDoc.path,
+                    type: currentContextDoc.type,
+                    size: currentContextDoc.size,
+                };
+                return [...manualFiles, demoted];
             }
 
             if (currentContextDoc?.path === activeFile.path) {
@@ -254,8 +261,22 @@ export function AIChatDialog({
                 enabled: contextDocEnabledRef.current,
             };
 
-            // Replace existing context doc, keep all manually attached files
-            return [newContextDoc, ...prev.filter(f => !f.isContextDoc)];
+            // If the new active file was already manually attached, remove that duplicate entry
+            const deduplicatedManual = manualFiles.filter(f => f.path !== activeFile.path);
+
+            // Demote old context doc to regular attachment (unless it was the only chip)
+            if (currentContextDoc) {
+                const demoted: AttachedFile = {
+                    name: currentContextDoc.name,
+                    path: currentContextDoc.path,
+                    type: currentContextDoc.type,
+                    size: currentContextDoc.size,
+                };
+                return [newContextDoc, ...deduplicatedManual, demoted];
+            }
+
+            // No previous context doc — just add the new one
+            return [newContextDoc, ...deduplicatedManual];
         });
     }, [open, editorState.activeFileId, editorState.openFiles]);
 
@@ -487,6 +508,7 @@ export function AIChatDialog({
                         attachedFiles={attachedFiles}
                         onAttachFromDisk={handleAttachFromDisk}
                         onToggleFileAttachment={onToggleFileAttachment}
+                        onToggleContextDoc={onToggleContextDoc}
                         onInputChange={setInputValue}
                         onSend={handleSendMessage}
                         onCancel={handleCancelRequest}
