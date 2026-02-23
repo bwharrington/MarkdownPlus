@@ -35,7 +35,13 @@ interface GeminiApiResponse {
         content: {
             parts: Array<{ text: string }>;
         };
+        finishReason?: string;
     }>;
+}
+
+export interface ChatApiResult {
+    content: string;
+    truncated: boolean;
 }
 
 interface GeminiModel {
@@ -97,8 +103,9 @@ function formatMessagesForGemini(messages: Message[]): GeminiContent[] {
 export async function callGeminiApi(
     messages: Message[],
     model: string = 'gemini-2.0-flash',
-    signal?: AbortSignal
-): Promise<string> {
+    signal?: AbortSignal,
+    maxTokens?: number,
+): Promise<ChatApiResult> {
     const apiKey = getApiKeyForService('gemini');
     if (!apiKey) {
         throw new Error('GEMINI_API_KEY not found. Please set it in Settings');
@@ -107,16 +114,21 @@ export async function callGeminiApi(
     const url = `${GEMINI_BASE_URL}/models/${model}:generateContent`;
     const contents = formatMessagesForGemini(messages);
 
-    log('Gemini API Request', { url, model, messageCount: messages.length });
+    log('Gemini API Request', { url, model, messageCount: messages.length, maxTokens });
 
     try {
+        const requestBody: Record<string, unknown> = { contents };
+        if (maxTokens != null) {
+            requestBody.generationConfig = { maxOutputTokens: maxTokens };
+        }
+
         const response = await fetch(url, {
             method: 'POST',
             headers: {
                 'x-goog-api-key': apiKey,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ contents }),
+            body: JSON.stringify(requestBody),
             signal,
         });
 
@@ -128,7 +140,14 @@ export async function callGeminiApi(
             throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
         }
 
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini';
+        const truncated = data.candidates?.[0]?.finishReason === 'MAX_TOKENS';
+        if (truncated) {
+            log('Gemini API: Response was truncated (MAX_TOKENS)', { finishReason: data.candidates?.[0]?.finishReason });
+        }
+        return {
+            content: data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini',
+            truncated,
+        };
     } catch (error) {
         logError('Error calling Gemini API', error as Error);
         throw new Error(`Failed to call Gemini API: ${error instanceof Error ? error.message : String(error)}`);

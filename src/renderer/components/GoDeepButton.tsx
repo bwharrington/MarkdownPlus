@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box, Button, Typography, Tooltip, styled } from '@mui/material';
+import { Box, Button, Typography, Tooltip, styled, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import type { GoDeepDepthLevel } from '../hooks/useAIGoDeeper';
 
 // --- Styled components ---
 
@@ -67,15 +68,33 @@ interface GoDeepButtonProps {
     onClick: () => void;
     fileName?: string;
     disabled?: boolean;
+    depthLevel?: GoDeepDepthLevel;
+    onDepthLevelChange?: (level: GoDeepDepthLevel) => void;
 }
 
 export const GoDeepButton = React.memo(function GoDeepButton({
     onClick,
     fileName,
     disabled = false,
+    depthLevel = 'practitioner',
+    onDepthLevelChange,
 }: GoDeepButtonProps) {
     return (
         <GoDeepButtonContainer>
+            <FormControl size="small" sx={{ width: '100%', maxWidth: 320 }}>
+                <InputLabel id="go-deep-depth-label">Depth</InputLabel>
+                <Select
+                    labelId="go-deep-depth-label"
+                    label="Depth"
+                    value={depthLevel}
+                    onChange={(e) => onDepthLevelChange?.(e.target.value as GoDeepDepthLevel)}
+                    disabled={disabled}
+                >
+                    <MenuItem value="beginner">Beginner</MenuItem>
+                    <MenuItem value="practitioner">Practitioner</MenuItem>
+                    <MenuItem value="expert">Expert</MenuItem>
+                </Select>
+            </FormControl>
             <AnimatedButton
                 variant="contained"
                 color="primary"

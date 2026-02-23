@@ -109,7 +109,7 @@ export function ProviderSelector({
                     onChange={(e) => onModeChange(e.target.value as AIChatMode)}
                     disabled={hasDiffTab || hasActiveRequest}
                 >
-                    <MenuItem value="chat">Chat</MenuItem>
+                    <MenuItem value="chat">Ask</MenuItem>
                     <MenuItem
                         value="edit"
                         disabled={isProviderRestrictedFromMode(provider, 'edit')}

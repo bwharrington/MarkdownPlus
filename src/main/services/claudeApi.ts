@@ -88,12 +88,17 @@ interface ClaudeApiOptions {
     maxTokens?: number;
 }
 
+export interface ChatApiResult {
+    content: string;
+    truncated: boolean;
+}
+
 async function callClaudeApiInternal(
     messages: Message[],
     model: string,
     options: ClaudeApiOptions,
     signal?: AbortSignal,
-): Promise<string> {
+): Promise<ChatApiResult> {
     const apiKey = getApiKeyForService('claude');
     if (!apiKey) {
         throw new Error('ANTHROPIC_API_KEY not found. Please set it in Settings');
@@ -116,6 +121,7 @@ async function callClaudeApiInternal(
         url: 'https://api.anthropic.com/v1/messages',
         model,
         messageCount: messages.length,
+        maxTokens: options.maxTokens ?? 4096,
     });
 
     try {
@@ -139,7 +145,14 @@ async function callClaudeApiInternal(
         }
 
         const data: ClaudeApiResponse = await response.json();
-        return data.content[0]?.text || 'No response from Claude';
+        const truncated = data.stop_reason === 'max_tokens';
+        if (truncated) {
+            log('Claude API: Response was truncated (max_tokens)', { stop_reason: data.stop_reason });
+        }
+        return {
+            content: data.content[0]?.text || 'No response from Claude',
+            truncated,
+        };
     } catch (error) {
         logError('Error calling Claude API', error as Error);
         throw new Error(`Failed to call Claude API: ${error instanceof Error ? error.message : String(error)}`);
@@ -149,9 +162,10 @@ async function callClaudeApiInternal(
 export async function callClaudeApi(
     messages: Message[],
     model: string = 'claude-sonnet-4-5-20250514',
-    signal?: AbortSignal
-): Promise<string> {
-    return callClaudeApiInternal(messages, model, { maxTokens: 4096 }, signal);
+    signal?: AbortSignal,
+    maxTokens?: number,
+): Promise<ChatApiResult> {
+    return callClaudeApiInternal(messages, model, { maxTokens: maxTokens ?? 4096 }, signal);
 }
 
 /**
@@ -163,7 +177,7 @@ export async function callClaudeApiWithSystemPrompt(
     systemPrompt: string,
     model: string = 'claude-sonnet-4-5-20250514',
     signal?: AbortSignal
-): Promise<string> {
+): Promise<ChatApiResult> {
     return callClaudeApiInternal(messages, model, { systemPrompt, maxTokens: 16384 }, signal);
 }
 

@@ -76,21 +76,33 @@ export function useMarkdownComponents(
     }, [previewRef]);
 
     const markdownComponents: Components = useMemo(() => ({
-        code({ node, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || '');
-            const language = match ? match[1] : '';
-            const isBlock = node?.position && String(children).includes('\n');
+        // Override <pre> to intercept all fenced code blocks (with or without a language tag).
+        // ReactMarkdown wraps every fenced block in <pre><code>...</code></pre>, so this is
+        // the only reliable place to distinguish fenced blocks from inline `code` spans.
+        pre({ children }) {
+            // The child is always a <code> element for fenced blocks
+            if (React.isValidElement(children) && (children as React.ReactElement<{ className?: string; children?: React.ReactNode }>).props) {
+                const codeEl = children as React.ReactElement<{ className?: string; children?: React.ReactNode }>;
+                const className = codeEl.props.className || '';
+                const match = /language-(\w+)/.exec(className);
+                const language = match ? match[1] : '';
+                const code = String(codeEl.props.children ?? '').replace(/\n$/, '');
 
-            if (language === 'mermaid') {
-                const chartCode = String(children).replace(/\n$/, '');
-                return <MermaidDiagram chart={chartCode} />;
+                if (language === 'mermaid') {
+                    return <MermaidDiagram chart={code} />;
+                }
+
+                if (language) {
+                    return <CodeBlock language={language}>{code}</CodeBlock>;
+                }
             }
 
-            if (language && isBlock) {
-                const code = String(children).replace(/\n$/, '');
-                return <CodeBlock language={language}>{code}</CodeBlock>;
-            }
-
+            // Unlabeled fenced blocks — keep the default <pre> wrapper so ASCII diagrams,
+            // math notation, and other plain text blocks preserve monospace formatting.
+            return <pre>{children}</pre>;
+        },
+        code({ className, children, ...props }) {
+            // Only inline code reaches here now — fenced blocks are handled by pre() above
             return (
                 <code className={className} {...props}>
                     {children}

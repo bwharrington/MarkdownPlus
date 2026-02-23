@@ -11,11 +11,13 @@ export interface AIChatRequestData {
     messages: Message[];
     model: string;
     requestId?: string;
+    maxTokens?: number;
 }
 
 export interface AIChatResponse {
     success: boolean;
     response?: string;
+    truncated?: boolean;
     error?: string;
 }
 
@@ -124,11 +126,11 @@ export function registerAIIpcHandlers() {
 
     // xAI Chat Request
     ipcMain.handle('ai:chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
-        log('AI IPC: chat-request', { model: data.model, messageCount: data.messages.length });
+        log('AI IPC: chat-request', { model: data.model, messageCount: data.messages.length, maxTokens: data.maxTokens });
         const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callXAiApi(data.messages, data.model, controller?.signal);
-            return { success: true, response };
+            const result = await callXAiApi(data.messages, data.model, controller?.signal, data.maxTokens);
+            return { success: true, response: result.content, truncated: result.truncated };
         } catch (error) {
             logError('AI IPC: chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
@@ -139,11 +141,11 @@ export function registerAIIpcHandlers() {
 
     // Claude Chat Request
     ipcMain.handle('ai:claude-chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
-        log('AI IPC: claude-chat-request', { model: data.model, messageCount: data.messages.length });
+        log('AI IPC: claude-chat-request', { model: data.model, messageCount: data.messages.length, maxTokens: data.maxTokens });
         const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callClaudeApi(data.messages, data.model, controller?.signal);
-            return { success: true, response };
+            const result = await callClaudeApi(data.messages, data.model, controller?.signal, data.maxTokens);
+            return { success: true, response: result.content, truncated: result.truncated };
         } catch (error) {
             logError('AI IPC: claude-chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
@@ -192,11 +194,11 @@ export function registerAIIpcHandlers() {
 
     // OpenAI Chat Request
     ipcMain.handle('ai:openai-chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
-        log('AI IPC: openai-chat-request', { model: data.model, messageCount: data.messages.length });
+        log('AI IPC: openai-chat-request', { model: data.model, messageCount: data.messages.length, maxTokens: data.maxTokens });
         const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callOpenAIApi(data.messages, data.model, controller?.signal);
-            return { success: true, response };
+            const result = await callOpenAIApi(data.messages, data.model, controller?.signal, data.maxTokens);
+            return { success: true, response: result.content, truncated: result.truncated };
         } catch (error) {
             logError('AI IPC: openai-chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
@@ -207,11 +209,11 @@ export function registerAIIpcHandlers() {
 
     // Gemini Chat Request
     ipcMain.handle('ai:gemini-chat-request', async (_event, data: AIChatRequestData): Promise<AIChatResponse> => {
-        log('AI IPC: gemini-chat-request', { model: data.model, messageCount: data.messages.length });
+        log('AI IPC: gemini-chat-request', { model: data.model, messageCount: data.messages.length, maxTokens: data.maxTokens });
         const controller = getControllerForRequest(data.requestId);
         try {
-            const response = await callGeminiApi(data.messages, data.model, controller?.signal);
-            return { success: true, response };
+            const result = await callGeminiApi(data.messages, data.model, controller?.signal, data.maxTokens);
+            return { success: true, response: result.content, truncated: result.truncated };
         } catch (error) {
             logError('AI IPC: gemini-chat-request failed', error as Error);
             return { success: false, error: (error as Error).message };
@@ -289,7 +291,8 @@ export function registerAIIpcHandlers() {
                     role: m.role as 'user' | 'assistant',
                     content: m.content,
                 }));
-                response = await callClaudeApiWithSystemPrompt(claudeMessages, DIFF_EDIT_SYSTEM_PROMPT, data.model, controller?.signal);
+                const result = await callClaudeApiWithSystemPrompt(claudeMessages, DIFF_EDIT_SYSTEM_PROMPT, data.model, controller?.signal);
+                response = result.content;
             } else if (data.provider === 'openai') {
                 // OpenAI with JSON mode
                 const openaiMessages = [

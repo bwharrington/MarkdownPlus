@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, Chip, styled, keyframes } from '@mui/material';
 import type { GoDeepPhase, GoDeepProgress as GoDeepProgressData, GoDeepAnalysis } from '../hooks/useAIGoDeeper';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
@@ -261,6 +261,13 @@ export const GoDeepProgress = React.memo(function GoDeepProgress({
     const messagePool = useMemo(() => getMessagePool(goDeepPhase), [goDeepPhase]);
     const { displayText } = useEditLoadingMessage(isWorking, messagePool);
 
+    // Capture selected topics when the user clicks Continue so we can show them after the step completes
+    const [confirmedTopics, setConfirmedTopics] = React.useState<string[]>([]);
+    const handleTopicsContinue = useCallback((topics: string[]) => {
+        setConfirmedTopics(topics);
+        onTopicsContinue?.(topics);
+    }, [onTopicsContinue]);
+
     // Track phase timings
     const timingsRef = useRef<Record<string, PhaseTiming>>({});
     const prevPhaseRef = useRef<GoDeepPhase>(null);
@@ -374,8 +381,29 @@ export const GoDeepProgress = React.memo(function GoDeepProgress({
                                     <GoDeepTopicSelector
                                         aiTopics={goDeepAnalysis?.newDeepDiveTopics ?? []}
                                         documentTopics={documentTopics}
-                                        onContinue={onTopicsContinue}
+                                        onContinue={handleTopicsContinue}
                                     />
+                                )}
+
+                                {/* Show confirmed topics once the selection step is done */}
+                                {stepPhase === 'topic_selection' && status === 'complete' && confirmedTopics.length > 0 && (
+                                    <MetadataCard>
+                                        <MetadataRow>
+                                            <MetadataLabel>Selected</MetadataLabel>
+                                            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                                                {confirmedTopics.map((topic) => (
+                                                    <Chip
+                                                        key={topic}
+                                                        label={topic}
+                                                        size="small"
+                                                        color="primary"
+                                                        variant="outlined"
+                                                        sx={{ height: 20, fontSize: '0.7rem' }}
+                                                    />
+                                                ))}
+                                            </Box>
+                                        </MetadataRow>
+                                    </MetadataCard>
                                 )}
 
                                 {/* Analysis metadata card shown after analyzing completes */}

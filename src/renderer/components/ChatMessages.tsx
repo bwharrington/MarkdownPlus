@@ -3,7 +3,7 @@ import { Box, Typography, CircularProgress, styled } from '@mui/material';
 import ReactMarkdown, { Components } from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
 import type { ResearchPhase, DeepeningProgress, InferenceResult } from '../hooks/useAIResearch';
-import type { GoDeepPhase, GoDeepProgress as GoDeepProgressData, GoDeepAnalysis } from '../hooks/useAIGoDeeper';
+import type { GoDeepPhase, GoDeepProgress as GoDeepProgressData, GoDeepAnalysis, GoDeepDepthLevel } from '../hooks/useAIGoDeeper';
 import { CodeBlock } from './CodeBlock';
 import { ResearchProgress } from './ResearchProgress';
 import { GoDeepProgress } from './GoDeepProgress';
@@ -159,6 +159,8 @@ interface ChatMessagesProps {
     documentTopics?: string[];
     onGoDeeper: () => void;
     onTopicsContinue?: (topics: string[]) => void;
+    depthLevel?: GoDeepDepthLevel;
+    onDepthLevelChange?: (level: GoDeepDepthLevel) => void;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
@@ -187,6 +189,8 @@ export function ChatMessages({
     documentTopics,
     onGoDeeper,
     onTopicsContinue,
+    depthLevel,
+    onDepthLevelChange,
     hasDiffTab,
     loadingDisplayText,
     error,
@@ -259,7 +263,12 @@ export function ChatMessages({
                 />
             )}
             {(researchComplete || goDeepComplete) && !isResearchLoading && !isGoDeepLoading && (
-                <GoDeepButton onClick={onGoDeeper} fileName={goDeepFileName ?? undefined} />
+                <GoDeepButton
+                    onClick={onGoDeeper}
+                    fileName={goDeepFileName ?? undefined}
+                    depthLevel={depthLevel}
+                    onDepthLevelChange={onDepthLevelChange}
+                />
             )}
             {error && (
                 <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>

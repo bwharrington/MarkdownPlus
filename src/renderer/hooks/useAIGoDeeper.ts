@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import { useEditorDispatch, useEditorState } from '../contexts/EditorContext';
 import type { AIProvider } from './useAIChat';
+import { closeUnclosedFences } from '../utils/sanitizeMarkdown';
+import { callWithContinuation } from '../utils/callWithContinuation';
 
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
@@ -13,17 +15,19 @@ export interface GoDeepProgress {
     total: number;
 }
 
+export type GoDeepDepthLevel = 'beginner' | 'practitioner' | 'expert';
+
 export interface GoDeepAnalysis {
     newFocusAreas: string;
     newDeepDiveTopics: string[];
-    suggestedDepthLevel: 'practitioner' | 'expert';
+    suggestedDepthLevel: GoDeepDepthLevel;
     changelogIdeas: string[];
 }
 
 const DEFAULT_ANALYSIS: GoDeepAnalysis = {
     newFocusAreas: 'latest developments, production edge cases, alternative approaches',
     newDeepDiveTopics: [],
-    suggestedDepthLevel: 'expert',
+    suggestedDepthLevel: 'practitioner',
     changelogIdeas: [],
 };
 
@@ -39,6 +43,7 @@ interface PendingContext {
     nextVersion: number;
     versionLabel: string;
     analysis: GoDeepAnalysis;
+    depthLevel: GoDeepDepthLevel;
 }
 
 // --- Phase D1: Report Analysis ---
@@ -50,20 +55,36 @@ Report content:
 
 User focus (if any): the entire report
 
+**Target audience depth level: {DEPTH_LEVEL_LABEL}**
+{DEPTH_INSTRUCTIONS}
+
+When suggesting topics and focus areas, tailor them to the depth level above. For example:
+- Beginner: suggest foundational concepts, definitions, and simple how-to topics
+- Practitioner: suggest practical patterns, real-world usage, and working code topics
+- Expert: suggest internals, edge cases, performance trade-offs, and production-scale topics
+
 Respond with JSON only. No other text.
 
 {
-  "newFocusAreas": "<2-4 key angles to expand, comma-separated>",
-  "newDeepDiveTopics": ["<5-8 high-value technical or strategic topics that deserve exhaustive new coverage>"],
-  "suggestedDepthLevel": "practitioner" | "expert",
+  "newFocusAreas": "<2-4 key angles to expand, comma-separated, tailored to the depth level>",
+  "newDeepDiveTopics": ["<5-8 high-value topics suited to the depth level>"],
+  "suggestedDepthLevel": "{DEPTH_LEVEL_VALUE}",
   "freshResearchRequired": true | false,
   "changelogIdeas": ["<4-6 short bullets describing what will be added>"]
 }`;
 
-function buildAnalysisPrompt(topic: string, report: string): string {
+function buildAnalysisPrompt(topic: string, report: string, depthLevel: GoDeepDepthLevel): string {
+    const depthLabelMap: Record<GoDeepDepthLevel, string> = {
+        beginner: 'Beginner',
+        practitioner: 'Practitioner',
+        expert: 'Expert',
+    };
     return ANALYSIS_PROMPT_TEMPLATE
         .replaceAll('{TOPIC}', topic)
-        .replaceAll('{EXISTING_FULL_REPORT}', report);
+        .replaceAll('{EXISTING_FULL_REPORT}', report)
+        .replaceAll('{DEPTH_LEVEL_LABEL}', depthLabelMap[depthLevel])
+        .replaceAll('{DEPTH_INSTRUCTIONS}', DEPTH_INSTRUCTIONS[depthLevel])
+        .replaceAll('{DEPTH_LEVEL_VALUE}', depthLevel);
 }
 
 function normalizeAnalysis(parsed: Record<string, unknown>): GoDeepAnalysis | null {
@@ -71,7 +92,11 @@ function normalizeAnalysis(parsed: Record<string, unknown>): GoDeepAnalysis | nu
         return {
             newFocusAreas: parsed.newFocusAreas as string,
             newDeepDiveTopics: parsed.newDeepDiveTopics as string[],
-            suggestedDepthLevel: parsed.suggestedDepthLevel === 'practitioner' ? 'practitioner' : 'expert',
+            suggestedDepthLevel: parsed.suggestedDepthLevel === 'beginner'
+                ? 'beginner'
+                : parsed.suggestedDepthLevel === 'practitioner'
+                    ? 'practitioner'
+                    : 'expert',
             changelogIdeas: Array.isArray(parsed.changelogIdeas)
                 ? (parsed.changelogIdeas as string[])
                 : [],
@@ -110,6 +135,12 @@ function parseAnalysisResponse(text: string): GoDeepAnalysis {
 
 // --- Phase D2: Deep Dive Expansion ---
 
+const DEPTH_INSTRUCTIONS: Record<string, string> = {
+    beginner: `Write for someone new to this topic. Prioritize clear explanations over jargon. Define technical terms when introduced. Use simple, well-commented code examples. Focus on "what it is" and "why it matters" before "how it works". Avoid assuming prior knowledge.`,
+    practitioner: `Write for someone who actively works with this technology. Focus on practical patterns, real-world usage, and working code. Include common pitfalls and how to avoid them. Assume familiarity with fundamentals but explain non-obvious behaviors.`,
+    expert: `Write for a deep technical expert. Prioritize internals, implementation trade-offs, edge cases, and production-scale concerns. Include advanced code patterns, performance considerations, and architectural decisions. Skip introductory explanations.`,
+};
+
 const EXPANSION_PROMPT_TEMPLATE = `You previously generated this research report:
 
 {TOPIC}
@@ -119,11 +150,13 @@ Here is the full original report for context:
 
 Create a rich, standalone addendum that significantly deepens the following topics: {BATCH_TOPICS}
 
+**Audience depth level: {DEPTH_LEVEL_LABEL}**
+{DEPTH_INSTRUCTIONS}
+
 For each topic deliver:
 - Latest 2025–2026 developments and changes
-- Advanced internals, mechanics, and under-the-hood details
-- Production battle stories, failure modes, and edge cases with solutions
-- More sophisticated, production-ready code examples (newer APIs, best practices)
+- Internals, mechanics, and under-the-hood details (scaled to depth level)
+- Code examples with inline explanations (complexity scaled to depth level)
 - Quantitative insights, benchmarks, or comparisons where relevant
 - Alternative implementations and trade-offs
 
@@ -144,17 +177,29 @@ function batchTopics(topics: string[]): string[][] {
     return batches;
 }
 
-function buildExpansionPrompt(topic: string, originalReport: string, batchTopicsList: string[]): string {
+function buildExpansionPrompt(
+    topic: string,
+    originalReport: string,
+    batchTopicsList: string[],
+    depthLevel: GoDeepDepthLevel,
+): string {
     const currentDate = new Date().toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
     });
+    const depthLabelMap: Record<GoDeepDepthLevel, string> = {
+        beginner: 'Beginner',
+        practitioner: 'Practitioner',
+        expert: 'Expert',
+    };
     return EXPANSION_PROMPT_TEMPLATE
         .replaceAll('{TOPIC}', topic)
         .replaceAll('{ORIGINAL_REPORT}', originalReport)
         .replaceAll('{BATCH_TOPICS}', batchTopicsList.join(', '))
-        .replaceAll('{CURRENT_DATE}', currentDate);
+        .replaceAll('{CURRENT_DATE}', currentDate)
+        .replaceAll('{DEPTH_LEVEL_LABEL}', depthLabelMap[depthLevel])
+        .replaceAll('{DEPTH_INSTRUCTIONS}', DEPTH_INSTRUCTIONS[depthLevel]);
 }
 
 // --- Phase D3: Intelligent Integration ---
@@ -162,6 +207,7 @@ function buildExpansionPrompt(topic: string, originalReport: string, batchTopics
 const CHANGELOG_PROMPT_TEMPLATE = `You are summarizing changes made to a research report during a "Go Deeper" pass.
 
 Original report topic: {TOPIC}
+Audience depth level: {DEPTH_LEVEL_LABEL}
 
 Here are the new deep-dive addendums that were generated:
 {ALL_ADDENDUMS_CONCATENATED}
@@ -174,10 +220,16 @@ Rules:
 - Be specific about topics covered, not vague
 - Do not include any headings, preamble, or closing text`;
 
-function buildChangelogPrompt(topic: string, addendums: string): string {
+function buildChangelogPrompt(topic: string, addendums: string, depthLevel: GoDeepDepthLevel): string {
+    const depthLabelMap: Record<GoDeepDepthLevel, string> = {
+        beginner: 'Beginner',
+        practitioner: 'Practitioner',
+        expert: 'Expert',
+    };
     return CHANGELOG_PROMPT_TEMPLATE
         .replaceAll('{TOPIC}', topic)
-        .replaceAll('{ALL_ADDENDUMS_CONCATENATED}', addendums);
+        .replaceAll('{ALL_ADDENDUMS_CONCATENATED}', addendums)
+        .replaceAll('{DEPTH_LEVEL_LABEL}', depthLabelMap[depthLevel]);
 }
 
 function buildFinalDocument(
@@ -232,18 +284,21 @@ async function callChatApi(
     messages: { role: 'user' | 'assistant'; content: string }[],
     model: string,
     requestId: string,
+    maxTokens?: number,
 ) {
     if (provider === 'claude') {
-        return window.electronAPI.claudeChatRequest(messages, model, requestId);
+        return window.electronAPI.claudeChatRequest(messages, model, requestId, maxTokens);
     }
     if (provider === 'xai') {
-        return window.electronAPI.aiChatRequest(messages, model, requestId);
+        return window.electronAPI.aiChatRequest(messages, model, requestId, maxTokens);
     }
     if (provider === 'gemini') {
-        return window.electronAPI.geminiChatRequest(messages, model, requestId);
+        return window.electronAPI.geminiChatRequest(messages, model, requestId, maxTokens);
     }
-    return window.electronAPI.openaiChatRequest(messages, model, requestId);
+    return window.electronAPI.openaiChatRequest(messages, model, requestId, maxTokens);
 }
+
+const EXPANSION_MAX_TOKENS = 16384;
 
 // --- Hook ---
 
@@ -270,6 +325,7 @@ export function useAIGoDeeper() {
         provider: AIProvider,
         model: string,
         requestId: string,
+        depthLevel: GoDeepDepthLevel = 'practitioner',
     ) => {
         if (!originalContent.trim()) {
             throw new Error('No report content to deepen');
@@ -290,7 +346,7 @@ export function useAIGoDeeper() {
         const nextVersion = currentVersion + 1;
         const versionLabel = `v${nextVersion}`;
 
-        console.log('[GoDeeper] Starting analysis', { topic, provider, model, requestId, currentVersion, nextVersion });
+        console.log('[GoDeeper] Starting analysis', { topic, provider, model, requestId, currentVersion, nextVersion, depthLevel });
 
         try {
             // Phase D1: Report Analysis
@@ -299,7 +355,7 @@ export function useAIGoDeeper() {
 
             const analysisMessages = [{
                 role: 'user' as const,
-                content: buildAnalysisPrompt(topic, originalContent),
+                content: buildAnalysisPrompt(topic, originalContent, depthLevel),
             }];
 
             console.log('[GoDeeper] Phase: analyzing — calling API');
@@ -335,6 +391,7 @@ export function useAIGoDeeper() {
                 nextVersion,
                 versionLabel,
                 analysis,
+                depthLevel,
             };
 
             // Switch to topic_selection phase — keep isGoDeepLoading true so border animation stays
@@ -366,12 +423,12 @@ export function useAIGoDeeper() {
             return;
         }
 
-        const { fileId, originalContent, topic, provider, model, requestId, startTime, nextVersion, versionLabel, analysis } = ctx;
+        const { fileId, originalContent, topic, provider, model, requestId, startTime, nextVersion, versionLabel, analysis, depthLevel } = ctx;
         pendingContextRef.current = null;
 
         if (activeRequestIdRef.current !== requestId) return;
 
-        console.log('[GoDeeper] Starting expansion with selected topics', { selectedTopics, requestId });
+        console.log('[GoDeeper] Starting expansion with selected topics', { selectedTopics, depthLevel, requestId });
 
         try {
             // Phase D2: Deep Dive Expansion
@@ -391,7 +448,7 @@ export function useAIGoDeeper() {
                     setGoDeepProgress({ current: i + 1, total: batches.length });
 
                     const batchRequestId = `${requestId}-goDeep-expand-${i}`;
-                    const expansionPrompt = buildExpansionPrompt(topic, originalContent, batches[i]);
+                    const expansionPrompt = buildExpansionPrompt(topic, originalContent, batches[i], depthLevel);
                     const expansionMessages = [{
                         role: 'user' as const,
                         content: expansionPrompt,
@@ -403,23 +460,19 @@ export function useAIGoDeeper() {
                     });
 
                     try {
-                        const expansionResponse = await callChatApi(
-                            provider, expansionMessages, model, batchRequestId
+                        const expansionResult = await callWithContinuation(
+                            callChatApi, provider, expansionMessages, model,
+                            batchRequestId, `[GoDeeper] Expansion ${i + 1}/${batches.length}`, EXPANSION_MAX_TOKENS
                         );
 
                         if (activeRequestIdRef.current !== requestId) return;
 
-                        if (expansionResponse.success && expansionResponse.response) {
-                            expansionResults.push(expansionResponse.response);
-                            console.log(`[GoDeeper] Expansion ${i + 1}/${batches.length} complete`, {
-                                elapsed: Date.now() - startTime,
-                                responseLength: expansionResponse.response.length,
-                            });
-                        } else {
-                            console.error(`[GoDeeper] Expansion ${i + 1}/${batches.length} failed`, {
-                                error: expansionResponse.error,
-                            });
-                        }
+                        expansionResults.push(closeUnclosedFences(expansionResult.content));
+                        console.log(`[GoDeeper] Expansion ${i + 1}/${batches.length} complete`, {
+                            elapsed: Date.now() - startTime,
+                            responseLength: expansionResult.content.length,
+                            continuations: expansionResult.continuations,
+                        });
                     } catch (expandErr) {
                         console.error(`[GoDeeper] Expansion ${i + 1}/${batches.length} error`, expandErr);
                     }
@@ -440,7 +493,7 @@ export function useAIGoDeeper() {
 
                 const changelogMessages = [{
                     role: 'user' as const,
-                    content: buildChangelogPrompt(topic, addendums),
+                    content: buildChangelogPrompt(topic, addendums, depthLevel),
                 }];
 
                 console.log('[GoDeeper] Phase: integrating — generating changelog');
@@ -558,7 +611,8 @@ export function useAIGoDeeper() {
                 type: 'SHOW_NOTIFICATION',
                 payload: {
                     severity: 'success',
-                    message: `Go Deeper complete — ${fileName}`,
+                    message: `Go Deeper complete — ${fileName}. Remember to save your file (Ctrl+S).`,
+                    variant: 'go-deeper',
                 },
             });
 
@@ -614,9 +668,11 @@ export function useAIGoDeeper() {
                 await window.electronAPI.cancelAIChatRequest(`${requestId}-goDeep-analysis`);
             } catch { /* ignore */ }
             for (let i = 0; i < EXPANSION_MAX_BATCHES; i++) {
-                try {
-                    await window.electronAPI.cancelAIChatRequest(`${requestId}-goDeep-expand-${i}`);
-                } catch { /* ignore */ }
+                for (const suffix of ['', '-cont-1', '-cont-2']) {
+                    try {
+                        await window.electronAPI.cancelAIChatRequest(`${requestId}-goDeep-expand-${i}${suffix}`);
+                    } catch { /* ignore */ }
+                }
             }
             try {
                 await window.electronAPI.cancelAIChatRequest(`${requestId}-goDeep-integrate`);

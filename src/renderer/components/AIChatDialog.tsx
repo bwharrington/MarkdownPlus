@@ -27,6 +27,8 @@ import { useAIChat, AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAIResearch } from '../hooks/useAIResearch';
 import { useAIGoDeeper } from '../hooks/useAIGoDeeper';
+import type { GoDeepDepthLevel } from '../hooks/useAIGoDeeper';
+import type { ResearchDepthLevel } from '../hooks/useAIResearch';
 import { extractDocumentTopics } from '../utils/extractDocumentTopics';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
@@ -155,6 +157,9 @@ export function AIChatDialog({
     // Track the filename being deepened (set when Go Deeper starts, cleared on dismiss)
     const [goDeepFileName, setGoDeepFileName] = useState<string | null>(null);
 
+    // User-selected depth level for Go Deeper expansions
+    const [goDeepDepthLevel, setGoDeepDepthLevel] = useState<GoDeepDepthLevel>('practitioner');
+
     // Glow animation state for context doc
     const [glowingFile, setGlowingFile] = useState<string | null>(null);
 
@@ -228,6 +233,15 @@ export function AIChatDialog({
             console.error('Failed to save AI chat config:', err);
         });
     }, [dispatch, editorState.config]);
+
+    // User-selected depth level for Research mode (persisted in config)
+    const [researchDepthLevel, setResearchDepthLevel] = useState<ResearchDepthLevel>(
+        (editorState.config.aiResearchDepthLevel as ResearchDepthLevel | undefined) ?? 'practitioner'
+    );
+    const handleResearchDepthLevelChange = useCallback((level: ResearchDepthLevel) => {
+        setResearchDepthLevel(level);
+        persistConfig({ aiResearchDepthLevel: level });
+    }, [persistConfig]);
 
     // Persist mode to config
     const handleModeChange = useCallback((newMode: AIChatMode) => {
@@ -415,7 +429,7 @@ export function AIChatDialog({
             try {
                 const topic = inputValue;
                 setInputValue('');
-                await submitResearch(topic, provider, selectedModel, requestId);
+                await submitResearch(topic, provider, selectedModel, requestId, researchDepthLevel);
             } catch {
                 // Error is handled by the useAIResearch hook (researchError state)
             }
@@ -428,7 +442,7 @@ export function AIChatDialog({
         );
         await sendMessage(enabledFiles.length > 0 ? enabledFiles : undefined);
         setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
-    }, [mode, provider, selectedModel, inputValue, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress]);
+    }, [mode, provider, selectedModel, inputValue, researchDepthLevel, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress]);
 
     const handleGoDeeper = useCallback(async () => {
         const activeFile = editorState.activeFileId
@@ -452,11 +466,12 @@ export function AIChatDialog({
                 provider,
                 selectedModel,
                 requestId,
+                goDeepDepthLevel,
             );
         } catch {
             // Error handled by hook state (goDeepError)
         }
-    }, [editorState.activeFileId, editorState.openFiles, provider, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress]);
+    }, [editorState.activeFileId, editorState.openFiles, provider, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress, goDeepDepthLevel]);
 
     const handleTopicsContinue = useCallback(async (selectedTopics: string[]) => {
         try {
@@ -605,6 +620,8 @@ export function AIChatDialog({
                         documentTopics={documentTopics}
                         onGoDeeper={handleGoDeeper}
                         onTopicsContinue={handleTopicsContinue}
+                        depthLevel={goDeepDepthLevel}
+                        onDepthLevelChange={setGoDeepDepthLevel}
                         hasDiffTab={hasDiffTab}
                         loadingDisplayText={loadingDisplayText}
                         error={error}
@@ -631,6 +648,8 @@ export function AIChatDialog({
                         hasActiveRequest={hasActiveRequest}
                         openFiles={editorState.openFiles}
                         attachedFiles={attachedFiles}
+                        researchDepthLevel={researchDepthLevel}
+                        onResearchDepthLevelChange={handleResearchDepthLevelChange}
                         onAttachFromDisk={handleAttachFromDisk}
                         onToggleFileAttachment={onToggleFileAttachment}
                         onToggleContextDoc={onToggleContextDoc}

@@ -104,14 +104,14 @@ const electronAPI = {
   },
 
   // AI Chat operations
-  aiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string) =>
-    ipcRenderer.invoke('ai:chat-request', { messages, model, requestId }),
-  claudeChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string) =>
-    ipcRenderer.invoke('ai:claude-chat-request', { messages, model, requestId }),
-  openaiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string) =>
-    ipcRenderer.invoke('ai:openai-chat-request', { messages, model, requestId }),
-  geminiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string) =>
-    ipcRenderer.invoke('ai:gemini-chat-request', { messages, model, requestId }),
+  aiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string, maxTokens?: number) =>
+    ipcRenderer.invoke('ai:chat-request', { messages, model, requestId, maxTokens }),
+  claudeChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string, maxTokens?: number) =>
+    ipcRenderer.invoke('ai:claude-chat-request', { messages, model, requestId, maxTokens }),
+  openaiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string, maxTokens?: number) =>
+    ipcRenderer.invoke('ai:openai-chat-request', { messages, model, requestId, maxTokens }),
+  geminiChatRequest: (messages: Array<{ role: string; content: string }>, model: string, requestId?: string, maxTokens?: number) =>
+    ipcRenderer.invoke('ai:gemini-chat-request', { messages, model, requestId, maxTokens }),
   cancelAIChatRequest: (requestId: string) =>
     ipcRenderer.invoke('ai:cancel-request', requestId),
   cancelAIEditRequest: (requestId: string) =>

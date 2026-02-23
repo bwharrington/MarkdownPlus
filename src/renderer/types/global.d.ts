@@ -58,6 +58,7 @@ export interface IConfig {
   aiChatMode?: AIChatMode;
   aiChatProvider?: string;
   aiChatModel?: string;
+  aiResearchDepthLevel?: string;
 }
 
 export interface ConfirmCloseResult {
@@ -90,6 +91,7 @@ export interface AIProviderStatuses {
 export interface AIChatResponse {
   success: boolean;
   response?: string;
+  truncated?: boolean;
   error?: string;
 }
 
@@ -185,10 +187,10 @@ export interface ElectronAPI {
   onOpenFilesFromArgs: (callback: (filePaths: string[]) => void) => () => void;
 
   // AI Chat operations
-  aiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
-  claudeChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
-  openaiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
-  geminiChatRequest: (messages: AIMessage[], model: string, requestId?: string) => Promise<AIChatResponse>;
+  aiChatRequest: (messages: AIMessage[], model: string, requestId?: string, maxTokens?: number) => Promise<AIChatResponse>;
+  claudeChatRequest: (messages: AIMessage[], model: string, requestId?: string, maxTokens?: number) => Promise<AIChatResponse>;
+  openaiChatRequest: (messages: AIMessage[], model: string, requestId?: string, maxTokens?: number) => Promise<AIChatResponse>;
+  geminiChatRequest: (messages: AIMessage[], model: string, requestId?: string, maxTokens?: number) => Promise<AIChatResponse>;
   cancelAIChatRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
   cancelAIEditRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
   aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai' | 'gemini', requestId?: string) => Promise<AIEditResponse>;

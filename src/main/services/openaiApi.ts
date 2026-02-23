@@ -23,7 +23,13 @@ export interface OpenAIApiResponse {
         message: {
             content: string;
         };
+        finish_reason?: string;
     }>;
+}
+
+export interface ChatApiResult {
+    content: string;
+    truncated: boolean;
 }
 
 export interface OpenAIModel {
@@ -49,8 +55,9 @@ export const DEFAULT_OPENAI_MODELS = [
 export async function callOpenAIApi(
     messages: Message[],
     model: string = 'gpt-4o-mini-latest',
-    signal?: AbortSignal
-): Promise<string> {
+    signal?: AbortSignal,
+    maxTokens?: number,
+): Promise<ChatApiResult> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('openai');
     if (!apiKey) {
@@ -92,19 +99,25 @@ export async function callOpenAIApi(
         url: 'https://api.openai.com/v1/chat/completions',
         model,
         messageCount: messages.length,
+        maxTokens,
     });
 
     try {
+        const requestBody: Record<string, unknown> = {
+            messages: formattedMessages,
+            model,
+        };
+        if (maxTokens != null) {
+            requestBody.max_tokens = maxTokens;
+        }
+
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                messages: formattedMessages,
-                model,
-            }),
+            body: JSON.stringify(requestBody),
             signal,
         });
 
@@ -116,7 +129,14 @@ export async function callOpenAIApi(
             throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
         }
 
-        return data.choices[0]?.message?.content || 'No response from OpenAI';
+        const truncated = data.choices[0]?.finish_reason === 'length';
+        if (truncated) {
+            log('OpenAI API: Response was truncated (length)', { finish_reason: data.choices[0]?.finish_reason });
+        }
+        return {
+            content: data.choices[0]?.message?.content || 'No response from OpenAI',
+            truncated,
+        };
     } catch (error) {
         logError('Error calling OpenAI API', error as Error);
         throw new Error(`Failed to call OpenAI API: ${error instanceof Error ? error.message : String(error)}`);

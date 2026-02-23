@@ -1,6 +1,11 @@
 import { useState, useCallback, useRef } from 'react';
 import { useEditorDispatch, useEditorState } from '../contexts/EditorContext';
 import type { AIProvider } from './useAIChat';
+import { closeUnclosedFences } from '../utils/sanitizeMarkdown';
+import { callWithContinuation } from '../utils/callWithContinuation';
+import type { GoDeepDepthLevel } from './useAIGoDeeper';
+
+export type { GoDeepDepthLevel as ResearchDepthLevel };
 
 // Generate unique ID (same pattern as useAIDiffEdit)
 const generateId = () => Math.random().toString(36).substring(2, 11);
@@ -26,23 +31,43 @@ const DEFAULT_INFERENCE: InferenceResult = {
     deepDiveTopics: [],
 };
 
+// --- Depth level instructions (shared across prompts) ---
+const DEPTH_INSTRUCTIONS: Record<GoDeepDepthLevel, string> = {
+    beginner: `Write for someone new to this topic. Prioritize clear explanations over jargon. Define technical terms when introduced. Use simple, well-commented code examples. Focus on "what it is" and "why it matters" before "how it works". Avoid assuming prior knowledge.`,
+    practitioner: `Write for someone who actively works with this technology. Focus on practical patterns, real-world usage, and working code. Include common pitfalls and how to avoid them. Assume familiarity with fundamentals but explain non-obvious behaviors.`,
+    expert: `Write for a deep technical expert. Prioritize internals, implementation trade-offs, edge cases, and production-scale concerns. Include advanced code patterns, performance considerations, and architectural decisions. Skip introductory explanations.`,
+};
+
+const DEPTH_LABEL: Record<GoDeepDepthLevel, string> = {
+    beginner: 'Beginner',
+    practitioner: 'Practitioner',
+    expert: 'Expert',
+};
+
 // --- Step 1: Pre-Prompt Inference ---
 const INFERENCE_PROMPT_TEMPLATE = `Analyze this research topic and respond with JSON only. No other text.
 
 Topic: "{TOPIC}"
 User Intent: "{USER_INTENT}"
+Target depth level: {DEPTH_LABEL}
+
+Tailor the audience and deep dive topics to the depth level:
+- Beginner: audience is newcomers; suggest foundational and conceptual topics
+- Practitioner: audience is working engineers; suggest practical patterns and common challenges
+- Expert: audience is senior engineers or architects; suggest internals, edge cases, and production concerns
 
 {
-  "audience": "<inferred target audience, e.g. 'mid-level software engineers building AI apps'>",
+  "audience": "<inferred target audience for {DEPTH_LABEL} level, e.g. 'mid-level software engineers building AI apps'>",
   "fields": ["<field1>", "<field2>", "<field3>"],
-  "focusAreas": "<2-3 key angles to explore, comma separated, prioritize technical hooks and reactivity if relevant>",
-  "deepDiveTopics": ["<list 4-6 technical concepts to deep dive, e.g. 'useEffect', 'useMemo', 'useCallback', 'React reconciliation', 'concurrent rendering', 'reactive programming model'>"]
+  "focusAreas": "<2-3 key angles to explore at {DEPTH_LABEL} level, comma separated>",
+  "deepDiveTopics": ["<list 4-6 technical concepts suited to {DEPTH_LABEL} level>"]
 }`;
 
-function buildInferencePrompt(topic: string): string {
+function buildInferencePrompt(topic: string, depthLevel: GoDeepDepthLevel): string {
     return INFERENCE_PROMPT_TEMPLATE
         .replaceAll('{TOPIC}', topic)
-        .replaceAll('{USER_INTENT}', topic);
+        .replaceAll('{USER_INTENT}', topic)
+        .replaceAll('{DEPTH_LABEL}', DEPTH_LABEL[depthLevel]);
 }
 
 function normalizeInference(parsed: Record<string, unknown>): InferenceResult | null {
@@ -81,9 +106,12 @@ function parseInferenceResponse(text: string): InferenceResult {
 // --- Step 2: Main Research Prompt ---
 const RESEARCH_PROMPT_TEMPLATE = `You are an elite, multidisciplinary research strategist and synthesizer, with expertise across {FIELDS}. Your mission: Deliver the deepest, most balanced, and actionable research report on the topic: "{TOPIC}".
 
+**Audience depth level: {DEPTH_LABEL}**
+{DEPTH_INSTRUCTIONS}
+
 **Core Principles (Follow Strictly):**
 - **Depth First**: Go beyond surface-level. Uncover historical roots, current realities, key players/innovators, data/evidence, debates, biases, blind spots, and forward-looking implications.
-- **Technical Mastery**: For any engineering, coding, or implementation aspects, provide concrete, executable insights. Include architectures, code snippets (in relevant languages like Python, JavaScript, Rust), pseudocode, step-by-step guides, tools/libraries, real-world case studies, and validation methods. Explain "how to do it" with clarity for practitioners.
+- **Technical Mastery**: For any engineering, coding, or implementation aspects, provide concrete, executable insights. Include architectures, code snippets (in relevant languages like Python, JavaScript, Rust), pseudocode, step-by-step guides, tools/libraries, real-world case studies, and validation methods. Explain "how to do it" with clarity appropriate for the depth level above.
 - **Truth-Seeking**: Synthesize from diverse, credible perspectives. Cross-verify claims. Highlight contradictions, uncertainties, and evolving consensus. Prioritize primary sources over summaries.
 - **Strategic Value**: Tailor insights for {AUDIENCE}. Connect dots to risks, opportunities, and decisions.
 - **Capability Optimization**: Assess your tools and knowledge (e.g., web search, page browsing, code execution, real-time feeds). Use them iteratively to gather fresh, specific data. If limited, simulate depth via reasoned extrapolation from known facts.
@@ -108,7 +136,7 @@ const RESEARCH_PROMPT_TEMPLATE = `You are an elite, multidisciplinary research s
 - **Key Debates & Risks**: Pros/cons, stakeholder views, controversies.
 - **Engineering & Implementation Guide**:
   - Core architectures and system designs (with diagrams described in text).
-  - Dedicated subsections for {DEEP_DIVE_TOPICS} — provide internals, mechanics, lifecycle details, dependency management, async patterns, common pitfalls, and production-ready code examples for each. Use the topic name directly as the subsection heading (e.g., "### useEffect" not "### Deep Dive: useEffect").
+  - Dedicated subsections for {DEEP_DIVE_TOPICS} — provide internals, mechanics, lifecycle details, dependency management, async patterns, common pitfalls, and code examples for each (complexity scaled to the depth level). Use the topic name directly as the subsection heading (e.g., "### useEffect" not "### Deep Dive: useEffect").
   - Step-by-step "how-to" implementations, including code examples (e.g., full functions, setup scripts) with inline explanations.
   - Recommended tools, libraries, frameworks, and deployment strategies.
   - Common pitfalls, optimizations, and debugging tips.
@@ -117,7 +145,7 @@ const RESEARCH_PROMPT_TEMPLATE = `You are an elite, multidisciplinary research s
 - **Actionable Playbook**: Recommendations, experiments, watchlists, open questions.
 - **Sources & Rigor**: Top 10-15 references (links where possible), methodology notes, confidence matrix, gaps/limitations.
 
-Be objective yet engaging. If data is thin, admit it and hypothesize based on patterns. For technical sections, ensure code is production-ready and explain trade-offs. Start directly with the summary.`;
+Be objective yet engaging. If data is thin, admit it and hypothesize based on patterns. Start directly with the summary.`;
 
 /**
  * Build the full research prompt with inferred (or default) metadata.
@@ -126,7 +154,8 @@ Be objective yet engaging. If data is thin, admit it and hypothesize based on pa
  */
 export function buildResearchPrompt(
     topic: string,
-    inference: InferenceResult = DEFAULT_INFERENCE
+    inference: InferenceResult = DEFAULT_INFERENCE,
+    depthLevel: GoDeepDepthLevel = 'practitioner',
 ): string {
     const deepDiveStr = inference.deepDiveTopics.length > 0
         ? inference.deepDiveTopics.join(', ')
@@ -136,19 +165,24 @@ export function buildResearchPrompt(
         .replaceAll('{AUDIENCE}', inference.audience)
         .replaceAll('{FIELDS}', inference.fields.join(', '))
         .replaceAll('{FOCUS_AREAS}', inference.focusAreas)
-        .replaceAll('{DEEP_DIVE_TOPICS}', deepDiveStr);
+        .replaceAll('{DEEP_DIVE_TOPICS}', deepDiveStr)
+        .replaceAll('{DEPTH_LABEL}', DEPTH_LABEL[depthLevel])
+        .replaceAll('{DEPTH_INSTRUCTIONS}', DEPTH_INSTRUCTIONS[depthLevel]);
 }
 
 // --- Step 3: Deepening Prompt ---
-const DEEPENING_PROMPT_TEMPLATE = `You previously wrote a research report on "{TOPIC}". The report is good but needs more depth in specific technical areas.
+const DEEPENING_PROMPT_TEMPLATE = `You previously wrote a research report on "{TOPIC}". The report is good but needs more depth in specific areas.
+
+**Audience depth level: {DEPTH_LABEL}**
+{DEPTH_INSTRUCTIONS}
 
 Please write an **addendum** that provides an exhaustive deep dive into these specific topics: {BATCH_TOPICS}
 
 For each topic, provide:
-1. **Detailed technical explanation** with internals, mechanics, and how it works under the hood
-2. **Production-ready code examples** with inline comments explaining each step
+1. **Detailed explanation** with internals, mechanics, and how it works under the hood (scaled to depth level)
+2. **Code examples** with inline comments explaining each step (complexity scaled to depth level)
 3. **Common pitfalls and edge cases** with solutions
-4. **Best practices and anti-patterns** with before/after code comparisons
+4. **Best practices and anti-patterns** with before/after comparisons
 5. **2025-2026 updates** — latest changes, deprecations, or new approaches
 
 Format as markdown that can be appended directly to the original report. Use ## headings for each topic. Target 800-1500 words.`;
@@ -164,10 +198,12 @@ function batchTopics(topics: string[]): string[][] {
     return batches;
 }
 
-function buildDeepeningPrompt(topic: string, batchTopicsList: string[]): string {
+function buildDeepeningPrompt(topic: string, batchTopicsList: string[], depthLevel: GoDeepDepthLevel): string {
     return DEEPENING_PROMPT_TEMPLATE
         .replaceAll('{TOPIC}', topic)
-        .replaceAll('{BATCH_TOPICS}', batchTopicsList.join(', '));
+        .replaceAll('{BATCH_TOPICS}', batchTopicsList.join(', '))
+        .replaceAll('{DEPTH_LABEL}', DEPTH_LABEL[depthLevel])
+        .replaceAll('{DEPTH_INSTRUCTIONS}', DEPTH_INSTRUCTIONS[depthLevel]);
 }
 
 // --- Step 4: Filename Inference ---
@@ -208,18 +244,21 @@ async function callChatApi(
     messages: { role: 'user' | 'assistant'; content: string }[],
     model: string,
     requestId: string,
+    maxTokens?: number,
 ) {
     if (provider === 'claude') {
-        return window.electronAPI.claudeChatRequest(messages, model, requestId);
+        return window.electronAPI.claudeChatRequest(messages, model, requestId, maxTokens);
     }
     if (provider === 'xai') {
-        return window.electronAPI.aiChatRequest(messages, model, requestId);
+        return window.electronAPI.aiChatRequest(messages, model, requestId, maxTokens);
     }
     if (provider === 'gemini') {
-        return window.electronAPI.geminiChatRequest(messages, model, requestId);
+        return window.electronAPI.geminiChatRequest(messages, model, requestId, maxTokens);
     }
-    return window.electronAPI.openaiChatRequest(messages, model, requestId);
+    return window.electronAPI.openaiChatRequest(messages, model, requestId, maxTokens);
 }
+
+const RESEARCH_MAX_TOKENS = 16384;
 
 export function useAIResearch() {
     const dispatch = useEditorDispatch();
@@ -238,6 +277,7 @@ export function useAIResearch() {
         provider: AIProvider,
         model: string,
         requestId: string,
+        depthLevel: GoDeepDepthLevel = 'practitioner',
     ) => {
         if (!topic.trim()) {
             throw new Error('Please enter a research topic');
@@ -251,7 +291,7 @@ export function useAIResearch() {
         setResearchComplete(false);
 
         const startTime = Date.now();
-        console.log('[Research] Starting research', { topic, provider, model, requestId });
+        console.log('[Research] Starting research', { topic, provider, model, requestId, depthLevel });
 
         try {
             // Step 1: Pre-prompt inference
@@ -260,7 +300,7 @@ export function useAIResearch() {
 
             const inferenceMessages = [{
                 role: 'user' as const,
-                content: buildInferencePrompt(topic),
+                content: buildInferencePrompt(topic, depthLevel),
             }];
 
             console.log('[Research] Phase: inference — calling API');
@@ -288,27 +328,25 @@ export function useAIResearch() {
             // Step 2: Main research call
             setResearchPhase('researching');
 
-            const researchPrompt = buildResearchPrompt(topic, inference);
+            const researchPrompt = buildResearchPrompt(topic, inference, depthLevel);
             const researchMessages = [{
                 role: 'user' as const,
                 content: researchPrompt,
             }];
 
             console.log('[Research] Phase: researching — calling API');
-            const researchResponse = await callChatApi(
-                provider, researchMessages, model, `${requestId}-research`
+            const researchResult = await callWithContinuation(
+                callChatApi, provider, researchMessages, model,
+                `${requestId}-research`, '[Research]', RESEARCH_MAX_TOKENS
             );
 
             if (activeRequestIdRef.current !== requestId) return;
 
-            if (!researchResponse.success || !researchResponse.response) {
-                throw new Error(researchResponse.error || 'Research request failed');
-            }
-
-            let finalContent = researchResponse.response;
+            let finalContent = closeUnclosedFences(researchResult.content);
             console.log('[Research] Main research complete', {
                 elapsed: Date.now() - startTime,
                 responseLength: finalContent.length,
+                continuations: researchResult.continuations,
             });
 
             // Step 3: Dynamic deepening calls
@@ -329,7 +367,7 @@ export function useAIResearch() {
                     setDeepeningProgress({ current: i + 1, total: batches.length });
 
                     const batchRequestId = `${requestId}-deepening-${i}`;
-                    const deepeningPrompt = buildDeepeningPrompt(topic, batches[i]);
+                    const deepeningPrompt = buildDeepeningPrompt(topic, batches[i], depthLevel);
                     const deepeningMessages = [{
                         role: 'user' as const,
                         content: deepeningPrompt,
@@ -341,24 +379,19 @@ export function useAIResearch() {
                     });
 
                     try {
-                        const deepeningResponse = await callChatApi(
-                            provider, deepeningMessages, model, batchRequestId
+                        const deepeningResult = await callWithContinuation(
+                            callChatApi, provider, deepeningMessages, model,
+                            batchRequestId, `[Research] Deepening ${i + 1}/${batches.length}`, RESEARCH_MAX_TOKENS
                         );
 
                         if (activeRequestIdRef.current !== requestId) return;
 
-                        if (deepeningResponse.success && deepeningResponse.response) {
-                            deepeningResults.push(deepeningResponse.response);
-                            console.log(`[Research] Deepening ${i + 1}/${batches.length} complete`, {
-                                elapsed: Date.now() - startTime,
-                                responseLength: deepeningResponse.response.length,
-                            });
-                        } else {
-                            console.error(`[Research] Deepening ${i + 1}/${batches.length} failed`, {
-                                error: deepeningResponse.error,
-                            });
-                            // Graceful degradation — continue with remaining batches
-                        }
+                        deepeningResults.push(closeUnclosedFences(deepeningResult.content));
+                        console.log(`[Research] Deepening ${i + 1}/${batches.length} complete`, {
+                            elapsed: Date.now() - startTime,
+                            responseLength: deepeningResult.content.length,
+                            continuations: deepeningResult.continuations,
+                        });
                     } catch (deepErr) {
                         console.error(`[Research] Deepening ${i + 1}/${batches.length} error`, deepErr);
                         // Graceful degradation — continue with remaining batches
@@ -477,18 +510,21 @@ export function useAIResearch() {
 
         if (requestId) {
             console.log('[Research] Canceling', { requestId });
-            // Cancel all possible in-flight requests
+            // Cancel all possible in-flight requests (including continuations)
             try {
                 await window.electronAPI.cancelAIChatRequest(`${requestId}-inference`);
             } catch { /* ignore */ }
-            try {
-                await window.electronAPI.cancelAIChatRequest(`${requestId}-research`);
-            } catch { /* ignore */ }
-            // Cancel deepening requests (up to max batches)
-            for (let i = 0; i < DEEPENING_MAX_BATCHES; i++) {
+            for (const suffix of ['', '-cont-1', '-cont-2']) {
                 try {
-                    await window.electronAPI.cancelAIChatRequest(`${requestId}-deepening-${i}`);
+                    await window.electronAPI.cancelAIChatRequest(`${requestId}-research${suffix}`);
                 } catch { /* ignore */ }
+            }
+            for (let i = 0; i < DEEPENING_MAX_BATCHES; i++) {
+                for (const suffix of ['', '-cont-1', '-cont-2']) {
+                    try {
+                        await window.electronAPI.cancelAIChatRequest(`${requestId}-deepening-${i}${suffix}`);
+                    } catch { /* ignore */ }
+                }
             }
             try {
                 await window.electronAPI.cancelAIChatRequest(`${requestId}-naming`);

@@ -44,6 +44,7 @@ export interface Notification {
   message: string;
   severity: 'error' | 'warning' | 'info' | 'success';
   action?: NotificationAction;
+  variant?: 'go-deeper';
 }
 
 // Import IConfig from global

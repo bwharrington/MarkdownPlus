@@ -1,10 +1,11 @@
 import React, { useCallback, useState } from 'react';
-import { Box, TextField, Button, IconButton, CircularProgress, styled } from '@mui/material';
+import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl } from '@mui/material';
 import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
 import { AttachFilePopover } from './AttachFilePopover';
 import type { AttachedFile } from './FileAttachmentsList';
 import type { AIChatMode } from '../types/global';
 import type { IFile } from '../types';
+import type { GoDeepDepthLevel } from '../hooks/useAIGoDeeper';
 
 const InputContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
@@ -25,6 +26,8 @@ interface MessageInputProps {
     hasActiveRequest: boolean;
     openFiles: IFile[];
     attachedFiles: AttachedFile[];
+    researchDepthLevel?: GoDeepDepthLevel;
+    onResearchDepthLevelChange?: (level: GoDeepDepthLevel) => void;
     onAttachFromDisk: () => void;
     onToggleFileAttachment: (file: IFile) => void;
     onToggleContextDoc: (filePath: string) => void;
@@ -45,6 +48,8 @@ export function MessageInput({
     hasActiveRequest,
     openFiles,
     attachedFiles,
+    researchDepthLevel = 'practitioner',
+    onResearchDepthLevelChange,
     onAttachFromDisk,
     onToggleFileAttachment,
     onToggleContextDoc,
@@ -115,6 +120,20 @@ export function MessageInput({
                     }
                 }}
             />
+            {mode === 'research' && onResearchDepthLevelChange && (
+                <FormControl size="small" sx={{ minWidth: 105, flexShrink: 0 }}>
+                    <Select
+                        value={researchDepthLevel}
+                        onChange={(e) => onResearchDepthLevelChange(e.target.value as GoDeepDepthLevel)}
+                        disabled={isResearchLoading}
+                        sx={{ fontSize: '0.8rem' }}
+                    >
+                        <MenuItem value="beginner">Beginner</MenuItem>
+                        <MenuItem value="practitioner">Practitioner</MenuItem>
+                        <MenuItem value="expert">Expert</MenuItem>
+                    </Select>
+                </FormControl>
+            )}
             <Button
                 variant="outlined"
                 size="small"
