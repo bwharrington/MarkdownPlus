@@ -1,0 +1,9 @@
+---
+description: React/TypeScript best practices for modular components, styled-components, and type safety
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# React/TypeScript Best Practices
+
+**IMPORTANT**: Follow the authoritative reference in [.vscode/instructions/frontend.instructions.md](.vscode/instructions/frontend.instructions.md) for component design, TypeScript, styling, state management, and anti-patterns. Read that file when working on frontend code.

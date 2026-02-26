@@ -21,7 +21,7 @@ let pendingFilesToOpen: string[] = [];
 let fileWatchers: Map<string, fsSync.FSWatcher> = new Map();
 
 // Supported markdown file extensions (for Windows file associations)
-const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
+const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn', '.mdc'];
 
 // Check if a file path is a markdown file
 function isMarkdownFile(filePath: string): boolean {
@@ -317,7 +317,7 @@ function registerIpcHandlers() {
     ipcMain.handle('file:open', async () => {
         const result = await dialog.showOpenDialog(mainWindow!, {
             filters: [
-                { name: 'Markup Files', extensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdx', 'mdwn', 'rst', 'rest'] },
+                { name: 'Markup Files', extensions: ['md', 'markdown', 'mdown', 'mkd', 'mkdn', 'mdx', 'mdwn', 'mdc', 'rst', 'rest'] },
                 { name: 'Text Files', extensions: ['txt'] },
                 { name: 'Other Markup', extensions: ['adoc', 'asciidoc', 'org', 'textile'] },
                 { name: 'All Files', extensions: ['*'] },
@@ -364,7 +364,7 @@ function registerIpcHandlers() {
         try {
             const ext = path.extname(filePath).toLowerCase();
             const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'];
-            const textExtensions = ['.txt', '.md', '.markdown', '.json', '.js', '.ts', '.tsx', '.jsx', '.css', '.html', '.xml', '.yaml', '.yml', '.log'];
+            const textExtensions = ['.txt', '.md', '.markdown', '.mdc', '.json', '.js', '.ts', '.tsx', '.jsx', '.css', '.html', '.xml', '.yaml', '.yml', '.log'];
 
             if (imageExtensions.includes(ext)) {
                 // Read as binary and base64 encode
@@ -435,7 +435,7 @@ function registerIpcHandlers() {
         const result = await dialog.showSaveDialog(mainWindow!, {
             defaultPath: defaultName || 'Untitled.md',
             filters: [
-                { name: 'Markdown', extensions: ['md'] },
+                { name: 'Markdown', extensions: ['md', 'mdc'] },
                 { name: 'Text Files', extensions: ['txt'] },
                 { name: 'All Files', extensions: ['*'] },
             ],

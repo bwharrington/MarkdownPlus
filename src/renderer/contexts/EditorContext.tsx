@@ -7,7 +7,7 @@ const generateId = () => Math.random().toString(36).substring(2, 11);
 // Determine file type from path
 const getFileTypeFromPath = (filePath: string): FileType => {
     const lowerPath = filePath.toLowerCase();
-    if (['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'].some(ext => lowerPath.endsWith(ext))) return 'markdown';
+    if (['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn', '.mdc'].some(ext => lowerPath.endsWith(ext))) return 'markdown';
     if (['.rst', '.rest'].some(ext => lowerPath.endsWith(ext))) return 'rst';
     if (['.txt'].some(ext => lowerPath.endsWith(ext))) return 'text';
     return 'unknown';

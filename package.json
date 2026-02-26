@@ -120,6 +120,13 @@
         "role": "Editor"
       },
       {
+        "ext": "mdc",
+        "name": "Markdown",
+        "description": "Markdown document",
+        "icon": "assets/icon-padded.png",
+        "role": "Editor"
+      },
+      {
         "ext": "rst",
         "name": "reStructuredText",
         "description": "reStructuredText document",

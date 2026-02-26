@@ -69,7 +69,7 @@ Markdown Nexus automatically registers as the default handler for markup files:
 
 **Markdown:**
 
-- `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdx`, `.mdwn`
+- `.md`, `.markdown`, `.mdown`, `.mkd`, `.mkdn`, `.mdx`, `.mdwn`, `.mdc`
 
 **reStructuredText:**
 
@@ -762,6 +762,7 @@ When editing lists, pressing `Enter` automatically continues the list:
 | `.mkdn`     | Markdown         | Full GFM rendering, Mermaid diagrams |
 | `.mdx`      | MDX              | Full GFM rendering, Mermaid diagrams |
 | `.mdwn`     | Markdown         | Full GFM rendering, Mermaid diagrams |
+| `.mdc`      | Markdown         | Full GFM rendering, Mermaid diagrams |
 | `.rst`      | reStructuredText | Full RST rendering, Mermaid diagrams |
 | `.rest`     | reStructuredText | Full RST rendering, Mermaid diagrams |
 

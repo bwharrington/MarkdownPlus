@@ -6,7 +6,7 @@ import type { IConfig, FileType } from '../types';
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 // Supported file extensions
-const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn'];
+const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn', '.mdc'];
 const RST_EXTENSIONS = ['.rst', '.rest'];
 const TEXT_EXTENSIONS = ['.txt'];
 const BEST_EFFORT_EXTENSIONS = ['.adoc', '.asciidoc', '.org', '.textile'];
