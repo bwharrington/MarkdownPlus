@@ -19,11 +19,11 @@ import {
     ExpandMoreIcon,
 } from './AppIcons';
 import { ChatMessages } from './ChatMessages';
-import { ProviderSelector } from './ProviderSelector';
 import { FileAttachmentsList } from './FileAttachmentsList';
 import type { AttachedFile } from './FileAttachmentsList';
 import { MessageInput } from './MessageInput';
-import { useAIChat, AIProvider } from '../hooks';
+import { useAIChat } from '../hooks';
+import type { AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAIResearch } from '../hooks/useAIResearch';
 import { useAIGoDeeper } from '../hooks/useAIGoDeeper';
@@ -204,10 +204,8 @@ export function AIChatDialog({
     const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
 
     const {
-        provider,
-        setProvider,
         isStatusesLoaded,
-        getProviderOptions,
+        getProviderForModel,
         models,
         selectedModel,
         setSelectedModel,
@@ -221,9 +219,12 @@ export function AIChatDialog({
         cancelCurrentRequest,
         clearChat,
     } = useAIChat({
-        savedProvider: editorState.config.aiChatProvider,
         savedModel: editorState.config.aiChatModel,
+        aiModels: editorState.config.aiModels,
     });
+
+    // Derive provider from the currently selected model
+    const provider: AIProvider = getProviderForModel(selectedModel) ?? 'claude';
 
     // Persist config helper
     const persistConfig = useCallback((updates: Record<string, unknown>) => {
@@ -243,20 +244,22 @@ export function AIChatDialog({
         persistConfig({ aiResearchDepthLevel: level });
     }, [persistConfig]);
 
-    // Persist mode to config
+    // Persist mode to config, auto-select valid model if current is restricted
     const handleModeChange = useCallback((newMode: AIChatMode) => {
         setMode(newMode);
         persistConfig({ aiChatMode: newMode });
         dismissResearchProgress();
         dismissGoDeepProgress();
-    }, [persistConfig, dismissResearchProgress, dismissGoDeepProgress]);
 
-    // Persist provider selection
-    const handleProviderChange = useCallback((newProvider: AIProvider) => {
-        setProvider(newProvider);
-        persistConfig({ aiChatProvider: newProvider });
-        dismissResearchProgress();
-    }, [setProvider, persistConfig, dismissResearchProgress]);
+        const currentProvider = getProviderForModel(selectedModel);
+        if (currentProvider && isProviderRestrictedFromMode(currentProvider, newMode)) {
+            const firstValid = models.find(m => !isProviderRestrictedFromMode(m.provider, newMode));
+            if (firstValid) {
+                setSelectedModel(firstValid.id);
+                persistConfig({ aiChatMode: newMode, aiChatModel: firstValid.id });
+            }
+        }
+    }, [persistConfig, dismissResearchProgress, dismissGoDeepProgress, getProviderForModel, selectedModel, models, setSelectedModel]);
 
     // Persist model selection
     const handleModelChange = useCallback((newModel: string) => {
@@ -366,7 +369,7 @@ export function AIChatDialog({
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
-    // Reset to chat mode when switching to a provider that doesn't support the current mode
+    // Reset to chat mode when the selected model's provider doesn't support the current mode
     useEffect(() => {
         if (mode !== 'chat' && isProviderRestrictedFromMode(provider, mode)) {
             handleModeChange('chat');
@@ -402,13 +405,15 @@ export function AIChatDialog({
         dismissResearchProgress();
         dismissGoDeepProgress();
 
+        const currentProvider = getProviderForModel(selectedModel) ?? 'claude';
+
         // Edit mode request
-        if (mode === 'edit' && !isProviderRestrictedFromMode(provider, 'edit')) {
+        if (mode === 'edit' && !isProviderRestrictedFromMode(currentProvider, 'edit')) {
             setIsEditLoading(true);
             const requestId = `ai-edit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             activeEditRequestIdRef.current = requestId;
             try {
-                await requestEdit(inputValue, provider as 'claude' | 'openai', selectedModel, requestId);
+                await requestEdit(inputValue, currentProvider as 'claude' | 'openai', selectedModel, requestId);
                 if (activeEditRequestIdRef.current !== requestId) return;
                 setInputValue('');
             } catch (err) {
@@ -424,12 +429,12 @@ export function AIChatDialog({
         }
 
         // Research mode request
-        if (mode === 'research' && !isProviderRestrictedFromMode(provider, 'research')) {
+        if (mode === 'research' && !isProviderRestrictedFromMode(currentProvider, 'research')) {
             const requestId = `ai-research-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             try {
                 const topic = inputValue;
                 setInputValue('');
-                await submitResearch(topic, provider, selectedModel, requestId, researchDepthLevel);
+                await submitResearch(topic, currentProvider, selectedModel, requestId, researchDepthLevel);
             } catch {
                 // Error is handled by the useAIResearch hook (researchError state)
             }
@@ -442,7 +447,7 @@ export function AIChatDialog({
         );
         await sendMessage(enabledFiles.length > 0 ? enabledFiles : undefined);
         setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
-    }, [mode, provider, selectedModel, inputValue, researchDepthLevel, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress]);
+    }, [mode, selectedModel, getProviderForModel, inputValue, researchDepthLevel, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress]);
 
     const handleGoDeeper = useCallback(async () => {
         const activeFile = editorState.activeFileId
@@ -451,6 +456,7 @@ export function AIChatDialog({
 
         if (!activeFile || !activeFile.content.trim()) return;
 
+        const currentProvider = getProviderForModel(selectedModel) ?? 'claude';
         const requestId = `ai-godeep-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const topic = activeFile.name.replace(/\.md$/i, '').replace(/\s+v\d+$/i, '');
 
@@ -463,7 +469,7 @@ export function AIChatDialog({
                 activeFile.id,
                 activeFile.content,
                 topic,
-                provider,
+                currentProvider,
                 selectedModel,
                 requestId,
                 goDeepDepthLevel,
@@ -471,7 +477,7 @@ export function AIChatDialog({
         } catch {
             // Error handled by hook state (goDeepError)
         }
-    }, [editorState.activeFileId, editorState.openFiles, provider, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress, goDeepDepthLevel]);
+    }, [editorState.activeFileId, editorState.openFiles, getProviderForModel, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress, goDeepDepthLevel]);
 
     const handleTopicsContinue = useCallback(async (selectedTopics: string[]) => {
         try {
@@ -538,8 +544,7 @@ export function AIChatDialog({
 
     if (!open) return null;
 
-    const providerOptions = getProviderOptions();
-    const hasProviders = providerOptions.length > 0;
+    const hasProviders = models.length > 0 || isLoadingModels;
     const hasActiveRequest = isLoading || isEditLoading || isResearchLoading || isGoDeepLoading;
 
     // The file that would be targeted if the user clicks Go Deeper right now
@@ -586,20 +591,6 @@ export function AIChatDialog({
                 </NoProvidersContainer>
             ) : (
                 <>
-                    <ProviderSelector
-                        provider={provider}
-                        providerOptions={providerOptions}
-                        models={models}
-                        selectedModel={selectedModel}
-                        isLoadingModels={isLoadingModels}
-                        mode={mode}
-                        hasDiffTab={hasDiffTab}
-                        hasActiveRequest={hasActiveRequest}
-                        onProviderChange={handleProviderChange}
-                        onModelChange={handleModelChange}
-                        onModeChange={handleModeChange}
-                    />
-
                     <ChatMessages
                         messages={messages}
                         greeting={greeting}
@@ -641,6 +632,9 @@ export function AIChatDialog({
                         inputRef={inputRef}
                         inputValue={inputValue}
                         mode={mode}
+                        models={models}
+                        selectedModel={selectedModel}
+                        isLoadingModels={isLoadingModels}
                         isLoading={isLoading}
                         isEditLoading={isEditLoading}
                         isResearchLoading={isResearchLoading}
@@ -649,6 +643,8 @@ export function AIChatDialog({
                         openFiles={editorState.openFiles}
                         attachedFiles={attachedFiles}
                         researchDepthLevel={researchDepthLevel}
+                        onModeChange={handleModeChange}
+                        onModelChange={handleModelChange}
                         onResearchDepthLevelChange={handleResearchDepthLevelChange}
                         onAttachFromDisk={handleAttachFromDisk}
                         onToggleFileAttachment={onToggleFileAttachment}

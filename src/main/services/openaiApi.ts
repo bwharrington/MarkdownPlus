@@ -47,10 +47,13 @@ export interface ListModelsResponse {
 
 // Default models to use if API listing fails
 export const DEFAULT_OPENAI_MODELS = [
-    { id: 'gpt-4o-latest', displayName: 'GPT-4o Latest' },
-    { id: 'gpt-4o-mini-latest', displayName: 'GPT-4o Mini Latest' },
-    { id: 'o3', displayName: 'o3' },
-    { id: 'o4-mini', displayName: 'o4 Mini' },
+    { id: 'gpt-5.2',          displayName: 'GPT-5.2' },
+    { id: 'gpt-5.1',          displayName: 'GPT-5.1' },
+    { id: 'gpt-5',            displayName: 'GPT-5' },
+    { id: 'gpt-5-mini',       displayName: 'GPT-5 Mini' },
+    { id: 'gpt-4o-latest',    displayName: 'GPT-4o Latest' },
+    { id: 'o3',               displayName: 'o3' },
+    { id: 'o4-mini',          displayName: 'o4 Mini' },
 ];
 
 export async function callOpenAIApi(
@@ -109,7 +112,7 @@ export async function callOpenAIApi(
             model,
         };
         if (maxTokens != null) {
-            requestBody.max_tokens = maxTokens;
+            requestBody.max_completion_tokens = maxTokens;
         }
 
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -124,11 +127,18 @@ export async function callOpenAIApi(
 
         log('OpenAI API Response Status', { status: response.status, statusText: response.statusText });
 
-        const data: OpenAIApiResponse = await response.json();
+        const responseText = await response.text();
 
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+            let detail = response.statusText;
+            try {
+                const errBody = JSON.parse(responseText);
+                detail = errBody?.error?.message || errBody?.message || detail;
+            } catch { /* use statusText fallback */ }
+            throw new Error(`API request failed with status ${response.status}: ${detail}`);
         }
+
+        const data: OpenAIApiResponse = JSON.parse(responseText);
 
         const truncated = data.choices[0]?.finish_reason === 'length';
         if (truncated) {
@@ -181,11 +191,18 @@ export async function callOpenAIApiWithJsonMode(
 
         log('OpenAI API Response Status (JSON mode)', { status: response.status, statusText: response.statusText });
 
-        const data: OpenAIApiResponse = await response.json();
+        const responseText = await response.text();
 
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+            let detail = response.statusText;
+            try {
+                const errBody = JSON.parse(responseText);
+                detail = errBody?.error?.message || errBody?.message || detail;
+            } catch { /* use statusText fallback */ }
+            throw new Error(`API request failed with status ${response.status}: ${detail}`);
         }
+
+        const data: OpenAIApiResponse = JSON.parse(responseText);
 
         return data.choices[0]?.message?.content || '';
     } catch (error) {

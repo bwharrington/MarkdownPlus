@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { AIProvider, AIModelOption, AIProviderStatuses } from './useAIChat';
+import type { AIProvider, AIProviderStatuses } from './useAIChat';
+import type { AIModelOption } from '../types/global';
 
 interface ModelCacheEntry {
     models: AIModelOption[];

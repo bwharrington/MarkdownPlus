@@ -56,7 +56,6 @@ export interface IConfig {
   imageSaveFolder?: string;
   aiChatDockWidth?: number;
   aiChatMode?: AIChatMode;
-  aiChatProvider?: string;
   aiChatModel?: string;
   aiResearchDepthLevel?: string;
 }

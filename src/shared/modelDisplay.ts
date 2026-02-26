@@ -14,10 +14,15 @@ export const MODEL_DISPLAY_OVERRIDES: Record<string, string> = {
     'grok-4-1-fast-non-reasoning': 'Grok 4.1',
     'grok-4-1-fast-reasoning':     'Grok 4.1 Reasoning',
     'grok-4-0709':                 'Grok 4',
-    // OpenAI
-    'gpt-5-chat-latest':           'GPT-5',
-    'gpt-5.1-chat-latest':         'GPT-5.1',
-    'gpt-5.2-chat-latest':         'GPT-5.2',
+    // OpenAI GPT-5 family (chat completions-compatible only)
+    'gpt-5':                       'GPT-5',
+    'gpt-5-mini':                  'GPT-5 Mini',
+    'gpt-5-nano':                  'GPT-5 Nano',
+    'gpt-5.1':                     'GPT-5.1',
+    'gpt-5.2':                     'GPT-5.2',
+    // OpenAI gpt-4o aliases
+    'gpt-4o-latest':               'GPT-4o Latest',
+    'gpt-4o-mini-latest':          'GPT-4o Mini Latest',
 };
 
 /** Format a model ID into a readable display name (e.g. "grok-4-latest" → "Grok 4 Latest"). */

@@ -392,7 +392,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             }
         };
         updateConfig({ aiModels: newAiModels });
-    }, [config?.aiModels, updateConfig]);
+        // Keep EditorContext in sync so useAIChat can filter models reactively
+        dispatch({ type: 'SET_CONFIG', payload: { ...config, aiModels: newAiModels } as IConfig });
+    }, [config, updateConfig, dispatch]);
 
     const handleSectionToggle = useCallback((provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
         setExpandedSections(prev => ({
@@ -626,11 +628,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     onTest={() => handleTestProvider('gemini')}
                 />
 
-                {/* AI Models Section - commented out for simplicity.
-                     The per-model enable/disable toggles no longer map correctly to the
-                     AI Chat window after model name filtering was introduced. This section
-                     should be revisited if per-model toggling is re-implemented properly.
-
                 {(providerStatuses.xai.enabled || providerStatuses.claude.enabled || providerStatuses.openai.enabled || providerStatuses.gemini.enabled) && (
                     <>
                         <SectionHeader>AI Models</SectionHeader>
@@ -680,7 +677,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         )}
                     </>
                 )}
-                */}
 
                 {/* Recent Files Table (Readonly) */}
                 <SectionHeader>Recent Files</SectionHeader>

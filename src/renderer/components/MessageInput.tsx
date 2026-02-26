@@ -1,24 +1,56 @@
 import React, { useCallback, useState } from 'react';
-import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl } from '@mui/material';
+import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader } from '@mui/material';
 import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
 import { AttachFilePopover } from './AttachFilePopover';
 import type { AttachedFile } from './FileAttachmentsList';
 import type { AIChatMode } from '../types/global';
 import type { IFile } from '../types';
+import type { AIModelOption } from '../hooks/useAIChat';
 import type { GoDeepDepthLevel } from '../hooks/useAIGoDeeper';
+import { isProviderRestrictedFromMode } from '../aiProviderModeRestrictions';
 
 const InputContainer = styled(Box)(({ theme }) => ({
     display: 'flex',
+    flexDirection: 'column',
     gap: 8,
-    padding: 12,
+    padding: '10px 12px',
     borderTop: `1px solid ${theme.palette.divider}`,
     backgroundColor: theme.palette.background.paper,
 }));
+
+const ControlsRow = styled(Box)({
+    width: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+});
+
+const LeftControls = styled(Box)({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
+    flexWrap: 'wrap',
+});
+
+const RightControls = styled(Box)({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 'auto',
+    flexShrink: 0,
+});
+
+const COMPACT_SELECT_SX = { fontSize: '0.75rem', py: 0.5 };
 
 interface MessageInputProps {
     inputRef: React.RefObject<HTMLTextAreaElement | null>;
     inputValue: string;
     mode: AIChatMode;
+    models: AIModelOption[];
+    selectedModel: string;
+    isLoadingModels: boolean;
     isLoading: boolean;
     isEditLoading: boolean;
     isResearchLoading: boolean;
@@ -27,6 +59,8 @@ interface MessageInputProps {
     openFiles: IFile[];
     attachedFiles: AttachedFile[];
     researchDepthLevel?: GoDeepDepthLevel;
+    onModeChange: (mode: AIChatMode) => void;
+    onModelChange: (model: string) => void;
     onResearchDepthLevelChange?: (level: GoDeepDepthLevel) => void;
     onAttachFromDisk: () => void;
     onToggleFileAttachment: (file: IFile) => void;
@@ -41,6 +75,9 @@ export function MessageInput({
     inputRef,
     inputValue,
     mode,
+    models,
+    selectedModel,
+    isLoadingModels,
     isLoading,
     isEditLoading,
     isResearchLoading,
@@ -49,6 +86,8 @@ export function MessageInput({
     openFiles,
     attachedFiles,
     researchDepthLevel = 'practitioner',
+    onModeChange,
+    onModelChange,
     onResearchDepthLevelChange,
     onAttachFromDisk,
     onToggleFileAttachment,
@@ -77,26 +116,50 @@ export function MessageInput({
         setAttachAnchorEl(null);
     }, []);
 
+    // Filter models based on provider mode restrictions for the current mode
+    const availableModels = React.useMemo(() =>
+        models.filter(m => !isProviderRestrictedFromMode(m.provider, mode)),
+        [models, mode]
+    );
+
+    // Group models by provider for the dropdown
+    const groupedModelItems = React.useMemo(() => {
+        const providerLabels: Record<string, string> = {
+            claude: 'Anthropic Claude',
+            openai: 'OpenAI',
+            gemini: 'Google Gemini',
+            xai: 'xAI (Grok)',
+        };
+
+        const byProvider = new Map<string, AIModelOption[]>();
+        for (const m of availableModels) {
+            const list = byProvider.get(m.provider) || [];
+            list.push(m);
+            byProvider.set(m.provider, list);
+        }
+
+        const items: React.ReactNode[] = [];
+        for (const [provider, providerModels] of byProvider) {
+            if (byProvider.size > 1) {
+                items.push(
+                    <ListSubheader key={`header-${provider}`} sx={{ fontSize: '0.7rem', lineHeight: '28px' }}>
+                        {providerLabels[provider] ?? provider}
+                    </ListSubheader>
+                );
+            }
+            for (const m of providerModels) {
+                items.push(
+                    <MenuItem key={m.id} value={m.id} sx={{ fontSize: '0.75rem' }}>
+                        {m.displayName}
+                    </MenuItem>
+                );
+            }
+        }
+        return items;
+    }, [availableModels]);
+
     return (
         <InputContainer>
-            <IconButton
-                size="small"
-                onClick={handleAttachClick}
-                disabled={isLoading}
-                title="Attach files"
-                sx={{ color: 'text.secondary' }}
-            >
-                <AttachFileIcon fontSize="small" />
-            </IconButton>
-            <AttachFilePopover
-                anchorEl={attachAnchorEl}
-                onClose={handleAttachPopoverClose}
-                openFiles={openFiles}
-                attachedFiles={attachedFiles}
-                onAttachFromDisk={onAttachFromDisk}
-                onToggleFileAttachment={onToggleFileAttachment}
-                onToggleContextDoc={onToggleContextDoc}
-            />
             <TextField
                 inputRef={inputRef}
                 multiline
@@ -112,56 +175,111 @@ export function MessageInput({
                 value={inputValue}
                 onChange={(e) => onInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
-                fullWidth
                 disabled={hasActiveRequest || hasDiffTab}
+                fullWidth
                 slotProps={{
                     input: {
                         sx: { fontSize: '0.875rem' }
                     }
                 }}
             />
-            {mode === 'research' && onResearchDepthLevelChange && (
-                <FormControl size="small" sx={{ minWidth: 105, flexShrink: 0 }}>
-                    <Select
-                        value={researchDepthLevel}
-                        onChange={(e) => onResearchDepthLevelChange(e.target.value as GoDeepDepthLevel)}
-                        disabled={isResearchLoading}
-                        sx={{ fontSize: '0.8rem' }}
+            <ControlsRow>
+                <LeftControls>
+                    <FormControl size="small" sx={{ minWidth: 80, flexShrink: 0 }}>
+                        <Select
+                            value={mode}
+                            onChange={(e) => onModeChange(e.target.value as AIChatMode)}
+                            disabled={hasDiffTab || hasActiveRequest}
+                            sx={COMPACT_SELECT_SX}
+                        >
+                            <MenuItem value="chat" sx={{ fontSize: '0.75rem' }}>Ask</MenuItem>
+                            <MenuItem value="edit" sx={{ fontSize: '0.75rem' }}>Edit</MenuItem>
+                            <MenuItem value="research" sx={{ fontSize: '0.75rem' }}>Research</MenuItem>
+                        </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: 140, maxWidth: 220, flexShrink: 1 }}>
+                        <Select
+                            value={selectedModel}
+                            onChange={(e) => onModelChange(e.target.value)}
+                            disabled={isLoadingModels || hasActiveRequest}
+                            sx={COMPACT_SELECT_SX}
+                            displayEmpty
+                            renderValue={(value) => {
+                                if (!value) return isLoadingModels ? 'Loading...' : 'Select model';
+                                const model = availableModels.find(m => m.id === value) ?? models.find(m => m.id === value);
+                                return model?.displayName ?? value;
+                            }}
+                        >
+                            {groupedModelItems}
+                        </Select>
+                    </FormControl>
+
+                    {mode === 'research' && onResearchDepthLevelChange && (
+                        <FormControl size="small" sx={{ minWidth: 110, flexShrink: 0 }}>
+                            <Select
+                                value={researchDepthLevel}
+                                onChange={(e) => onResearchDepthLevelChange(e.target.value as GoDeepDepthLevel)}
+                                disabled={isResearchLoading}
+                                sx={COMPACT_SELECT_SX}
+                            >
+                                <MenuItem value="beginner" sx={{ fontSize: '0.75rem' }}>Beginner</MenuItem>
+                                <MenuItem value="practitioner" sx={{ fontSize: '0.75rem' }}>Practitioner</MenuItem>
+                                <MenuItem value="expert" sx={{ fontSize: '0.75rem' }}>Expert</MenuItem>
+                            </Select>
+                        </FormControl>
+                    )}
+
+                    <IconButton
+                        size="small"
+                        onClick={handleAttachClick}
+                        disabled={isLoading}
+                        title="Attach files"
+                        sx={{ color: 'text.secondary' }}
                     >
-                        <MenuItem value="beginner">Beginner</MenuItem>
-                        <MenuItem value="practitioner">Practitioner</MenuItem>
-                        <MenuItem value="expert">Expert</MenuItem>
-                    </Select>
-                </FormControl>
-            )}
-            <Button
-                variant="outlined"
-                size="small"
-                onClick={onCancel}
-                disabled={!hasActiveRequest}
-                color="warning"
-                sx={{ minWidth: 'auto', px: 2 }}
-            >
-                Cancel
-            </Button>
-            <Button
-                variant="contained"
-                size="small"
-                onClick={onSend}
-                disabled={!inputValue.trim() || hasActiveRequest || hasDiffTab}
-                color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : 'primary'}
-                sx={{ minWidth: 'auto', px: 2 }}
-            >
-                {(isEditLoading || isResearchLoading) ? (
-                    <CircularProgress size={18} color="inherit" />
-                ) : mode === 'edit' ? (
-                    <EditIcon fontSize="small" />
-                ) : mode === 'research' ? (
-                    <ResearchIcon fontSize="small" />
-                ) : (
-                    <SendIcon fontSize="small" />
-                )}
-            </Button>
+                        <AttachFileIcon fontSize="small" />
+                    </IconButton>
+                </LeftControls>
+                <RightControls>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={onCancel}
+                        disabled={!hasActiveRequest}
+                        color="warning"
+                        sx={{ minWidth: 'auto', px: 1.5, flexShrink: 0, fontSize: '0.75rem' }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        size="small"
+                        onClick={onSend}
+                        disabled={!inputValue.trim() || hasActiveRequest || hasDiffTab}
+                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : 'primary'}
+                        sx={{ minWidth: 44, px: 1.5, flexShrink: 0 }}
+                    >
+                        {(isEditLoading || isResearchLoading) ? (
+                            <CircularProgress size={18} color="inherit" />
+                        ) : mode === 'edit' ? (
+                            <EditIcon fontSize="small" />
+                        ) : mode === 'research' ? (
+                            <ResearchIcon fontSize="small" />
+                        ) : (
+                            <SendIcon fontSize="small" />
+                        )}
+                    </Button>
+                </RightControls>
+            </ControlsRow>
+            <AttachFilePopover
+                anchorEl={attachAnchorEl}
+                onClose={handleAttachPopoverClose}
+                openFiles={openFiles}
+                attachedFiles={attachedFiles}
+                onAttachFromDisk={onAttachFromDisk}
+                onToggleFileAttachment={onToggleFileAttachment}
+                onToggleContextDoc={onToggleContextDoc}
+            />
         </InputContainer>
     );
 }

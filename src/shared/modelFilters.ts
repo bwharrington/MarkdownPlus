@@ -38,9 +38,27 @@ function shouldIncludeClaudeModel(id: string): boolean {
     return false;
 }
 
+// Explicit allowlist of GPT-5 family models that support v1/chat/completions.
+// Pro, codex, and oss variants are Responses API only and are intentionally excluded.
+const OPENAI_GPT5_CHAT_MODELS = new Set([
+    'gpt-5',
+    'gpt-5-mini',
+    'gpt-5-nano',
+    'gpt-5.1',
+    'gpt-5.2',
+]);
+
 function shouldIncludeOpenAIModel(id: string): boolean {
+    // ChatGPT-specific aliases are not recommended for API use and duplicate real IDs
+    if (id.endsWith('-chat-latest')) return false;
+
+    // GPT-5 family: only explicitly allowlisted models support v1/chat/completions
+    if (id.startsWith('gpt-5')) return OPENAI_GPT5_CHAT_MODELS.has(id);
+
     return (
+        // gpt-4o-latest, gpt-4o-mini-latest, etc.
         (id.startsWith('gpt-') && id.endsWith('-latest')) ||
+        // o-series reasoning models: o3, o4-mini, o4-pro, etc.
         /^o\d(-mini|-pro)?$/.test(id)
     );
 }
