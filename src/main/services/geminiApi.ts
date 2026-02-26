@@ -1,5 +1,6 @@
 import { log, logError } from '../logger';
 import { getApiKeyForService } from '../secureStorageIpcHandlers';
+import { filterGeminiModelsFromApi } from '../../shared/modelFilters';
 
 export interface AttachmentData {
     name: string;
@@ -249,36 +250,7 @@ export async function listGeminiModels(apiKeyOverride?: string): Promise<GeminiM
             })),
         });
 
-        // Filter to clean, current, chat-capable Gemini models only.
-        // Strategy: allowlist by pattern rather than blocklist, so new base aliases
-        // from Google are picked up automatically without code changes.
-        const filtered = data.models
-            .filter(m => {
-                const id = m.name.replace(/^models\//, '');
-                return (
-                    // Must support standard chat generation
-                    m.supportedGenerationMethods.includes('generateContent') &&
-                    // Only Gemini-branded chat models (drop PaLM, Gemma, LearnLM, Imagen, AQA, etc.)
-                    id.startsWith('gemini-') &&
-                    // Drop embedding models
-                    !id.includes('embedding') &&
-                    // Drop image-generation and image-only variants (e.g. gemini-2.5-flash-image, gemini-3-pro-image-preview)
-                    !id.includes('image') &&
-                    // Drop pinned dated snapshots (e.g. exp-03-25, exp-0827, exp-02-05, exp-1206)
-                    !/-(exp-)?(\d{2}-\d{2}|\d{4}|\d{6})$/.test(id) &&
-                    // Drop pinned numbered versions (-001, -002, -001-tuning, etc.)
-                    !/-\d{3}(-\w+)?$/.test(id) &&
-                    // Drop -latest aliases (the bare name already serves as the rolling alias)
-                    !id.endsWith('-latest')
-                );
-            })
-            .map(m => {
-                const id = m.name.replace(/^models\//, '');
-                return {
-                    id,
-                    displayName: m.displayName || id,
-                };
-            });
+        const filtered = filterGeminiModelsFromApi(data.models ?? []);
 
         log('Gemini List Models Filtered Result', {
             filteredCount: filtered.length,

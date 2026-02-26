@@ -42,6 +42,8 @@ import { useDraggableDialog } from '../hooks/useDraggableDialog';
 import { useEditorDispatch } from '../contexts/EditorContext';
 import { useAIProviderCacheContext } from '../contexts/AIProviderCacheContext';
 import { IConfig, IFileReference } from '../types/global';
+import { filterModelsForProvider } from '../../shared/modelFilters';
+import { getDisplayName } from '../../shared/modelDisplay';
 
 // Styled Components
 const DialogContainer = styled(Box)(({ theme }) => ({
@@ -89,12 +91,6 @@ const SectionHeader = styled(Typography)(({ theme }) => ({
     },
 }));
 
-// Helper to format model IDs (e.g., "grok-beta" -> "Grok Beta")
-function formatModelName(modelId: string): string {
-    return modelId
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase());
-}
 
 // Sub-component: AI Provider Section
 interface AIProviderSectionProps {
@@ -113,11 +109,12 @@ function AIProviderSection({ title, provider, config, onModelToggle, expanded, o
         return null; // No models configured for this provider
     }
 
-    // Get all models for this provider
-    const models = Object.entries(providerConfig).map(([modelId, modelConfig]) => ({
+    // Get all models for this provider, filtered by model name (aligned with API service filtering)
+    const allModels = Object.entries(providerConfig).map(([modelId, modelConfig]) => ({
         id: modelId,
         enabled: modelConfig.enabled
     }));
+    const models = filterModelsForProvider(provider, allModels);
 
     return (
         <Accordion
@@ -148,7 +145,7 @@ function AIProviderSection({ title, provider, config, onModelToggle, expanded, o
                                     size="small"
                                 />
                             }
-                            label={formatModelName(model.id)}
+                            label={getDisplayName(model.id)}
                             sx={{ display: 'block', mb: 0.5 }}
                         />
                     ))}
@@ -629,7 +626,11 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     onTest={() => handleTestProvider('gemini')}
                 />
 
-                {/* AI Models Section - Only show if at least one provider has an API key */}
+                {/* AI Models Section - commented out for simplicity.
+                     The per-model enable/disable toggles no longer map correctly to the
+                     AI Chat window after model name filtering was introduced. This section
+                     should be revisited if per-model toggling is re-implemented properly.
+
                 {(providerStatuses.xai.enabled || providerStatuses.claude.enabled || providerStatuses.openai.enabled || providerStatuses.gemini.enabled) && (
                     <>
                         <SectionHeader>AI Models</SectionHeader>
@@ -679,6 +680,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         )}
                     </>
                 )}
+                */}
 
                 {/* Recent Files Table (Readonly) */}
                 <SectionHeader>Recent Files</SectionHeader>

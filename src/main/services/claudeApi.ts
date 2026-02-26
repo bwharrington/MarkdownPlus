@@ -1,5 +1,6 @@
 import { log, logError } from '../logger';
 import { getApiKeyForService } from '../secureStorageIpcHandlers';
+import { filterModelsForProvider } from '../../shared/modelFilters';
 
 export interface AttachmentData {
     name: string;
@@ -51,9 +52,9 @@ type ClaudeContentBlock =
 
 // Default models to use if API listing fails
 export const DEFAULT_CLAUDE_MODELS = [
-    { id: 'claude-opus-4-6', displayName: 'Claude Opus 4.6' },
-    { id: 'claude-sonnet-4-6', displayName: 'Claude Sonnet 4.6' },
-    { id: 'claude-haiku-4-5-20251001', displayName: 'Claude Haiku 4.5' },
+    { id: 'claude-opus-4-6',            displayName: 'Claude Opus 4.6' },
+    { id: 'claude-sonnet-4-6',          displayName: 'Claude Sonnet 4.6' },
+    { id: 'claude-haiku-4-5-20251001',  displayName: 'Claude Haiku 4.5' },
 ];
 
 function formatMessagesForClaude(messages: Message[]) {
@@ -213,11 +214,7 @@ export async function listClaudeModels(): Promise<ClaudeModel[]> {
             models: (data.data ?? []).map(m => m.id),
         });
 
-        // Filter out old Claude 3 base generation (pre-3.5) — keep claude-3-5+, claude-3-7+, claude-4+, etc.
-        const filtered = data.data.filter(model =>
-            model.id.startsWith('claude-') &&
-            !model.id.startsWith('claude-3-')
-        );
+        const filtered = filterModelsForProvider('claude', data.data ?? []);
 
         log('Claude List Models Filtered Result', {
             filteredCount: filtered.length,

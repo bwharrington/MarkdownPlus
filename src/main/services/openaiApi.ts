@@ -1,5 +1,6 @@
 import { log, logError } from '../logger';
 import { getApiKeyForService } from '../secureStorageIpcHandlers';
+import { filterModelsForProvider } from '../../shared/modelFilters';
 
 export interface AttachmentData {
     name: string;
@@ -224,13 +225,7 @@ export async function listOpenAIModels(): Promise<OpenAIModel[]> {
             models: (data.data ?? []).map(m => m.id),
         });
 
-        // Keep GPT chat models (latest aliases only) and o-series reasoning models (base IDs only)
-        const filtered = data.data.filter(model =>
-            // GPT chat models — latest aliases only (no dated snapshots, no audio/search variants)
-            (model.id.startsWith('gpt-') && model.id.endsWith('-latest')) ||
-            // O-series reasoning models — base IDs only (e.g. o1, o3, o4-mini, o3-mini)
-            (/^o\d(-mini|-pro)?$/.test(model.id))
-        );
+        const filtered = filterModelsForProvider('openai', data.data ?? []);
 
         log('OpenAI List Models Filtered Result', {
             filteredCount: filtered.length,

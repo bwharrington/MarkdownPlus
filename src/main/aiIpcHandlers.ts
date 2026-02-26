@@ -6,6 +6,7 @@ import { callXAiApi, listModels, hasApiKey as hasXaiApiKey, DEFAULT_XAI_MODELS, 
 import { callClaudeApi, callClaudeApiWithSystemPrompt, listClaudeModels, hasApiKey as hasClaudeApiKey, DEFAULT_CLAUDE_MODELS } from './services/claudeApi';
 import { callOpenAIApi, callOpenAIApiWithJsonMode, listOpenAIModels, hasApiKey as hasOpenAIApiKey, DEFAULT_OPENAI_MODELS } from './services/openaiApi';
 import { callGeminiApi, callGeminiApiWithJsonMode, listGeminiModels, hasApiKey as hasGeminiApiKey, DEFAULT_GEMINI_MODELS } from './services/geminiApi';
+import { getDisplayName, formatModelName } from '../shared/modelDisplay';
 
 export interface AIChatRequestData {
     messages: Message[];
@@ -485,29 +486,3 @@ export function registerAIIpcHandlers() {
     log('AI IPC handlers registered');
 }
 
-// Explicit display-name overrides for model IDs with poor auto-formatted names.
-// Unknown model IDs fall through to formatModelName() automatically.
-const MODEL_DISPLAY_OVERRIDES: Record<string, string> = {
-    // xAI
-    'grok-4-1-fast-non-reasoning': 'Grok 4.1',
-    'grok-4-1-fast-reasoning':     'Grok 4.1 Reasoning',
-    'grok-4-0709':                 'Grok 4',
-    // OpenAI
-    'gpt-5-chat-latest':           'GPT-5',
-    'gpt-5.1-chat-latest':         'GPT-5.1',
-    'gpt-5.2-chat-latest':         'GPT-5.2',
-};
-
-function getDisplayName(modelId: string): string {
-    return MODEL_DISPLAY_OVERRIDES[modelId] ?? formatModelName(modelId);
-}
-
-// Format model ID to display name
-function formatModelName(modelId: string): string {
-    // Handle common patterns
-    return modelId
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, c => c.toUpperCase())
-        .replace(/(\d+)$/g, ' $1')
-        .trim();
-}

@@ -1,5 +1,6 @@
 import { log, logError } from '../logger';
 import { getApiKeyForService } from '../secureStorageIpcHandlers';
+import { filterModelsForProvider } from '../../shared/modelFilters';
 
 export interface AttachmentData {
     name: string;
@@ -169,13 +170,7 @@ export async function listModels(): Promise<Model[]> {
             models: (data.data ?? []).map(m => m.id),
         });
 
-        // Filter to Grok 4 text chat models only — exclude older generations and non-chat variants
-        const filtered = data.data.filter(model =>
-            model.id.startsWith('grok-4') &&
-            !model.id.includes('image') &&
-            !model.id.includes('video') &&
-            !model.id.includes('imagine')
-        );
+        const filtered = filterModelsForProvider('xai', data.data ?? []);
 
         log('xAI List Models Filtered Result', {
             filteredCount: filtered.length,
