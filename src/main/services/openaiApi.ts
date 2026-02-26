@@ -218,13 +218,26 @@ export async function listOpenAIModels(): Promise<OpenAIModel[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
+        // Log raw model list for debugging filter behaviour
+        log('OpenAI List Models Raw Response', {
+            totalCount: data.data?.length ?? 0,
+            models: (data.data ?? []).map(m => m.id),
+        });
+
         // Keep GPT chat models (latest aliases only) and o-series reasoning models (base IDs only)
-        return data.data.filter(model =>
+        const filtered = data.data.filter(model =>
             // GPT chat models — latest aliases only (no dated snapshots, no audio/search variants)
             (model.id.startsWith('gpt-') && model.id.endsWith('-latest')) ||
             // O-series reasoning models — base IDs only (e.g. o1, o3, o4-mini, o3-mini)
             (/^o\d(-mini|-pro)?$/.test(model.id))
         );
+
+        log('OpenAI List Models Filtered Result', {
+            filteredCount: filtered.length,
+            models: filtered.map(m => m.id),
+        });
+
+        return filtered;
     } catch (error) {
         logError('Error listing OpenAI models', error as Error);
         throw new Error(`Failed to list models: ${error instanceof Error ? error.message : String(error)}`);

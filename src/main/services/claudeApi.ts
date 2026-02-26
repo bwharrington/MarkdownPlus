@@ -207,11 +207,24 @@ export async function listClaudeModels(): Promise<ClaudeModel[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
+        // Log raw model list for debugging filter behaviour
+        log('Claude List Models Raw Response', {
+            totalCount: data.data?.length ?? 0,
+            models: (data.data ?? []).map(m => m.id),
+        });
+
         // Filter out old Claude 3 base generation (pre-3.5) — keep claude-3-5+, claude-3-7+, claude-4+, etc.
-        return data.data.filter(model =>
+        const filtered = data.data.filter(model =>
             model.id.startsWith('claude-') &&
             !model.id.startsWith('claude-3-')
         );
+
+        log('Claude List Models Filtered Result', {
+            filteredCount: filtered.length,
+            models: filtered.map(m => m.id),
+        });
+
+        return filtered;
     } catch (error) {
         logError('Error listing Claude models', error as Error);
         throw new Error(`Failed to list Claude models: ${error instanceof Error ? error.message : String(error)}`);

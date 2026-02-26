@@ -3,7 +3,6 @@ node_modules
 dist
 release
 /config.json
-/markdownplus-debug.log
 NO_FILE.MD
-/docs/test-documentation.pdf
+/markdown-nexus-debug.log
 /ai-response-debug.txt

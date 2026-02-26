@@ -2,7 +2,7 @@
 
 ## Architecture Guidelines
 
-**IMPORTANT**: Always follow the React/TypeScript best practices defined in `.claude/ReactArchitecture.prompt.md`.
+**IMPORTANT**: Always follow the React/TypeScript best practices defined in `.vscode/instructions/frontend.instructions.md`.
 
 Key principles:
 - **Small, modular components**: Follow Single Responsibility Principle

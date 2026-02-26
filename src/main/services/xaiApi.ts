@@ -42,9 +42,9 @@ export interface ListModelsResponse {
 
 // Default models to use if API listing fails
 export const DEFAULT_XAI_MODELS = [
-    { id: 'grok-3-fast', displayName: 'Grok 3 Fast' },
-    { id: 'grok-3', displayName: 'Grok 3' },
-    { id: 'grok-3-mini', displayName: 'Grok 3 Mini' },
+    { id: 'grok-4-0709',                 displayName: 'Grok 4' },
+    { id: 'grok-4-1-fast-non-reasoning', displayName: 'Grok 4.1' },
+    { id: 'grok-4-1-fast-reasoning',     displayName: 'Grok 4.1 Reasoning' },
 ];
 
 export async function callXAiApi(
@@ -163,13 +163,26 @@ export async function listModels(): Promise<Model[]> {
             throw new Error(`Failed to list models: ${response.status} ${response.statusText}`);
         }
 
-        // Filter to text chat models only — exclude image, video, and image-generation variants
-        return data.data.filter(model =>
-            model.id.startsWith('grok-') &&
+        // Log raw model list for debugging filter behaviour
+        log('xAI List Models Raw Response', {
+            totalCount: data.data?.length ?? 0,
+            models: (data.data ?? []).map(m => m.id),
+        });
+
+        // Filter to Grok 4 text chat models only — exclude older generations and non-chat variants
+        const filtered = data.data.filter(model =>
+            model.id.startsWith('grok-4') &&
             !model.id.includes('image') &&
             !model.id.includes('video') &&
             !model.id.includes('imagine')
         );
+
+        log('xAI List Models Filtered Result', {
+            filteredCount: filtered.length,
+            models: filtered.map(m => m.id),
+        });
+
+        return filtered;
     } catch (error) {
         logError('Error listing xAI models', error as Error);
         throw new Error(`Failed to list models: ${error instanceof Error ? error.message : String(error)}`);

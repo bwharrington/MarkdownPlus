@@ -161,7 +161,7 @@ export function registerAIIpcHandlers() {
             const models = await listModels();
             const modelOptions: AIModelOption[] = models.map(m => ({
                 id: m.id,
-                displayName: formatModelName(m.id),
+                displayName: getDisplayName(m.id),
             }));
             const enabledModels = await getEnabledModels('xai', modelOptions);
             return { success: true, models: enabledModels };
@@ -265,7 +265,7 @@ export function registerAIIpcHandlers() {
             const models = await listOpenAIModels();
             const modelOptions: AIModelOption[] = models.map(m => ({
                 id: m.id,
-                displayName: formatModelName(m.id),
+                displayName: getDisplayName(m.id),
             }));
             const enabledModels = await getEnabledModels('openai', modelOptions);
             return { success: true, models: enabledModels };
@@ -483,6 +483,23 @@ export function registerAIIpcHandlers() {
     });
 
     log('AI IPC handlers registered');
+}
+
+// Explicit display-name overrides for model IDs with poor auto-formatted names.
+// Unknown model IDs fall through to formatModelName() automatically.
+const MODEL_DISPLAY_OVERRIDES: Record<string, string> = {
+    // xAI
+    'grok-4-1-fast-non-reasoning': 'Grok 4.1',
+    'grok-4-1-fast-reasoning':     'Grok 4.1 Reasoning',
+    'grok-4-0709':                 'Grok 4',
+    // OpenAI
+    'gpt-5-chat-latest':           'GPT-5',
+    'gpt-5.1-chat-latest':         'GPT-5.1',
+    'gpt-5.2-chat-latest':         'GPT-5.2',
+};
+
+function getDisplayName(modelId: string): string {
+    return MODEL_DISPLAY_OVERRIDES[modelId] ?? formatModelName(modelId);
 }
 
 // Format model ID to display name

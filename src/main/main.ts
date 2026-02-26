@@ -271,6 +271,13 @@ async function syncAIModelsConfig() {
 
 // Watch a file for external changes
 function watchFile(filePath: string) {
+    // Never watch the app's own log file — doing so creates an infinite feedback
+    // loop: writing a log entry triggers the watcher, which logs the detection,
+    // which writes another log entry, ad infinitum.
+    if (filePath === getLogFilePath()) {
+        return;
+    }
+
     // Don't watch if already watching
     if (fileWatchers.has(filePath)) {
         return;
