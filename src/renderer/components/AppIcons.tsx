@@ -56,6 +56,8 @@ import {
     FileDiff,
     RefreshCw,
     Telescope,
+    Copy,
+    ClipboardCopy,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -184,3 +186,5 @@ export const RefreshIcon = createIcon(RefreshCw);
 export const ResearchIcon = createIcon(Telescope);
 export const PlusIcon = createIcon(Plus);
 export const MinusIcon = createIcon(Minus);
+export const CopyIcon = createIcon(Copy);
+export const ClipboardCopyIcon = createIcon(ClipboardCopy);

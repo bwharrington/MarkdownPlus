@@ -12,6 +12,8 @@ import {
     MinusIcon,
     VisibilityIcon,
     VisibilityOffIcon,
+    CopyIcon,
+    ClipboardCopyIcon,
 } from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
@@ -70,7 +72,10 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
         }
     }, [file.id, isDiffTab, dispatch, closeFile]);
 
+    const tooltipTitle = isDiffTab ? 'AI Changes' : (file.path || 'Unsaved file');
+
     return (
+        <Tooltip title={tooltipTitle} enterDelay={600} placement="bottom">
         <TabContent>
             {isDiffTab ? (
                 <Tooltip title="AI Diff">
@@ -93,9 +98,7 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
                     />
                 </Tooltip>
             ) : null}
-            <Tooltip title={isDiffTab ? 'AI Changes' : (file.path || 'Unsaved file')}>
-                <FileName>{file.name}</FileName>
-            </Tooltip>
+            <FileName>{file.name}</FileName>
             {!isDiffTab && (
                 <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview (Ctrl+E)' : 'Switch to edit (Ctrl+E)'}>
                     <IconButton
@@ -123,6 +126,7 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
                 </IconButton>
             </Tooltip>
         </TabContent>
+        </Tooltip>
     );
 });
 
@@ -194,6 +198,26 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
             const file = state.openFiles.find(f => f.id === contextMenu.fileId);
             if (file && file.path) {
                 await window.electronAPI.showInFolder(file.path);
+            }
+        }
+        setContextMenu(null);
+    }, [contextMenu, state.openFiles]);
+
+    const handleCopyFileContent = useCallback(async () => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file) {
+                await navigator.clipboard.writeText(file.content);
+            }
+        }
+        setContextMenu(null);
+    }, [contextMenu, state.openFiles]);
+
+    const handleCopyFilePath = useCallback(async () => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file?.path) {
+                await navigator.clipboard.writeText(file.path);
             }
         }
         setContextMenu(null);
@@ -286,6 +310,20 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
                     <FolderOpenIcon size={18} sx={{ mr: 1 }} />
                     Open File Location
                 </MenuItem>
+                <MenuItem
+                    onClick={handleCopyFileContent}
+                    disabled={state.openFiles.find(f => f.id === contextMenu?.fileId)?.viewMode === 'diff'}
+                >
+                    <CopyIcon size={18} sx={{ mr: 1 }} />
+                    Copy File Contents
+                </MenuItem>
+                <MenuItem
+                    onClick={handleCopyFilePath}
+                    disabled={!state.openFiles.find(f => f.id === contextMenu?.fileId)?.path}
+                >
+                    <ClipboardCopyIcon size={18} sx={{ mr: 1 }} />
+                    Copy File Path
+                </MenuItem>
                 {(() => {
                     const contextFile = contextMenu
                         ? state.openFiles.find(f => f.id === contextMenu.fileId)
@@ -323,7 +361,7 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
                             ) : (
                                 <PlusIcon size={18} sx={{ mr: 1, color: 'success.main' }} />
                             )}
-                            {isManuallyAttached ? `Remove "${contextFile?.name}"` : `Attach "${contextFile?.name}"`}
+                            {isManuallyAttached ? `Remove '${contextFile?.name}' from Nexus` : `Attach '${contextFile?.name}' to Nexus`}
                         </MenuItem>
                     );
                 })()}
