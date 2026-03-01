@@ -150,19 +150,25 @@ Below are the exact prompt templates sent to the AI for each phase. Placeholder 
 
 ### Phase 1 Prompt — Topic Analysis
 
-Sent as a single user message. The same topic string is used for both `{TOPIC}` and `{USER_INTENT}`.
+Sent as a single user message. The same topic string is used for both `{TOPIC}` and `{USER_INTENT}`. `{DEPTH_LABEL}` is one of `Beginner`, `Practitioner`, or `Expert`.
 
 ```
 Analyze this research topic and respond with JSON only. No other text.
 
 Topic: "{TOPIC}"
 User Intent: "{USER_INTENT}"
+Target depth level: {DEPTH_LABEL}
+
+Tailor the audience and deep dive topics to the depth level:
+- Beginner: audience is newcomers; suggest foundational and conceptual topics
+- Practitioner: audience is working engineers; suggest practical patterns and common challenges
+- Expert: audience is senior engineers or architects; suggest internals, edge cases, and production concerns
 
 {
-  "audience": "<inferred target audience, e.g. 'mid-level software engineers building AI apps'>",
+  "audience": "<inferred target audience for {DEPTH_LABEL} level, e.g. 'mid-level software engineers building AI apps'>",
   "fields": ["<field1>", "<field2>", "<field3>"],
-  "focusAreas": "<2-3 key angles to explore, comma separated, prioritize technical hooks and reactivity if relevant>",
-  "deepDiveTopics": ["<list 4-6 technical concepts to deep dive, e.g. 'useEffect', 'useMemo', 'useCallback', 'React reconciliation', 'concurrent rendering', 'reactive programming model'>"]
+  "focusAreas": "<2-3 key angles to explore at {DEPTH_LABEL} level, comma separated>",
+  "deepDiveTopics": ["<list 4-6 technical concepts suited to {DEPTH_LABEL} level>"]
 }
 ```
 
@@ -181,14 +187,17 @@ User Intent: "{USER_INTENT}"
 
 ### Phase 2 Prompt — Main Research Report
 
-Sent as a single user message. `{FIELDS}`, `{AUDIENCE}`, `{FOCUS_AREAS}`, and `{DEEP_DIVE_TOPICS}` are filled in from the Phase 1 inference result (or the fallback defaults).
+Sent as a single user message. `{FIELDS}`, `{AUDIENCE}`, `{FOCUS_AREAS}`, and `{DEEP_DIVE_TOPICS}` are filled in from the Phase 1 inference result (or the fallback defaults). `{DEPTH_LABEL}` and `{DEPTH_INSTRUCTIONS}` are injected from the selected depth level (see below).
 
 ```
 You are an elite, multidisciplinary research strategist and synthesizer, with expertise across {FIELDS}. Your mission: Deliver the deepest, most balanced, and actionable research report on the topic: "{TOPIC}".
 
+**Audience depth level: {DEPTH_LABEL}**
+{DEPTH_INSTRUCTIONS}
+
 **Core Principles (Follow Strictly):**
 - **Depth First**: Go beyond surface-level. Uncover historical roots, current realities, key players/innovators, data/evidence, debates, biases, blind spots, and forward-looking implications.
-- **Technical Mastery**: For any engineering, coding, or implementation aspects, provide concrete, executable insights. Include architectures, code snippets (in relevant languages like Python, JavaScript, Rust), pseudocode, step-by-step guides, tools/libraries, real-world case studies, and validation methods. Explain "how to do it" with clarity for practitioners.
+- **Technical Mastery**: For any engineering, coding, or implementation aspects, provide concrete, executable insights. Include architectures, code snippets (in relevant languages like Python, JavaScript, Rust), pseudocode, step-by-step guides, tools/libraries, real-world case studies, and validation methods. Explain "how to do it" with clarity appropriate for the depth level above.
 - **Truth-Seeking**: Synthesize from diverse, credible perspectives. Cross-verify claims. Highlight contradictions, uncertainties, and evolving consensus. Prioritize primary sources over summaries.
 - **Strategic Value**: Tailor insights for {AUDIENCE}. Connect dots to risks, opportunities, and decisions.
 - **Capability Optimization**: Assess your tools and knowledge (e.g., web search, page browsing, code execution, real-time feeds). Use them iteratively to gather fresh, specific data. If limited, simulate depth via reasoned extrapolation from known facts.
@@ -207,13 +216,13 @@ You are an elite, multidisciplinary research strategist and synthesizer, with ex
 4. **Forecast & Apply**: Project 1-5 year scenarios. Derive 4-6 actionable insights, including implementation roadmaps.
 
 **Output Format (Markdown, Scannable, 1500-3500 Words):**
-- **Executive Summary (250 words)**: 4-6 bullet takeaways + "Why this matters NOW for {AUDIENCE}".
+- **Opening section (250 words)**: Use a compelling, topic-specific heading (NOT "Executive Summary" — instead derive a heading from the topic, e.g., "The State of Quantum Computing in 2026" or "Why Dark Energy Changes Everything"). Include 4-6 bullet takeaways + "Why this matters NOW for {AUDIENCE}".
 - **Historical Evolution**: Timeline of milestones, paradigm shifts.
 - **Current State**: Landscape, leaders, metrics, adoption stats.
 - **Key Debates & Risks**: Pros/cons, stakeholder views, controversies.
 - **Engineering & Implementation Guide**:
   - Core architectures and system designs (with diagrams described in text).
-  - **Deep Dive Sections** (NEW): Dedicated subsections for {DEEP_DIVE_TOPICS} — provide internals, mechanics, lifecycle details, dependency management, async patterns, common pitfalls, and production-ready code examples for each.
+  - Dedicated subsections for {DEEP_DIVE_TOPICS} — provide internals, mechanics, lifecycle details, dependency management, async patterns, common pitfalls, and code examples for each (complexity scaled to the depth level). Use the topic name directly as the subsection heading (e.g., "### useEffect" not "### Deep Dive: useEffect").
   - Step-by-step "how-to" implementations, including code examples (e.g., full functions, setup scripts) with inline explanations.
   - Recommended tools, libraries, frameworks, and deployment strategies.
   - Common pitfalls, optimizations, and debugging tips.
@@ -222,25 +231,36 @@ You are an elite, multidisciplinary research strategist and synthesizer, with ex
 - **Actionable Playbook**: Recommendations, experiments, watchlists, open questions.
 - **Sources & Rigor**: Top 10-15 references (links where possible), methodology notes, confidence matrix, gaps/limitations.
 
-Be objective yet engaging. If data is thin, admit it and hypothesize based on patterns. For technical sections, ensure code is production-ready and explain trade-offs. Start directly with the summary.
+Be objective yet engaging. If data is thin, admit it and hypothesize based on patterns. Start directly with the summary.
 ```
+
+**`{DEPTH_INSTRUCTIONS}` values by level:**
+
+| Level | Injected text |
+|---|---|
+| Beginner | `Write for someone new to this topic. Prioritize clear explanations over jargon. Define technical terms when introduced. Use simple, well-commented code examples. Focus on "what it is" and "why it matters" before "how it works". Avoid assuming prior knowledge.` |
+| Practitioner | `Write for someone who actively works with this technology. Focus on practical patterns, real-world usage, and working code. Include common pitfalls and how to avoid them. Assume familiarity with fundamentals but explain non-obvious behaviors.` |
+| Expert | `Write for a deep technical expert. Prioritize internals, implementation trade-offs, edge cases, and production-scale concerns. Include advanced code patterns, performance considerations, and architectural decisions. Skip introductory explanations.` |
 
 ---
 
 ### Phase 3 Prompt — Deep Dive Expansion
 
-One prompt is sent per batch of 2 topics. `{BATCH_TOPICS}` is replaced with the comma-separated topic names for that batch (e.g., `useEffect, useMemo`).
+One prompt is sent per batch of 2 topics. `{BATCH_TOPICS}` is replaced with the comma-separated topic names for that batch (e.g., `useEffect, useMemo`). `{DEPTH_LABEL}` and `{DEPTH_INSTRUCTIONS}` are injected the same way as in Phase 2.
 
 ```
-You previously wrote a research report on "{TOPIC}". The report is good but needs more depth in specific technical areas.
+You previously wrote a research report on "{TOPIC}". The report is good but needs more depth in specific areas.
+
+**Audience depth level: {DEPTH_LABEL}**
+{DEPTH_INSTRUCTIONS}
 
 Please write an **addendum** that provides an exhaustive deep dive into these specific topics: {BATCH_TOPICS}
 
 For each topic, provide:
-1. **Detailed technical explanation** with internals, mechanics, and how it works under the hood
-2. **Production-ready code examples** with inline comments explaining each step
+1. **Detailed explanation** with internals, mechanics, and how it works under the hood (scaled to depth level)
+2. **Code examples** with inline comments explaining each step (complexity scaled to depth level)
 3. **Common pitfalls and edge cases** with solutions
-4. **Best practices and anti-patterns** with before/after code comparisons
+4. **Best practices and anti-patterns** with before/after comparisons
 5. **2025-2026 updates** — latest changes, deprecations, or new approaches
 
 Format as markdown that can be appended directly to the original report. Use ## headings for each topic. Target 800-1500 words.
@@ -284,4 +304,4 @@ Click the **Cancel** button at any point during research. All in-flight API call
 | Google Gemini | Yes |
 | xAI (Grok) | Yes |
 
-Research mode is currently wired to use **Claude** and **OpenAI** only. If xAI is selected as your provider when you switch to Research mode, the mode will be unavailable. Gemini support is planned but not yet connected.
+Research mode is supported by all four providers. The depth level selector applies equally regardless of which provider is active.

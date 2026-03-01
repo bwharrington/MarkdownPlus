@@ -125,39 +125,61 @@ async function callClaudeApiInternal(
         maxTokens: options.maxTokens ?? 4096,
     });
 
-    try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'X-Api-Key': apiKey,
-                'Content-Type': 'application/json',
-                'anthropic-version': '2023-06-01',
-            },
-            body: JSON.stringify(requestBody),
-            signal,
-        });
+    const MAX_RETRIES = 2;
+    let lastError: unknown;
 
-        log('Claude API Response Status', { status: response.status, statusText: response.statusText });
-
-        if (!response.ok) {
-            const errorBody = await response.text();
-            logError('Claude API Error Response', { status: response.status, body: errorBody });
-            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        // Don't retry if the caller has already aborted
+        if (signal?.aborted) {
+            throw new Error('Request aborted');
         }
 
-        const data: ClaudeApiResponse = await response.json();
-        const truncated = data.stop_reason === 'max_tokens';
-        if (truncated) {
-            log('Claude API: Response was truncated (max_tokens)', { stop_reason: data.stop_reason });
+        try {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'X-Api-Key': apiKey,
+                    'Content-Type': 'application/json',
+                    'anthropic-version': '2023-06-01',
+                },
+                body: JSON.stringify(requestBody),
+                signal,
+            });
+
+            log('Claude API Response Status', { status: response.status, statusText: response.statusText });
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                logError('Claude API Error Response', { status: response.status, body: errorBody });
+                throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+            }
+
+            const data: ClaudeApiResponse = await response.json();
+            const truncated = data.stop_reason === 'max_tokens';
+            if (truncated) {
+                log('Claude API: Response was truncated (max_tokens)', { stop_reason: data.stop_reason });
+            }
+            return {
+                content: data.content[0]?.text || 'No response from Claude',
+                truncated,
+            };
+        } catch (error) {
+            lastError = error;
+            const isRetryable = error instanceof Error &&
+                !signal?.aborted &&
+                (error.message.includes('UND_ERR_HEADERS_TIMEOUT') ||
+                 error.message.includes('HeadersTimeoutError') ||
+                 error.message.includes('fetch failed'));
+            if (isRetryable && attempt < MAX_RETRIES) {
+                log(`Claude API: Retrying after fetch error (attempt ${attempt}/${MAX_RETRIES})`, {});
+                continue;
+            }
+            break;
         }
-        return {
-            content: data.content[0]?.text || 'No response from Claude',
-            truncated,
-        };
-    } catch (error) {
-        logError('Error calling Claude API', error as Error);
-        throw new Error(`Failed to call Claude API: ${error instanceof Error ? error.message : String(error)}`);
     }
+
+    logError('Error calling Claude API', lastError as Error);
+    throw new Error(`Failed to call Claude API: ${lastError instanceof Error ? lastError.message : String(lastError)}`);
 }
 
 export async function callClaudeApi(

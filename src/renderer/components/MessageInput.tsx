@@ -44,6 +44,7 @@ const RightControls = styled(Box)({
 
 const COMPACT_SELECT_SX = { fontSize: '0.75rem', py: 0.5 };
 
+
 interface MessageInputProps {
     inputRef: React.RefObject<HTMLTextAreaElement | null>;
     inputValue: string;
@@ -54,6 +55,7 @@ interface MessageInputProps {
     isLoading: boolean;
     isEditLoading: boolean;
     isResearchLoading: boolean;
+    isInsightForgeLoading: boolean;
     hasDiffTab: boolean;
     hasActiveRequest: boolean;
     openFiles: IFile[];
@@ -81,6 +83,7 @@ export function MessageInput({
     isLoading,
     isEditLoading,
     isResearchLoading,
+    isInsightForgeLoading,
     hasDiffTab,
     hasActiveRequest,
     openFiles,
@@ -170,7 +173,9 @@ export function MessageInput({
                         ? "Describe the changes you want... (e.g., 'Add a table of contents')"
                         : mode === 'research'
                             ? "Enter a research topic... (e.g., 'Vector search in production')"
-                            : "Type a message... (Enter to send, Shift+Enter for newline)"
+                            : mode === 'insightforge'
+                                ? "Enter any Software Engineering topic for a deep-dive (e.g. How to use React, Configuring a Hasura API, C Memory Management)"
+                                : "Type a message... (Enter to send, Shift+Enter for newline)"
                 }
                 value={inputValue}
                 onChange={(e) => onInputChange(e.target.value)}
@@ -195,6 +200,7 @@ export function MessageInput({
                             <MenuItem value="chat" sx={{ fontSize: '0.75rem' }}>Ask</MenuItem>
                             <MenuItem value="edit" sx={{ fontSize: '0.75rem' }}>Edit</MenuItem>
                             <MenuItem value="research" sx={{ fontSize: '0.75rem' }}>Research</MenuItem>
+                            <MenuItem value="insightforge" sx={{ fontSize: '0.75rem' }}>Insight Forge</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -256,14 +262,16 @@ export function MessageInput({
                         size="small"
                         onClick={onSend}
                         disabled={!inputValue.trim() || hasActiveRequest || hasDiffTab}
-                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : 'primary'}
+                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : mode === 'insightforge' ? 'secondary' : 'primary'}
                         sx={{ minWidth: 44, px: 1.5, flexShrink: 0 }}
                     >
-                        {(isEditLoading || isResearchLoading) ? (
+                        {(isEditLoading || isResearchLoading || isInsightForgeLoading) ? (
                             <CircularProgress size={18} color="inherit" />
                         ) : mode === 'edit' ? (
                             <EditIcon fontSize="small" />
                         ) : mode === 'research' ? (
+                            <ResearchIcon fontSize="small" />
+                        ) : mode === 'insightforge' ? (
                             <ResearchIcon fontSize="small" />
                         ) : (
                             <SendIcon fontSize="small" />

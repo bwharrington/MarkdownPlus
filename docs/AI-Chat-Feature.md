@@ -37,7 +37,7 @@ This document describes the Nexus feature in Markdown Nexus, covering configurat
    - [How Go Deeper Works](#how-go-deeper-works)
    - [Topic Selection](#topic-selection)
    - [Go Deeper Output](#go-deeper-output)
-   - [Loading States — Visual Progress Stepper](#loading-states--visual-progress-stepper-1)
+   - [Loading States — Nexus Progress Stepper](#loading-states--nexus-progress-stepper-1)
    - [Cancellation](#cancellation-1)
    - [Debugging & Logging](#debugging--logging-1)
 7. [Supported AI Providers](#supported-ai-providers)
@@ -61,7 +61,7 @@ The Nexus feature allows users to interact with AI language models directly with
 - **Research Mode**: Deep research on any topic. The AI performs a multi-phase process — first inferring the target audience and relevant fields, then generating a comprehensive, structured research report with automatic deepening passes. The output opens as a new markdown file tab in preview mode.
 - **Go Deeper Mode**: Expands and enriches an existing research report. The AI analyzes the document, suggests expansion topics, lets the user select which to pursue, then generates exhaustive addendums and merges them back into a versioned document.
 
-Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research mode is supported by Claude and OpenAI. Go Deeper mode is supported by all four providers. xAI is restricted to chat mode only for Research. Each provider's models are filtered at the API level to surface only the models relevant for chat use.
+Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research mode is supported by all four providers. Go Deeper mode is supported by all four providers. xAI is restricted from Edit mode only (structured output not yet available). Each provider's models are filtered at the API level to surface only the models relevant for chat use.
 
 ---
 
@@ -104,12 +104,12 @@ Once an API key is configured for a provider, an **AI Models** section appears i
 
 **Default fallback models** (used when the provider API cannot be reached):
 
-| Provider | Models                                                      |
-| -------- | ----------------------------------------------------------- |
-| Claude   | Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5       |
-| OpenAI   | GPT-4o Latest, GPT-4o Mini Latest, o3, o4 Mini             |
-| Gemini   | Gemini 3 Pro Preview, Gemini 3 Flash Preview                |
-| xAI      | Grok 3 Fast, Grok 3, Grok 3 Mini                           |
+| Provider | Models                                                                  |
+| -------- | ----------------------------------------------------------------------- |
+| Claude   | Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5                   |
+| OpenAI   | GPT-5.2, GPT-5.1, GPT-5, GPT-5 Mini, GPT-4o Latest, o3, o4 Mini       |
+| Gemini   | Gemini 3 Pro Preview, Gemini 3 Flash Preview                            |
+| xAI      | Grok 4, Grok 4.1, Grok 4.1 Reasoning                                   |
 
 The application queries each provider's API for dynamically available models. Models returned from the API are first filtered at the provider level to remove irrelevant variants (see [Model Filtering](#model-filtering) below), then further filtered based on the user's enabled/disabled configuration stored in `config.json` under the `aiModels` key.
 
@@ -124,8 +124,9 @@ Each provider applies automatic filtering to its API model list to surface only 
 
 **OpenAI:**
 
-- GPT chat models are included only when they use the `-latest` rolling alias (e.g., `gpt-4o-latest`); dated snapshots and audio/search variants are excluded
-- O-series reasoning models are included only as base IDs (e.g., `o1`, `o3`, `o4-mini`, `o3-mini`)
+- GPT-5 family models are included via an explicit allowlist (`gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-5.1`, `gpt-5.2`); ChatGPT-specific `-chat-latest` aliases are excluded
+- GPT chat models outside the GPT-5 family are included only when they use the `-latest` rolling alias (e.g., `gpt-4o-latest`); dated snapshots and audio/search variants are excluded
+- O-series reasoning models are included only as base IDs (e.g., `o3`, `o4-mini`, `o4-pro`)
 
 **Google Gemini:**
 
@@ -135,7 +136,7 @@ Each provider applies automatic filtering to its API model list to surface only 
 
 **xAI:**
 
-- Only models starting with `grok-` are included
+- Only models starting with `grok-4` are included
 - Image, video, and image-generation variants (`image`, `video`, `imagine`) are excluded
 
 ### Secure Storage
@@ -281,6 +282,10 @@ Right-clicking a file tab shows AI attachment options:
 
 ### Loading Indicators
 
+#### Nexus Aura
+
+While any AI request is active, the Nexus panel displays the **Nexus Aura** — a continuously rotating conic gradient that sweeps around the outer border of the panel in a loop of deep blue → cyan → white → gold → amber → white → cyan → deep blue. It is implemented as a 3px masked pseudo-element (`conic-gradient` driven by a CSS custom property `--border-angle` that animates from 0° to 360°) layered on top of the panel border. The Nexus Aura is visible in every mode (Chat, Edit, Research, Go Deeper, Insight Forge) and stops as soon as the request completes or is cancelled.
+
 **Chat Mode:**
 
 - A centered `CircularProgress` spinner appears in the messages area while waiting for a response
@@ -296,7 +301,7 @@ Right-clicking a file tab shows AI attachment options:
 **Research Mode:**
 
 - The send button shows a spinner while research is in progress
-- A multi-phase progress stepper is displayed in the messages area (see [Loading States — Visual Progress Stepper](#loading-states--visual-progress-stepper) in the Research Mode section)
+- The **Nexus Progress Stepper** is displayed in the messages area (see [Loading States — Nexus Progress Stepper](#loading-states--nexus-progress-stepper) in the Research Mode section)
 
 **Provider/Model Loading:**
 
@@ -478,7 +483,7 @@ This prevents conflicts between manual edits and the pending diff changes. Once 
 ### Activating Research Mode
 
 - Select **Research** from the Mode dropdown in the Nexus panel
-- Research mode is supported for **Claude** and **OpenAI** providers only (xAI is restricted from research mode; Gemini is not yet wired for research)
+- Research mode is supported for all four providers: **Claude**, **OpenAI**, **Google Gemini**, and **xAI**
 - The input placeholder changes to "Enter a research topic..." and the send button shows a telescope icon with an info-blue color
 
 ### How Research Works
@@ -547,9 +552,9 @@ The research report follows a standardized markdown format:
 - **Sources & Rigor**: References, confidence matrix
 - **Extended Technical Deep Dive** (appended from deepening calls): Exhaustive coverage of each deep dive topic with production-ready code, pitfalls, and comparative analysis
 
-### Loading States — Visual Progress Stepper
+### Loading States — Nexus Progress Stepper
 
-During research, the chat panel shows a **vertical stepper UI** (`ResearchProgress` component) that visualizes all four phases as a timeline:
+During research, the chat panel shows the **Nexus Progress Stepper** (`ResearchProgress` component) — a vertical timeline that visualizes all four phases as a sequence of steps:
 
 ```
 ● Analyzing Topic                    ✓ 2.1s
@@ -620,7 +625,7 @@ When the user clicks "Go Deeper", the AI receives the full document content and 
 - **Suggested depth level** — `practitioner` or `expert`
 - **Changelog ideas** — 4-6 short bullets previewing what will be added
 
-After analysis completes, the workflow **pauses** at topic selection. The border animation and loading state remain active during this pause.
+After analysis completes, the workflow **pauses** at topic selection. The Nexus Aura and loading state remain active during this pause.
 
 **Phase D2 — Topic Selection (User Interaction):**
 
@@ -668,9 +673,9 @@ The `GoDeepTopicSelector` component uses the `extractDocumentTopics` utility ([s
 - The file is marked dirty — save manually with Ctrl+S / Save As
 - Document structure: original content + deep dive addendums + changelog section, separated by `---` dividers
 
-### Loading States — Visual Progress Stepper
+### Loading States — Nexus Progress Stepper
 
-During Go Deeper, the chat panel shows a **vertical stepper UI** (`GoDeepProgress` component) with six steps:
+During Go Deeper, the chat panel shows the **Nexus Progress Stepper** (`GoDeepProgress` component) with six steps:
 
 ```
 ● Analyzing Report                   ✓ 3.2s
@@ -757,7 +762,7 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 
 - **API Endpoint**: `https://api.openai.com/v1/chat/completions`
 - **Authentication**: `Bearer` token in `Authorization` header
-- **Default Fallback Models**: GPT-4o Latest, GPT-4o Mini Latest, o3, o4 Mini
+- **Default Fallback Models**: GPT-5.2, GPT-5.1, GPT-5, GPT-5 Mini, GPT-4o Latest, o3, o4 Mini
 - **Edit Mode**: Supported (uses `response_format: { type: 'json_object' }`)
 - **Research Mode**: Supported
 - **Image Attachments**: Data URL format with `image_url`
@@ -770,7 +775,7 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 - **Authentication**: `x-goog-api-key` header
 - **Default Fallback Models**: Gemini 3 Pro Preview, Gemini 3 Flash Preview
 - **Edit Mode**: Supported (uses `response_mime_type: 'application/json'` for JSON mode; system prompt prepended as first user message since Gemini lacks a dedicated system role)
-- **Research Mode**: Not yet wired (only Claude and OpenAI dispatch research calls)
+- **Research Mode**: Supported
 - **Image Attachments**: Inline data format with `mimeType` and base64 `data` in Gemini's `inlineData` part
 - **Text Attachments**: Appended as text parts in the Gemini `parts` array
 - **Model Filtering**: Only `gemini-` branded chat models that support `generateContent`; excludes embedding, image-generation, dated snapshot, numbered version, and `-latest` alias variants
@@ -781,13 +786,13 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 
 - **API Endpoint**: `https://api.x.ai/v1/chat/completions`
 - **Authentication**: `Bearer` token in `Authorization` header
-- **Default Fallback Models**: Grok 3 Fast, Grok 3, Grok 3 Mini
+- **Default Fallback Models**: Grok 4, Grok 4.1, Grok 4.1 Reasoning
 - **Edit Mode**: Not supported (no structured output; restricted via `aiProviderModeRestrictions.ts`)
-- **Research Mode**: Not supported (explicitly blocked in `useAIResearch.ts`)
+- **Research Mode**: Supported
 - **Go Deeper Mode**: Supported
 - **Image Attachments**: Data URL format with `image_url` (same as OpenAI format)
 - **Text Attachments**: Inline text content format
-- **Model Filtering**: Only `grok-` models; excludes image, video, and image-generation variants
+- **Model Filtering**: Only `grok-4` models; excludes image, video, and image-generation variants
 - **Validation**: Test call to list models endpoint
 
 ---
@@ -808,8 +813,8 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 | `src/renderer/components/MessageInput.tsx`              | Message text input, send/edit button, cancel, and attachment popover trigger |
 | `src/renderer/components/TabBar.tsx`                    | File tabs with AI attachment context menu (attach/remove, show/hide)         |
 | `src/renderer/components/CodeBlock.tsx`                  | Syntax-highlighted code blocks using PrismLight (react-syntax-highlighter)   |
-| `src/renderer/components/ResearchProgress.tsx`          | Vertical stepper UI for research phase visualization with metadata cards     |
-| `src/renderer/components/GoDeepProgress.tsx`            | Vertical stepper UI for Go Deeper phase visualization with metadata cards and topic selector |
+| `src/renderer/components/ResearchProgress.tsx`          | Nexus Progress Stepper for research phase visualization with metadata cards     |
+| `src/renderer/components/GoDeepProgress.tsx`            | Nexus Progress Stepper for Go Deeper phase visualization with metadata cards and topic selector |
 | `src/renderer/components/GoDeepTopicSelector.tsx`       | Interactive checkbox component for selecting expansion topics during Go Deeper |
 | `src/renderer/components/DiffView.tsx`                  | Dedicated diff tab view with unified inline diff rendering                   |
 | `src/renderer/components/DiffNavigationToolbar.tsx`     | Floating toolbar for navigating and resolving diff hunks                     |
@@ -919,6 +924,6 @@ Diff state is no longer global — it lives on each diff tab's `IFile` object:
 **Provider Mode Restrictions** (defined in `aiProviderModeRestrictions.ts`):
 
 - A static map defines which providers are restricted from which modes
-- Currently: xAI is restricted from `edit` mode
+- Currently: xAI is restricted from `edit` mode only (structured output not yet available)
 - The UI disables restricted mode options and auto-resets to `chat` when switching to a restricted provider
 - The send handler also enforces restrictions at runtime as a safety net

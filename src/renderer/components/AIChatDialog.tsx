@@ -27,6 +27,7 @@ import type { AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAIResearch } from '../hooks/useAIResearch';
 import { useAIGoDeeper } from '../hooks/useAIGoDeeper';
+import { useAIInsightForge } from '../hooks/useAIInsightForge';
 import type { GoDeepDepthLevel } from '../hooks/useAIGoDeeper';
 import type { ResearchDepthLevel } from '../hooks/useAIResearch';
 import { extractDocumentTopics } from '../utils/extractDocumentTopics';
@@ -200,6 +201,19 @@ export function AIChatDialog({
         goDeepComplete,
     } = useAIGoDeeper();
 
+    // AI Insight Forge hook
+    const {
+        submitInsightForge,
+        cancelInsightForge,
+        dismissInsightForgeProgress,
+        isInsightForgeLoading,
+        insightForgeError,
+        insightForgePhase,
+        insightForgeComplete,
+        insightForgeFileName,
+    } = useAIInsightForge();
+    const [insightForgeQuery, setInsightForgeQuery] = useState<string | null>(null);
+
     // Rotating loading messages with typewriter effect
     const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
 
@@ -250,6 +264,8 @@ export function AIChatDialog({
         persistConfig({ aiChatMode: newMode });
         dismissResearchProgress();
         dismissGoDeepProgress();
+        dismissInsightForgeProgress();
+        setInsightForgeQuery(null);
 
         const currentProvider = getProviderForModel(selectedModel);
         if (currentProvider && isProviderRestrictedFromMode(currentProvider, newMode)) {
@@ -259,7 +275,7 @@ export function AIChatDialog({
                 persistConfig({ aiChatMode: newMode, aiChatModel: firstValid.id });
             }
         }
-    }, [persistConfig, dismissResearchProgress, dismissGoDeepProgress, getProviderForModel, selectedModel, models, setSelectedModel]);
+    }, [persistConfig, dismissResearchProgress, dismissGoDeepProgress, dismissInsightForgeProgress, getProviderForModel, selectedModel, models, setSelectedModel]);
 
     // Persist model selection
     const handleModelChange = useCallback((newModel: string) => {
@@ -404,6 +420,8 @@ export function AIChatDialog({
         setEditModeError(null);
         dismissResearchProgress();
         dismissGoDeepProgress();
+        dismissInsightForgeProgress();
+        setInsightForgeQuery(null);
 
         const currentProvider = getProviderForModel(selectedModel) ?? 'claude';
 
@@ -441,13 +459,27 @@ export function AIChatDialog({
             return;
         }
 
+        // Insight Forge mode request
+        if (mode === 'insightforge') {
+            const requestId = `ai-insightforge-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            try {
+                const query = inputValue;
+                setInputValue('');
+                setInsightForgeQuery(query);
+                await submitInsightForge(query, currentProvider, selectedModel, requestId, 'practitioner');
+            } catch {
+                // Error is handled by the useAIInsightForge hook (insightForgeError state)
+            }
+            return;
+        }
+
         // Regular chat mode
         const enabledFiles = attachedFiles.filter(file =>
             !file.isContextDoc || file.enabled !== false
         );
         await sendMessage(enabledFiles.length > 0 ? enabledFiles : undefined);
         setAttachedFiles(prev => prev.filter(file => file.isContextDoc));
-    }, [mode, selectedModel, getProviderForModel, inputValue, researchDepthLevel, requestEdit, submitResearch, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress]);
+    }, [mode, selectedModel, getProviderForModel, inputValue, researchDepthLevel, requestEdit, submitResearch, submitInsightForge, setInputValue, sendMessage, attachedFiles, dismissResearchProgress, dismissGoDeepProgress, dismissInsightForgeProgress]);
 
     const handleGoDeeper = useCallback(async () => {
         const activeFile = editorState.activeFileId
@@ -463,6 +495,8 @@ export function AIChatDialog({
         setGoDeepFileName(activeFile.name);
         dismissResearchProgress();
         dismissGoDeepProgress();
+        dismissInsightForgeProgress();
+        setInsightForgeQuery(null);
 
         try {
             await submitAnalysis(
@@ -477,7 +511,7 @@ export function AIChatDialog({
         } catch {
             // Error handled by hook state (goDeepError)
         }
-    }, [editorState.activeFileId, editorState.openFiles, getProviderForModel, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress, goDeepDepthLevel]);
+    }, [editorState.activeFileId, editorState.openFiles, getProviderForModel, selectedModel, submitAnalysis, dismissResearchProgress, dismissGoDeepProgress, dismissInsightForgeProgress, goDeepDepthLevel]);
 
     const handleTopicsContinue = useCallback(async (selectedTopics: string[]) => {
         try {
@@ -516,17 +550,24 @@ export function AIChatDialog({
 
         if (isGoDeepLoading) {
             await cancelGoDeeper();
+            return;
         }
-    }, [isLoading, isEditLoading, isResearchLoading, isGoDeepLoading, cancelCurrentRequest, cancelResearch, cancelGoDeeper]);
+
+        if (isInsightForgeLoading) {
+            await cancelInsightForge();
+        }
+    }, [isLoading, isEditLoading, isResearchLoading, isGoDeepLoading, isInsightForgeLoading, cancelCurrentRequest, cancelResearch, cancelGoDeeper, cancelInsightForge]);
 
     const handleClearChatConfirm = useCallback(() => {
         clearChat();
         dismissResearchProgress();
         dismissGoDeepProgress();
+        dismissInsightForgeProgress();
+        setInsightForgeQuery(null);
         setGoDeepFileName(null);
         setAttachedFiles([]);
         setClearConfirmOpen(false);
-    }, [clearChat, dismissResearchProgress, dismissGoDeepProgress, setAttachedFiles]);
+    }, [clearChat, dismissResearchProgress, dismissGoDeepProgress, dismissInsightForgeProgress, setAttachedFiles]);
 
     // Document headings extracted for topic selection (only computed during topic_selection pause)
     // Must be above the early return to satisfy Rules of Hooks
@@ -545,7 +586,7 @@ export function AIChatDialog({
     if (!open) return null;
 
     const hasProviders = models.length > 0 || isLoadingModels;
-    const hasActiveRequest = isLoading || isEditLoading || isResearchLoading || isGoDeepLoading;
+    const hasActiveRequest = isLoading || isEditLoading || isResearchLoading || isGoDeepLoading || isInsightForgeLoading;
 
     // The file that would be targeted if the user clicks Go Deeper right now
     const activeFileName = editorState.activeFileId
@@ -613,6 +654,12 @@ export function AIChatDialog({
                         onTopicsContinue={handleTopicsContinue}
                         depthLevel={goDeepDepthLevel}
                         onDepthLevelChange={setGoDeepDepthLevel}
+                        isInsightForgeLoading={isInsightForgeLoading}
+                        insightForgePhase={insightForgePhase}
+                        insightForgeComplete={insightForgeComplete}
+                        insightForgeError={insightForgeError}
+                        insightForgeFileName={insightForgeFileName}
+                        insightForgeQuery={insightForgeQuery}
                         hasDiffTab={hasDiffTab}
                         loadingDisplayText={loadingDisplayText}
                         error={error}
@@ -638,6 +685,7 @@ export function AIChatDialog({
                         isLoading={isLoading}
                         isEditLoading={isEditLoading}
                         isResearchLoading={isResearchLoading}
+                        isInsightForgeLoading={isInsightForgeLoading}
                         hasDiffTab={hasDiffTab}
                         hasActiveRequest={hasActiveRequest}
                         openFiles={editorState.openFiles}

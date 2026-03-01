@@ -440,7 +440,7 @@ Access the Nexus Assistant by clicking the **AI** button in the toolbar. The cha
 
 #### Features
 
-- **Multi-provider support** - Choose between Claude, OpenAI, or xAI
+- **Multi-provider support** - Choose between Claude, OpenAI, Google Gemini, or xAI
 - **Dynamic model selection** - Available models are fetched from each provider
 - **File attachments** - Attach files for context in your conversations
 - **Context documents** - Add reference files that persist across messages
@@ -473,7 +473,7 @@ AI Edit Mode allows you to make AI-powered edits directly to your document with 
 2. Click the **pencil icon** next to the model selector to toggle Edit Mode
 3. The button turns green when Edit Mode is active
 
-> **Note:** Edit Mode is only available with Claude and OpenAI providers. xAI shows an "Edit N/A" badge indicating it doesn't support structured output required for edit mode.
+> **Note:** Edit Mode is available with Claude, OpenAI, and Google Gemini providers. xAI shows an "Edit N/A" badge indicating it doesn't support the structured output required for edit mode.
 
 #### Making Edits
 
@@ -535,6 +535,8 @@ Research Mode uses a multi-phase AI pipeline:
 3. **Deepening** — Automatic follow-up calls expand technical sections in batches for greater depth
 4. **Naming** — A descriptive filename is generated for the new tab
 
+While the pipeline runs, the **Nexus Aura** (a rotating blue-to-gold gradient ring around the panel border) indicates active processing, and the **Nexus Progress Stepper** displays live phase progress in the messages area.
+
 The final report is opened as a new markdown file tab in **preview mode**, ready to read or save.
 
 #### Research Output Structure
@@ -550,7 +552,7 @@ Reports follow a standardized format:
 - Sources & Rigor
 - Extended Technical Deep Dive (appended from deepening calls)
 
-> **Note:** Research Mode is available with Claude and OpenAI providers. xAI is restricted from Research Mode.
+> **Note:** Research Mode is available with all four providers: Claude, OpenAI, Google Gemini, and xAI.
 
 ---
 
@@ -575,6 +577,8 @@ Go Deeper runs a four-phase AI pipeline:
 3. **Expanding Depth** — Selected topics are batched and sent to the AI for exhaustive addendum generation, covering latest developments, advanced internals, production edge cases, code examples, and benchmarks. A batch counter shows progress (e.g., "2/4").
 4. **Integrating Content** — Addendums are merged into the document with a generated changelog section
 5. **Finalizing Document** — The file is renamed with a version suffix (`v2`, `v3`, etc.) and updated in the editor
+
+Throughout the pipeline the **Nexus Aura** and **Nexus Progress Stepper** provide live visual feedback identical to Research Mode.
 
 #### Go Deeper Output
 
@@ -626,9 +630,9 @@ The AI Inline Edit Window provides a streamlined interface for making AI-powered
 | **Input prompt**     | "Type a message..."            | "Describe the changes you want..." |
 | **Send button**      | Blue with send icon            | Green with edit icon               |
 | **Result**           | Chat response in dialog        | Visual diff in the editor          |
-| **Provider support** | All providers                  | Claude and OpenAI only             |
+| **Provider support** | All providers                  | Claude, OpenAI, and Gemini         |
 
-> **Note:** Edit Mode is only available with Claude and OpenAI providers. xAI displays an "Edit N/A" badge as it does not support the structured output required for inline edits.
+> **Note:** Edit Mode is available with Claude, OpenAI, and Google Gemini providers. xAI displays an "Edit N/A" badge as it does not support the structured output required for inline edits.
 
 ### AI Provider Configuration
 
@@ -638,10 +642,10 @@ Configure your AI providers by setting up API keys through the Settings dialog.
 
 | Provider                     | Models                                                      | Chat | Edit | Research | Go Deeper |
 | ---------------------------- | ----------------------------------------------------------- | ---- | ---- | -------- | --------- |
-| **Claude** (Anthropic) | Claude Sonnet 4.5, Claude Sonnet 4, Claude Haiku 3.5, etc.  | Yes  | Yes  | Yes      | Yes       |
-| **OpenAI**             | GPT-4o, GPT-4o Mini, GPT-4 Turbo, etc.                      | Yes  | Yes  | Yes      | Yes       |
-| **Google Gemini**      | Gemini 2.0 Flash, Gemini 1.5 Pro, etc.                      | Yes  | Yes  | No       | Yes       |
-| **xAI (Grok)**         | Grok 3, Grok 3 Fast, Grok 3 Mini, etc.                      | Yes  | No   | No       | Yes       |
+| **Claude** (Anthropic) | Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5, etc. | Yes  | Yes  | Yes      | Yes       |
+| **OpenAI**             | GPT-5, GPT-5 Mini, GPT-4o Latest, o3, o4 Mini, etc.        | Yes  | Yes  | Yes      | Yes       |
+| **Google Gemini**      | Gemini 3 Pro Preview, Gemini 3 Flash Preview, etc.          | Yes  | Yes  | Yes      | Yes       |
+| **xAI (Grok)**         | Grok 4, Grok 4.1, Grok 4.1 Reasoning, etc.                 | Yes  | No   | Yes      | Yes       |
 
 #### Setting Up API Keys
 
@@ -838,7 +842,7 @@ src/
 │   │   ├── ProviderSelector.tsx # Provider/model dropdowns
 │   │   ├── FileAttachmentsList.tsx # File attachment chips
 │   │   ├── MessageInput.tsx    # Chat input with send/edit controls
-│   │   ├── GoDeepProgress.tsx  # Go Deeper phase stepper UI
+│   │   ├── GoDeepProgress.tsx  # Nexus Progress Stepper for Go Deeper phases
 │   │   ├── GoDeepTopicSelector.tsx # Go Deeper topic selection UI
 │   │   ├── DiffView.tsx        # Dedicated diff tab view
 │   │   ├── DiffNavigationToolbar.tsx  # Diff review controls
