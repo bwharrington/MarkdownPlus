@@ -8,8 +8,8 @@ import { CodeBlock } from './CodeBlock';
 import { ResearchProgress } from './ResearchProgress';
 import { GoDeepProgress } from './GoDeepProgress';
 import { GoDeepButton } from './GoDeepButton';
-import { InsightForgeProgress } from './InsightForgeProgress';
-import type { InsightForgePhase } from '../hooks/useAIInsightForge';
+import { TechResearchProgress } from './TechResearchProgress';
+import type { TechResearchPhase } from '../hooks/useAITechResearch';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
     flex: 1,
@@ -163,12 +163,12 @@ interface ChatMessagesProps {
     onTopicsContinue?: (topics: string[]) => void;
     depthLevel?: GoDeepDepthLevel;
     onDepthLevelChange?: (level: GoDeepDepthLevel) => void;
-    isInsightForgeLoading: boolean;
-    insightForgePhase: InsightForgePhase;
-    insightForgeComplete: boolean;
-    insightForgeError: string | null;
-    insightForgeFileName: string | null;
-    insightForgeQuery: string | null;
+    isTechResearchLoading: boolean;
+    techResearchPhase: TechResearchPhase;
+    techResearchComplete: boolean;
+    techResearchError: string | null;
+    techResearchFileName: string | null;
+    techResearchQuery: string | null;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
@@ -199,12 +199,12 @@ export function ChatMessages({
     onTopicsContinue,
     depthLevel,
     onDepthLevelChange,
-    isInsightForgeLoading,
-    insightForgePhase,
-    insightForgeComplete,
-    insightForgeError,
-    insightForgeFileName,
-    insightForgeQuery,
+    isTechResearchLoading,
+    techResearchPhase,
+    techResearchComplete,
+    techResearchError,
+    techResearchFileName,
+    techResearchQuery,
     hasDiffTab,
     loadingDisplayText,
     error,
@@ -216,7 +216,7 @@ export function ChatMessages({
         DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
     );
 
-    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !isGoDeepLoading && !goDeepComplete && !researchComplete && !isInsightForgeLoading && !insightForgeComplete && !hasDiffTab;
+    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !isGoDeepLoading && !goDeepComplete && !researchComplete && !isTechResearchLoading && !techResearchComplete && !hasDiffTab;
 
     return (
         <MessagesContainer>
@@ -276,20 +276,20 @@ export function ChatMessages({
                     inferenceResult={inferenceResult}
                 />
             )}
-            {(isInsightForgeLoading || insightForgeComplete) && insightForgePhase && (
+            {(isTechResearchLoading || techResearchComplete) && techResearchPhase && (
                 <>
-                    {insightForgeQuery && (
+                    {techResearchQuery && (
                         <MessageBubble role="user">
-                            <Typography variant="body2">{insightForgeQuery}</Typography>
+                            <Typography variant="body2">{techResearchQuery}</Typography>
                         </MessageBubble>
                     )}
-                    <InsightForgeProgress insightForgePhase={insightForgePhase} />
+                    <TechResearchProgress techResearchPhase={techResearchPhase} />
                 </>
             )}
-            {insightForgeComplete && insightForgeFileName && (
+            {techResearchComplete && techResearchFileName && (
                 <DiffTabBanner>
                     <Typography variant="body2">
-                        Insight Forge complete — {insightForgeFileName}
+                        Tech Research complete — {techResearchFileName}
                     </Typography>
                 </DiffTabBanner>
             )}
@@ -321,9 +321,9 @@ export function ChatMessages({
                     {goDeepError}
                 </Typography>
             )}
-            {insightForgeError && (
+            {techResearchError && (
                 <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
-                    {insightForgeError}
+                    {techResearchError}
                 </Typography>
             )}
             {hasDiffTab && (

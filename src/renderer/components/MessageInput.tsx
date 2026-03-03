@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader } from '@mui/material';
+import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader, Divider } from '@mui/material';
 import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
 import { AttachFilePopover } from './AttachFilePopover';
 import type { AttachedFile } from './FileAttachmentsList';
@@ -55,7 +55,7 @@ interface MessageInputProps {
     isLoading: boolean;
     isEditLoading: boolean;
     isResearchLoading: boolean;
-    isInsightForgeLoading: boolean;
+    isTechResearchLoading: boolean;
     hasDiffTab: boolean;
     hasActiveRequest: boolean;
     openFiles: IFile[];
@@ -83,7 +83,7 @@ export function MessageInput({
     isLoading,
     isEditLoading,
     isResearchLoading,
-    isInsightForgeLoading,
+    isTechResearchLoading,
     hasDiffTab,
     hasActiveRequest,
     openFiles,
@@ -149,6 +149,7 @@ export function MessageInput({
                         {providerLabels[provider] ?? provider}
                     </ListSubheader>
                 );
+                items.push(<Divider key={`divider-${provider}`} />);
             }
             for (const m of providerModels) {
                 items.push(
@@ -173,7 +174,7 @@ export function MessageInput({
                         ? "Describe the changes you want... (e.g., 'Add a table of contents')"
                         : mode === 'research'
                             ? "Enter a research topic... (e.g., 'Vector search in production')"
-                            : mode === 'insightforge'
+                            : mode === 'techresearch'
                                 ? "Enter any Software Engineering topic for a deep-dive (e.g. How to use React, Configuring a Hasura API, C Memory Management)"
                                 : "Type a message... (Enter to send, Shift+Enter for newline)"
                 }
@@ -200,7 +201,7 @@ export function MessageInput({
                             <MenuItem value="chat" sx={{ fontSize: '0.75rem' }}>Ask</MenuItem>
                             <MenuItem value="edit" sx={{ fontSize: '0.75rem' }}>Edit</MenuItem>
                             <MenuItem value="research" sx={{ fontSize: '0.75rem' }}>Research</MenuItem>
-                            <MenuItem value="insightforge" sx={{ fontSize: '0.75rem' }}>Insight Forge</MenuItem>
+                            <MenuItem value="techresearch" sx={{ fontSize: '0.75rem' }}>Tech Research</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -262,16 +263,16 @@ export function MessageInput({
                         size="small"
                         onClick={onSend}
                         disabled={!inputValue.trim() || hasActiveRequest || hasDiffTab}
-                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : mode === 'insightforge' ? 'secondary' : 'primary'}
+                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : mode === 'techresearch' ? 'secondary' : 'primary'}
                         sx={{ minWidth: 44, px: 1.5, flexShrink: 0 }}
                     >
-                        {(isEditLoading || isResearchLoading || isInsightForgeLoading) ? (
+                        {(isEditLoading || isResearchLoading || isTechResearchLoading) ? (
                             <CircularProgress size={18} color="inherit" />
                         ) : mode === 'edit' ? (
                             <EditIcon fontSize="small" />
                         ) : mode === 'research' ? (
                             <ResearchIcon fontSize="small" />
-                        ) : mode === 'insightforge' ? (
+                        ) : mode === 'techresearch' ? (
                             <ResearchIcon fontSize="small" />
                         ) : (
                             <SendIcon fontSize="small" />

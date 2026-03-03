@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, styled, keyframes } from '@mui/material';
-import type { InsightForgePhase } from '../hooks/useAIInsightForge';
+import type { TechResearchPhase } from '../hooks/useAITechResearch';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 
 type StepStatus = 'pending' | 'active' | 'complete';
 
-const PHASE_ORDER: InsightForgePhase[] = ['scoping', 'extraction', 'analysis', 'assembly'];
+const PHASE_ORDER: TechResearchPhase[] = ['scoping', 'extraction', 'analysis', 'assembly'];
 
 const PHASE_LABELS: Record<string, string> = {
     scoping:    'Scoping Query & Blueprint',
@@ -26,7 +26,7 @@ const EXTRACTION_MESSAGES = [
     'Pulling implementation details...',
     'Sourcing edge case data...',
     'Gathering configuration specifics...',
-    // Note: In a future release this step will use live web search (see WEB_SEARCH_PLACEHOLDER in useAIInsightForge.ts)
+    // Note: In a future release this step will use live web search (see WEB_SEARCH_PLACEHOLDER in useAITechResearch.ts)
 ] as const;
 
 const ANALYSIS_MESSAGES = [
@@ -162,11 +162,11 @@ const LoadingCursor = styled('span')(({ theme }) => ({
 
 // --- Component ---
 
-interface InsightForgeProgressProps {
-    insightForgePhase: InsightForgePhase;
+interface TechResearchProgressProps {
+    techResearchPhase: TechResearchPhase;
 }
 
-function getMessagePool(phase: InsightForgePhase): readonly string[] {
+function getMessagePool(phase: TechResearchPhase): readonly string[] {
     switch (phase) {
         case 'scoping':    return SCOPING_MESSAGES;
         case 'extraction': return EXTRACTION_MESSAGES;
@@ -176,7 +176,7 @@ function getMessagePool(phase: InsightForgePhase): readonly string[] {
     }
 }
 
-function getStepStatus(phase: InsightForgePhase, stepPhase: InsightForgePhase): StepStatus {
+function getStepStatus(phase: TechResearchPhase, stepPhase: TechResearchPhase): StepStatus {
     if (phase === 'complete') return 'complete';
     const currentIndex = PHASE_ORDER.indexOf(phase);
     const stepIndex = PHASE_ORDER.indexOf(stepPhase);
@@ -191,20 +191,20 @@ function formatElapsed(ms: number): string {
     return `${(ms / 1000).toFixed(1)}s`;
 }
 
-export const InsightForgeProgress = React.memo(function InsightForgeProgress({
-    insightForgePhase,
-}: InsightForgeProgressProps) {
-    const isWorking = insightForgePhase !== null && insightForgePhase !== 'complete';
-    const messagePool = useMemo(() => getMessagePool(insightForgePhase), [insightForgePhase]);
+export const TechResearchProgress = React.memo(function TechResearchProgress({
+    techResearchPhase,
+}: TechResearchProgressProps) {
+    const isWorking = techResearchPhase !== null && techResearchPhase !== 'complete';
+    const messagePool = useMemo(() => getMessagePool(techResearchPhase), [techResearchPhase]);
     const { displayText } = useEditLoadingMessage(isWorking, messagePool);
 
     // Track phase timings
     const timingsRef = useRef<Record<string, PhaseTiming>>({});
-    const prevPhaseRef = useRef<InsightForgePhase>(null);
+    const prevPhaseRef = useRef<TechResearchPhase>(null);
 
     useEffect(() => {
         const prev = prevPhaseRef.current;
-        const curr = insightForgePhase;
+        const curr = techResearchPhase;
 
         if (prev !== curr) {
             if (prev && prev !== 'complete' && timingsRef.current[prev] && !timingsRef.current[prev].end) {
@@ -219,7 +219,7 @@ export const InsightForgeProgress = React.memo(function InsightForgeProgress({
             }
             prevPhaseRef.current = curr;
         }
-    }, [insightForgePhase]);
+    }, [techResearchPhase]);
 
     const getPhaseElapsed = (phase: string): string | null => {
         const timing = timingsRef.current[phase];
@@ -237,13 +237,13 @@ export const InsightForgeProgress = React.memo(function InsightForgeProgress({
         return formatElapsed(lastEnd - firstStart);
     };
 
-    const isComplete = insightForgePhase === 'complete';
+    const isComplete = techResearchPhase === 'complete';
     const completeStatus: StepStatus = isComplete ? 'complete' : 'pending';
 
     return (
         <ProgressContainer>
             {PHASE_ORDER.map((stepPhase) => {
-                const status = getStepStatus(insightForgePhase, stepPhase);
+                const status = getStepStatus(techResearchPhase, stepPhase);
                 const label = PHASE_LABELS[stepPhase!] || stepPhase;
                 const elapsed = status === 'complete' ? getPhaseElapsed(stepPhase!) : null;
                 const isActive = status === 'active';
@@ -295,7 +295,7 @@ export const InsightForgeProgress = React.memo(function InsightForgeProgress({
                                 color: isComplete ? 'success.main' : undefined,
                             }}
                         >
-                            Insight Forge Complete
+                            Tech Research Complete
                         </Typography>
                         {isComplete && getTotalElapsed() && (
                             <TimeBadge>{getTotalElapsed()}</TimeBadge>

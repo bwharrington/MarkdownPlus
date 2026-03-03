@@ -2,7 +2,7 @@
 
 export type LineEnding = 'CRLF' | 'LF';
 export type ViewMode = 'edit' | 'preview' | 'diff';
-export type AIChatMode = 'chat' | 'edit' | 'research' | 'insightforge';
+export type AIChatMode = 'chat' | 'edit' | 'research' | 'techresearch';
 
 export interface IFileReference {
   fileName: string;
@@ -58,7 +58,7 @@ export interface IConfig {
   aiChatMode?: AIChatMode;
   aiChatModel?: string;
   aiResearchDepthLevel?: string;
-  aiInsightForgeDepthLevel?: string;
+  aiTechResearchDepthLevel?: string;
 }
 
 export interface ConfirmCloseResult {

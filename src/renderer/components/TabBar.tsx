@@ -14,6 +14,7 @@ import {
     VisibilityOffIcon,
     CopyIcon,
     ClipboardCopyIcon,
+    SaveAsIcon,
 } from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { useFileOperations } from '../hooks';
@@ -143,7 +144,7 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
     const [contextMenu, setContextMenu] = React.useState<{ mouseX: number; mouseY: number; fileId: string } | null>(null);
     const [renameDialog, setRenameDialog] = React.useState<{ open: boolean; fileId: string; currentName: string }>({ open: false, fileId: '', currentName: '' });
     const [newFileName, setNewFileName] = React.useState('');
-    const { renameFile, showInFolder } = useFileOperations();
+    const { renameFile, showInFolder, saveFileAs } = useFileOperations();
 
     const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: string) => {
         dispatch({ type: 'SELECT_TAB', payload: { id: newValue } });
@@ -222,6 +223,23 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
         }
         setContextMenu(null);
     }, [contextMenu, state.openFiles]);
+
+    const handleCopyFileName = useCallback(async () => {
+        if (contextMenu) {
+            const file = state.openFiles.find(f => f.id === contextMenu.fileId);
+            if (file) {
+                await navigator.clipboard.writeText(file.name);
+            }
+        }
+        setContextMenu(null);
+    }, [contextMenu, state.openFiles]);
+
+    const handleSaveAsClick = useCallback(async () => {
+        if (contextMenu) {
+            await saveFileAs(contextMenu.fileId);
+        }
+        setContextMenu(null);
+    }, [contextMenu, saveFileAs]);
 
     const handleAttachToggleClick = useCallback(() => {
         if (contextMenu) {
@@ -323,6 +341,14 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
                 >
                     <ClipboardCopyIcon size={18} sx={{ mr: 1 }} />
                     Copy File Path
+                </MenuItem>
+                <MenuItem onClick={handleCopyFileName}>
+                    <CopyIcon size={18} sx={{ mr: 1 }} />
+                    Copy File Name
+                </MenuItem>
+                <MenuItem onClick={handleSaveAsClick}>
+                    <SaveAsIcon size={18} sx={{ mr: 1 }} />
+                    Save As
                 </MenuItem>
                 {(() => {
                     const contextFile = contextMenu
