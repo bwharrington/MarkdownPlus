@@ -207,6 +207,8 @@ export function AIChatDialog({
         techResearchPhase,
         techResearchComplete,
         techResearchFileName,
+        sourceFetchProgress,
+        isWebSearchEnabled,
     } = useAITechResearch();
     const [techResearchQuery, setTechResearchQuery] = useState<string | null>(null);
 
@@ -635,6 +637,8 @@ export function AIChatDialog({
                         planFileName={planFileName}
                         planQuery={planQuery}
                         mode={mode}
+                        sourceFetchProgress={sourceFetchProgress}
+                        isWebSearchEnabled={isWebSearchEnabled}
                         hasDiffTab={hasDiffTab}
                         loadingDisplayText={loadingDisplayText}
                         error={error}

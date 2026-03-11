@@ -12,6 +12,7 @@ import { validateApiKey as validateXAiKey } from './services/xaiApi';
 import { validateApiKey as validateClaudeKey } from './services/claudeApi';
 import { validateApiKey as validateOpenAIKey } from './services/openaiApi';
 import { validateApiKey as validateGeminiKey } from './services/geminiApi';
+import { validateSerperKey } from './services/webSearchService';
 
 export interface SetApiKeyData {
     provider: ApiProvider;
@@ -50,8 +51,7 @@ export function registerSecureStorageIpcHandlers() {
                     validationResult = await validateGeminiKey(data.key);
                     break;
                 case 'serper':
-                    // Serper: accept any non-empty key (no test call needed, lightweight)
-                    validationResult = { valid: data.key.trim().length > 0 };
+                    validationResult = await validateSerperKey(data.key);
                     break;
                 default:
                     return {

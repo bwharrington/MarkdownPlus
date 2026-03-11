@@ -476,27 +476,41 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [dispatch, refreshProviderStatuses, invalidateModelsForProvider]);
 
-    const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
+    const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
         setTestingProvider(provider);
         try {
-            const statuses = await cacheRefreshStatuses();
-            const status = statuses[provider];
-            if (status.enabled && status.status === 'success') {
+            if (provider === 'serper') {
+                // Test Serper by running a simple search
+                const result = await window.electronAPI.webSearch('test', 1);
                 dispatch({
                     type: 'SHOW_NOTIFICATION',
                     payload: {
-                        message: `${provider} connection successful`,
-                        severity: 'success',
+                        message: result.success
+                            ? 'Serper (Web Search) connection successful'
+                            : `Serper connection failed: ${result.error || 'Unknown error'}`,
+                        severity: result.success ? 'success' : 'error',
                     },
                 });
-            } else if (status.enabled && status.status === 'error') {
-                dispatch({
-                    type: 'SHOW_NOTIFICATION',
-                    payload: {
-                        message: `${provider} connection failed — API key may be invalid or the service is unavailable`,
-                        severity: 'error',
-                    },
-                });
+            } else {
+                const statuses = await cacheRefreshStatuses();
+                const status = statuses[provider];
+                if (status.enabled && status.status === 'success') {
+                    dispatch({
+                        type: 'SHOW_NOTIFICATION',
+                        payload: {
+                            message: `${provider} connection successful`,
+                            severity: 'success',
+                        },
+                    });
+                } else if (status.enabled && status.status === 'error') {
+                    dispatch({
+                        type: 'SHOW_NOTIFICATION',
+                        payload: {
+                            message: `${provider} connection failed — API key may be invalid or the service is unavailable`,
+                            severity: 'error',
+                        },
+                    });
+                }
             }
         } catch {
             dispatch({
@@ -641,18 +655,20 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
                 <SectionHeader>Web Search</SectionHeader>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: 12 }}>
-                    Used by Plan mode to fetch real-world context during planning. Get a free key at <strong>serper.dev</strong>.
+                    Used by Plan and Tech Research modes to fetch real-world context during planning and research. Get a free key at <strong>serper.dev</strong>.
                 </Typography>
+
                 <APIKeyInput
                     provider="serper"
-                    label="Serper (Google Search)"
+                    label="Serper (Web Search)"
                     hasKey={apiKeyStatus.serper}
                     value={apiKeyInputs.serper}
+                    providerStatus={apiKeyStatus.serper ? 'success' : 'unchecked'}
+                    isTesting={testingProvider === 'serper'}
                     onChange={(value) => setApiKeyInputs(prev => ({ ...prev, serper: value }))}
                     onSet={() => handleSetApiKey('serper')}
                     onClear={() => handleClearApiKey('serper')}
-                    onTest={() => {}}
-                    isTesting={false}
+                    onTest={() => handleTestProvider('serper')}
                 />
 
                 {(providerStatuses.xai.enabled || providerStatuses.claude.enabled || providerStatuses.openai.enabled || providerStatuses.gemini.enabled) && (

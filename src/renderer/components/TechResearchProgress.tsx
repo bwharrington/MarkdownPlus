@@ -1,14 +1,18 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, styled, keyframes } from '@mui/material';
 import type { TechResearchPhase } from '../hooks/useAITechResearch';
+import type { SourceFetchProgress } from '../types/global';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 
 type StepStatus = 'pending' | 'active' | 'complete';
 
-const PHASE_ORDER: TechResearchPhase[] = ['scoping', 'extraction', 'analysis', 'assembly'];
+const FULL_PHASE_ORDER: TechResearchPhase[] = ['scoping', 'discovery', 'fetching', 'extraction', 'analysis', 'assembly'];
+const MINIMAL_PHASE_ORDER: TechResearchPhase[] = ['scoping', 'extraction', 'analysis', 'assembly'];
 
 const PHASE_LABELS: Record<string, string> = {
     scoping:    'Scoping Query & Blueprint',
+    discovery:  'Discovering Sources',
+    fetching:   'Fetching Documentation',
     extraction: 'Extracting Technical Details',
     analysis:   'Deep Analysis',
     assembly:   'Assembling Markdown + Filename',
@@ -21,12 +25,25 @@ const SCOPING_MESSAGES = [
     'Identifying key terms...',
 ] as const;
 
+const DISCOVERY_MESSAGES = [
+    'Generating search queries...',
+    'Searching for documentation...',
+    'Finding official references...',
+    'Locating primary sources...',
+] as const;
+
+const FETCHING_MESSAGES = [
+    'Downloading documentation pages...',
+    'Extracting content from sources...',
+    'Parsing reference materials...',
+    'Building source context...',
+] as const;
+
 const EXTRACTION_MESSAGES = [
     'Extracting mechanics from knowledge base...',
     'Pulling implementation details...',
     'Sourcing edge case data...',
     'Gathering configuration specifics...',
-    // Note: In a future release this step will use live web search (see WEB_SEARCH_PLACEHOLDER in useAITechResearch.ts)
 ] as const;
 
 const ANALYSIS_MESSAGES = [
@@ -160,15 +177,72 @@ const LoadingCursor = styled('span')(({ theme }) => ({
     animation: 'blink 1s step-end infinite',
 }));
 
+const SourceCard = styled(Box)(({ theme }) => ({
+    border: `1px solid ${theme.palette.divider}`,
+    borderRadius: 6,
+    padding: '8px 10px',
+    marginTop: 6,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+}));
+
+const SourceRow = styled(Box)({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 0,
+});
+
+const StatusDot = styled(Box)<{ dotStatus: string }>(({ theme, dotStatus }) => ({
+    width: 7,
+    height: 7,
+    borderRadius: '50%',
+    flexShrink: 0,
+    ...(dotStatus === 'pending' && {
+        backgroundColor: theme.palette.grey[500],
+    }),
+    ...(dotStatus === 'fetching' && {
+        backgroundColor: theme.palette.info.main,
+        animation: `${pulse} 1.5s ease-in-out infinite`,
+    }),
+    ...(dotStatus === 'done' && {
+        backgroundColor: theme.palette.success.main,
+    }),
+    ...(dotStatus === 'failed' && {
+        backgroundColor: theme.palette.error.main,
+    }),
+}));
+
+const SourceTitle = styled(Typography)({
+    fontSize: '0.72rem',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    flex: 1,
+    minWidth: 0,
+});
+
+const SizeBadge = styled(Typography)(({ theme }) => ({
+    fontSize: '0.65rem',
+    color: theme.palette.text.disabled,
+    fontFamily: 'monospace',
+    flexShrink: 0,
+}));
+
 // --- Component ---
 
 interface TechResearchProgressProps {
     techResearchPhase: TechResearchPhase;
+    sourceFetchProgress?: SourceFetchProgress[];
+    isWebSearchEnabled?: boolean;
 }
 
 function getMessagePool(phase: TechResearchPhase): readonly string[] {
     switch (phase) {
         case 'scoping':    return SCOPING_MESSAGES;
+        case 'discovery':  return DISCOVERY_MESSAGES;
+        case 'fetching':   return FETCHING_MESSAGES;
         case 'extraction': return EXTRACTION_MESSAGES;
         case 'analysis':   return ANALYSIS_MESSAGES;
         case 'assembly':   return ASSEMBLY_MESSAGES;
@@ -176,14 +250,19 @@ function getMessagePool(phase: TechResearchPhase): readonly string[] {
     }
 }
 
-function getStepStatus(phase: TechResearchPhase, stepPhase: TechResearchPhase): StepStatus {
+function getStepStatus(phase: TechResearchPhase, stepPhase: TechResearchPhase, phaseOrder: TechResearchPhase[]): StepStatus {
     if (phase === 'complete') return 'complete';
-    const currentIndex = PHASE_ORDER.indexOf(phase);
-    const stepIndex = PHASE_ORDER.indexOf(stepPhase);
+    const currentIndex = phaseOrder.indexOf(phase);
+    const stepIndex = phaseOrder.indexOf(stepPhase);
     if (currentIndex < 0 || stepIndex < 0) return 'pending';
     if (stepIndex < currentIndex) return 'complete';
     if (stepIndex === currentIndex) return 'active';
     return 'pending';
+}
+
+function formatBytes(bytes: number): string {
+    if (bytes < 1024) return `${bytes}B`;
+    return `${(bytes / 1024).toFixed(1)}KB`;
 }
 
 function formatElapsed(ms: number): string {
@@ -193,10 +272,14 @@ function formatElapsed(ms: number): string {
 
 export const TechResearchProgress = React.memo(function TechResearchProgress({
     techResearchPhase,
+    sourceFetchProgress,
+    isWebSearchEnabled,
 }: TechResearchProgressProps) {
     const isWorking = techResearchPhase !== null && techResearchPhase !== 'complete';
     const messagePool = useMemo(() => getMessagePool(techResearchPhase), [techResearchPhase]);
     const { displayText } = useEditLoadingMessage(isWorking, messagePool);
+
+    const phaseOrder = isWebSearchEnabled ? FULL_PHASE_ORDER : MINIMAL_PHASE_ORDER;
 
     // Track phase timings
     const timingsRef = useRef<Record<string, PhaseTiming>>({});
@@ -240,13 +323,18 @@ export const TechResearchProgress = React.memo(function TechResearchProgress({
     const isComplete = techResearchPhase === 'complete';
     const completeStatus: StepStatus = isComplete ? 'complete' : 'pending';
 
+    // Show source card during/after fetching phase when we have progress data
+    const showSourceCard = sourceFetchProgress && sourceFetchProgress.length > 0
+        && (techResearchPhase === 'fetching' || getStepStatus(techResearchPhase, 'fetching', phaseOrder) === 'complete');
+
     return (
         <ProgressContainer>
-            {PHASE_ORDER.map((stepPhase) => {
-                const status = getStepStatus(techResearchPhase, stepPhase);
+            {phaseOrder.map((stepPhase) => {
+                const status = getStepStatus(techResearchPhase, stepPhase, phaseOrder);
                 const label = PHASE_LABELS[stepPhase!] || stepPhase;
                 const elapsed = status === 'complete' ? getPhaseElapsed(stepPhase!) : null;
                 const isActive = status === 'active';
+                const isFetchingStep = stepPhase === 'fetching';
 
                 return (
                     <React.Fragment key={stepPhase}>
@@ -273,6 +361,28 @@ export const TechResearchProgress = React.memo(function TechResearchProgress({
                                         {displayText}
                                         <LoadingCursor />
                                     </TypewriterText>
+                                )}
+                                {isFetchingStep && showSourceCard && (
+                                    <SourceCard>
+                                        {sourceFetchProgress!.map((src) => (
+                                            <SourceRow key={src.url}>
+                                                <StatusDot dotStatus={src.status} />
+                                                <SourceTitle
+                                                    sx={{
+                                                        color: src.status === 'failed' ? 'error.main' : 'text.secondary',
+                                                    }}
+                                                >
+                                                    {src.title || src.url}
+                                                </SourceTitle>
+                                                {src.status === 'done' && src.byteSize != null && (
+                                                    <SizeBadge>{formatBytes(src.byteSize)}</SizeBadge>
+                                                )}
+                                                {src.status === 'failed' && (
+                                                    <SizeBadge sx={{ color: 'error.main' }}>failed</SizeBadge>
+                                                )}
+                                            </SourceRow>
+                                        ))}
+                                    </SourceCard>
                                 )}
                             </StepContent>
                         </StepRow>

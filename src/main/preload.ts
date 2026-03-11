@@ -128,6 +128,13 @@ const electronAPI = {
   listGeminiModels: () => ipcRenderer.invoke('ai:list-gemini-models'),
   getAIProviderStatuses: () => ipcRenderer.invoke('ai:get-provider-status'),
 
+  // Web Search operations
+  webSearch: (query: string, numResults?: number, requestId?: string) =>
+    ipcRenderer.invoke('web:search', { query, numResults, requestId }),
+  webFetchPage: (url: string, requestId?: string) =>
+    ipcRenderer.invoke('web:fetch-page', { url, requestId }),
+  hasSerperKey: () => ipcRenderer.invoke('web:has-serper-key'),
+
   // Secure Storage operations (API Keys)
   setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper', key: string) =>
     ipcRenderer.invoke('secure-storage:set-api-key', { provider, key }),

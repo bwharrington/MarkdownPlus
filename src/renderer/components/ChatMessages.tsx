@@ -12,7 +12,7 @@ import { TechResearchProgress } from './TechResearchProgress';
 import type { TechResearchPhase } from '../hooks/useAITechResearch';
 import { PlanProgress } from './PlanProgress';
 import type { PlanPhase } from '../hooks/useAIPlan';
-import type { AIChatMode } from '../types/global';
+import type { AIChatMode, SourceFetchProgress } from '../types/global';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
     flex: 1,
@@ -179,6 +179,8 @@ interface ChatMessagesProps {
     planFileName: string | null;
     planQuery: string | null;
     mode: AIChatMode;
+    sourceFetchProgress?: SourceFetchProgress[];
+    isWebSearchEnabled?: boolean;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
@@ -222,6 +224,8 @@ export function ChatMessages({
     planFileName,
     planQuery,
     mode,
+    sourceFetchProgress,
+    isWebSearchEnabled,
     hasDiffTab,
     loadingDisplayText,
     error,
@@ -311,7 +315,11 @@ export function ChatMessages({
                             <Typography variant="body2">{techResearchQuery}</Typography>
                         </MessageBubble>
                     )}
-                    <TechResearchProgress techResearchPhase={techResearchPhase} />
+                    <TechResearchProgress
+                        techResearchPhase={techResearchPhase}
+                        sourceFetchProgress={sourceFetchProgress}
+                        isWebSearchEnabled={isWebSearchEnabled}
+                    />
                 </>
             )}
             {techResearchComplete && techResearchFileName && (
