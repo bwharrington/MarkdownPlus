@@ -1,39 +1,81 @@
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as path from 'path';
 import { app } from 'electron';
 
-let logFilePath: string;
+let logsDir: string;
+let currentLogDate: string = '';
+let currentLogFilePath: string = '';
 let logBuffer: string[] = [];
 let isWriting = false;
 
-// Initialize logger
-export function initLogger() {
-    const appPath = app.isPackaged 
-        ? path.dirname(app.getPath('exe'))
-        : app.getAppPath();
-    
-    logFilePath = path.join(appPath, 'markdown-nexus-debug.log');
-
-    // Clear old log file on startup
-    try {
-        fs.writeFile(logFilePath, `=== Markdown Nexus Debug Log ===\n`, 'utf-8').catch(() => {});
-    } catch {
-        // Ignore errors
-    }
-    
-    log('Logger initialized', { appPath, logFilePath, isPackaged: app.isPackaged });
+// Get the YYYY-MM-DD string for today in local time
+function getTodayDateString(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }
 
-// Write buffered logs to file
+// Compute path for a given date string
+function buildLogFilePath(dateStr: string): string {
+    return path.join(logsDir, `markdown-nexus-${dateStr}.log`);
+}
+
+// Ensure the log directory exists and return today's log file path.
+// If the date has rolled over since the last write, updates currentLogDate/currentLogFilePath.
+function getOrRotateLogFilePath(): string {
+    const today = getTodayDateString();
+    if (today !== currentLogDate) {
+        currentLogDate = today;
+        currentLogFilePath = buildLogFilePath(today);
+    }
+    return currentLogFilePath;
+}
+
+// Initialize logger — creates the logs directory and appends a session-start header
+export function initLogger() {
+    const appPath = app.isPackaged
+        ? path.dirname(app.getPath('exe'))
+        : app.getAppPath();
+
+    logsDir = path.join(appPath, 'logs');
+
+    // Ensure the logs directory exists synchronously so the first log write succeeds
+    try {
+        fsSync.mkdirSync(logsDir, { recursive: true });
+    } catch {
+        // Ignore — directory may already exist
+    }
+
+    // Prime the current date / file path
+    getOrRotateLogFilePath();
+
+    // Append a session-start header (do NOT overwrite previous entries for the day)
+    const header = `\n=== Markdown Nexus Session Start ===\n`;
+    try {
+        fsSync.appendFileSync(currentLogFilePath, header, 'utf-8');
+    } catch {
+        // Ignore write errors during init
+    }
+
+    log('Logger initialized', { appPath, logsDir, logFilePath: currentLogFilePath, isPackaged: app.isPackaged });
+}
+
+// Write buffered logs to file (handles date rollover between flushes)
 async function flushLogs() {
     if (isWriting || logBuffer.length === 0) return;
-    
+
     isWriting = true;
     const toWrite = [...logBuffer];
     logBuffer = [];
-    
+
+    // Re-evaluate the path in case the date has changed since the entries were queued
+    const targetPath = getOrRotateLogFilePath();
+
     try {
-        await fs.appendFile(logFilePath, toWrite.join(''), 'utf-8');
+        await fs.appendFile(targetPath, toWrite.join(''), 'utf-8');
     } catch (error) {
         console.error('Failed to write logs:', error);
     } finally {
@@ -44,16 +86,16 @@ async function flushLogs() {
 // Log a message with optional data
 export function log(message: string, data?: any) {
     const timestamp = new Date().toISOString();
-    const logLine = data 
+    const logLine = data
         ? `[${timestamp}] ${message}\n${JSON.stringify(data, null, 2)}\n\n`
         : `[${timestamp}] ${message}\n\n`;
-    
+
     // Console output
     console.log(`[LOG] ${message}`, data || '');
-    
+
     // Buffer for file write
     logBuffer.push(logLine);
-    
+
     // Flush after a short delay
     setTimeout(flushLogs, 100);
 }
@@ -64,12 +106,12 @@ export function logError(message: string, error: any) {
     const errorInfo = {
         message: error?.message || String(error),
         stack: error?.stack,
-        ...error
+        ...error,
     };
     const logLine = `[${timestamp}] ERROR: ${message}\n${JSON.stringify(errorInfo, null, 2)}\n\n`;
-    
+
     console.error(`[ERROR] ${message}`, error);
-    
+
     logBuffer.push(logLine);
     setTimeout(flushLogs, 100);
 }
@@ -79,7 +121,12 @@ export async function flushLogsSync() {
     await flushLogs();
 }
 
-// Get log file path
+// Get current log file path (today's log file)
 export function getLogFilePath(): string {
-    return logFilePath;
+    return currentLogFilePath;
+}
+
+// Get the logs directory path (used for watcher exclusion)
+export function getLogsDir(): string {
+    return logsDir;
 }

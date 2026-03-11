@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { CssBaseline, Box, styled } from '@mui/material';
+import React, { useEffect, useState, useCallback, useRef, Component } from 'react';
+import { CssBaseline, Box, Button, styled, Typography } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider, AIProviderCacheProvider } from './contexts';
 import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog } from './components';
 import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType } from './hooks';
@@ -34,6 +34,80 @@ console.info = (...args: unknown[]) => {
     originalConsole.info(...args);
     window.electronAPI.sendConsoleLog('info', ...args);
 };
+
+// Global renderer error handlers — forward uncaught errors to the main process log
+window.onerror = (message, source, lineno, colno, error) => {
+    console.error('[App] Uncaught error', { message, source, lineno, colno, stack: error?.stack });
+    return false;
+};
+
+window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+    const reason = event.reason;
+    const message = reason instanceof Error ? reason.message : String(reason);
+    const stack = reason instanceof Error ? reason.stack : undefined;
+    console.error('[App] Unhandled promise rejection', { message, stack });
+};
+
+// ErrorBoundary styled components
+const ErrorContainer = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '100vh',
+    gap: theme.spacing(2),
+    padding: theme.spacing(4),
+    backgroundColor: theme.palette.background.default,
+    color: theme.palette.text.primary,
+}));
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+class AppErrorBoundary extends Component<{ children: React.ReactNode }, ErrorBoundaryState> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error('[App] React render error caught by ErrorBoundary', {
+            message: error.message,
+            stack: error.stack,
+            componentStack: info.componentStack,
+        });
+    }
+
+    handleReload = () => {
+        this.setState({ hasError: false, error: null });
+        window.location.reload();
+    };
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <ErrorContainer>
+                    <Typography variant="h5" fontWeight="bold">
+                        Something went wrong
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 480, textAlign: 'center' }}>
+                        {this.state.error?.message || 'An unexpected error occurred.'}
+                    </Typography>
+                    <Button variant="contained" onClick={this.handleReload}>
+                        Reload App
+                    </Button>
+                </ErrorContainer>
+            );
+        }
+        return this.props.children;
+    }
+}
 
 const AppContainer = styled(Box)({
     display: 'flex',
@@ -267,6 +341,13 @@ function AppContent() {
                 return;
             }
 
+            // Ctrl+G - Go to Line (edit mode only)
+            if (e.ctrlKey && e.key === 'g') {
+                e.preventDefault();
+                window.dispatchEvent(new CustomEvent('open-find-dialog', { detail: { tab: 'goto' } }));
+                return;
+            }
+
             // Ctrl+Shift+A - Open AI Chat Dialog
             if (e.ctrlKey && e.shiftKey && e.key === 'A') {
                 e.preventDefault();
@@ -368,7 +449,11 @@ function AppContent() {
     }, [saveFile, saveFileAs, saveAllFiles, closeFile, closeAllFiles, showInFolder]);
 
     // Handle external file changes (silent reload or prompt based on config)
-    useExternalFileWatcher({ openFiles: state.openFiles, dispatch });
+    useExternalFileWatcher({
+        openFiles: state.openFiles,
+        dispatch,
+        silentFileUpdates: state.config.silentFileUpdates !== false,
+    });
 
     // Sync AI dock width from config once loaded.
     useEffect(() => {
@@ -596,14 +681,16 @@ function AppContent() {
 
 const App: React.FC = () => {
     return (
-        <ThemeProvider>
-            <CssBaseline />
-            <EditorProvider>
-                <AIProviderCacheProvider>
-                    <AppContent />
-                </AIProviderCacheProvider>
-            </EditorProvider>
-        </ThemeProvider>
+        <AppErrorBoundary>
+            <ThemeProvider>
+                <CssBaseline />
+                <EditorProvider>
+                    <AIProviderCacheProvider>
+                        <AppContent />
+                    </AIProviderCacheProvider>
+                </EditorProvider>
+            </ThemeProvider>
+        </AppErrorBoundary>
     );
 };
 

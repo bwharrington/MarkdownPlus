@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader, Divider } from '@mui/material';
-import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon } from './AppIcons';
+import { AttachFileIcon, SendIcon, EditIcon, ResearchIcon, PlanIcon } from './AppIcons';
 import { AttachFilePopover } from './AttachFilePopover';
 import type { AttachedFile } from './FileAttachmentsList';
 import type { AIChatMode } from '../types/global';
@@ -56,6 +56,7 @@ interface MessageInputProps {
     isEditLoading: boolean;
     isResearchLoading: boolean;
     isTechResearchLoading: boolean;
+    isPlanLoading: boolean;
     hasDiffTab: boolean;
     hasActiveRequest: boolean;
     openFiles: IFile[];
@@ -84,6 +85,7 @@ export function MessageInput({
     isEditLoading,
     isResearchLoading,
     isTechResearchLoading,
+    isPlanLoading,
     hasDiffTab,
     hasActiveRequest,
     openFiles,
@@ -176,7 +178,9 @@ export function MessageInput({
                             ? "Enter a research topic... (e.g., 'Vector search in production')"
                             : mode === 'techresearch'
                                 ? "Enter any Software Engineering topic for a deep-dive (e.g. How to use React, Configuring a Hasura API, C Memory Management)"
-                                : "Type a message... (Enter to send, Shift+Enter for newline)"
+                                : mode === 'plan'
+                                    ? "Describe what you want to plan... (e.g., 'Migrate our REST API to GraphQL', 'Build a mobile MVP')"
+                                    : "Type a message... (Enter to send, Shift+Enter for newline)"
                 }
                 value={inputValue}
                 onChange={(e) => onInputChange(e.target.value)}
@@ -202,6 +206,7 @@ export function MessageInput({
                             <MenuItem value="edit" sx={{ fontSize: '0.75rem' }}>Edit</MenuItem>
                             <MenuItem value="research" sx={{ fontSize: '0.75rem' }}>Research</MenuItem>
                             <MenuItem value="techresearch" sx={{ fontSize: '0.75rem' }}>Tech Research</MenuItem>
+                            <MenuItem value="plan" sx={{ fontSize: '0.75rem' }}>Plan</MenuItem>
                         </Select>
                     </FormControl>
 
@@ -263,10 +268,10 @@ export function MessageInput({
                         size="small"
                         onClick={onSend}
                         disabled={!inputValue.trim() || hasActiveRequest || hasDiffTab}
-                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : mode === 'techresearch' ? 'secondary' : 'primary'}
+                        color={mode === 'edit' ? 'success' : mode === 'research' ? 'info' : mode === 'techresearch' ? 'secondary' : mode === 'plan' ? 'warning' : 'primary'}
                         sx={{ minWidth: 44, px: 1.5, flexShrink: 0 }}
                     >
-                        {(isEditLoading || isResearchLoading || isTechResearchLoading) ? (
+                        {(isEditLoading || isResearchLoading || isTechResearchLoading || isPlanLoading) ? (
                             <CircularProgress size={18} color="inherit" />
                         ) : mode === 'edit' ? (
                             <EditIcon fontSize="small" />
@@ -274,6 +279,8 @@ export function MessageInput({
                             <ResearchIcon fontSize="small" />
                         ) : mode === 'techresearch' ? (
                             <ResearchIcon fontSize="small" />
+                        ) : mode === 'plan' ? (
+                            <PlanIcon fontSize="small" />
                         ) : (
                             <SendIcon fontSize="small" />
                         )}

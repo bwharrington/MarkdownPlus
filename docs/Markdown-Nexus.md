@@ -31,6 +31,7 @@ Markdown Nexus is a modern, feature-rich Markdown editor built with Electron, Re
    - [AI Research Mode](#ai-research-mode)
    - [Go Deeper Mode](#go-deeper-mode)
    - [Tech Research Mode](#tech-research-mode)
+   - [Plan Mode](#plan-mode)
    - [AI Provider Configuration](#ai-provider-configuration)
 5. [Keyboard Shortcuts](#keyboard-shortcuts)
 6. [Supported File Formats](#supported-file-formats)
@@ -89,6 +90,7 @@ Markdown Nexus provides two viewing modes for each document:
 #### Edit Mode
 
 - Raw Markdown text editing with a monospace font
+- **Line numbers** - A fixed-width gutter along the left edge shows logical line numbers (newline-delimited). The gutter scrolls in sync with the editor and is only visible in Edit mode.
 - Syntax-aware editing (list continuation, code block handling)
 - Full formatting toolbar access
 - Real-time content updates
@@ -142,9 +144,9 @@ Access file operations through the toolbar or keyboard shortcuts:
 - **Show in Folder** - Reveal file in system file explorer
 - **Rename** - Rename file from tab context menu
 
-### Find and Replace
+### Find, Replace, and Go to Line
 
-Powerful search functionality accessible in both Edit and Preview modes:
+A tabbed search panel accessible in both Edit and Preview modes. Open it with `Ctrl+F`, `Ctrl+H`, or `Ctrl+G`, or click the search icon in the toolbar.
 
 #### Find Tab (`Ctrl+F`)
 
@@ -152,6 +154,7 @@ Powerful search functionality accessible in both Edit and Preview modes:
 - **Count** - Display total number of matches
 - **Highlighting** - All matches highlighted in the document
 - **Current match indicator** - Active match shown in distinct color
+- Press `Enter` to jump to the next match; `Escape` to close the panel
 
 #### Replace Tab (`Ctrl+H`)
 
@@ -160,6 +163,14 @@ Powerful search functionality accessible in both Edit and Preview modes:
 - **Match counter** - Shows "X of Y matches" during navigation
 
 > **Note:** Replace operations are only available in Edit mode. In Preview mode, the Replace buttons are disabled with a helpful tooltip.
+
+#### Go to Line Tab (`Ctrl+G`) — Edit mode only
+
+- Jump directly to any line number in the document
+- Opens with the line-number input already focused — just type a number and press **Enter** or click **Go**
+- The editor scrolls up or down to center the target line and places the cursor at the start of that line
+- The **Go to Line** tab is only shown when the file is in Edit mode; it is hidden in Preview mode
+- Press `Escape` to close the panel without navigating
 
 ### Markdown Formatting Toolbar
 
@@ -417,13 +428,12 @@ Settings are preserved across application updates and reinstalls. While direct e
 
 ### Logging
 
-Markdown Nexus maintains a debug log file for troubleshooting:
+Markdown Nexus maintains daily rotating debug log files for troubleshooting:
 
-- **Location:** `markdownplus-debug.log` (next to executable)
-- **View Log:** Click the document icon in the toolbar
-- **Content:** Timestamped entries for app events, IPC calls, and errors
-
-The log file is cleared on each application start to prevent excessive growth.
+- **Location:** `{userData}/logs/markdown-nexus-YYYY-MM-DD.log`
+- **View Log:** Click the document icon in the toolbar to open the current day's log
+- **Content:** Timestamped entries for app events, IPC calls, errors, and crashes
+- **Rotation:** A new log file is created each calendar day. Logs from previous sessions on the same day are appended (not overwritten). Each session starts with a `=== Session Start ===` header.
 
 #### Console Logging
 
@@ -433,6 +443,14 @@ All console output from the renderer process is captured and written to the log 
 - `[RENDERER WARN]`
 - `[RENDERER ERROR]`
 - `[RENDERER INFO]`
+
+#### Crash Logging
+
+Unhandled errors in both the main and renderer processes are caught and logged before the application exits:
+
+- **Main process:** `uncaughtException` and `unhandledRejection` handlers log errors and flush the log buffer to disk
+- **Renderer process:** `window.onerror` and `window.onunhandledrejection` forward uncaught errors to the main process log
+- **Renderer crash:** The `render-process-gone` event logs the reason and exit code
 
 ---
 
@@ -682,18 +700,60 @@ The AI Inline Edit Window provides a streamlined interface for making AI-powered
 
 > **Note:** Edit Mode is available with Claude, OpenAI, and Google Gemini providers. xAI displays an "Edit N/A" badge as it does not support the structured output required for inline edits.
 
+### Plan Mode
+
+Plan Mode generates a comprehensive, structured project plan for any task or initiative and opens the result as a new document tab.
+
+#### Activating Plan Mode
+
+1. Open the Nexus dialog (`Ctrl+Shift+A`)
+2. Select **Plan** from the Mode dropdown
+3. Describe what you want to plan (e.g., "Build a REST API with Node.js", "Migrate our database to PostgreSQL") and press **Enter**
+
+#### How It Works
+
+Plan Mode uses a four-phase AI pipeline:
+
+1. **Analyzing Request** — A quick call analyzes the request and produces a JSON blueprint: a goal summary, inferred constraints, major work streams, and suggested web search queries
+2. **Searching the Web** — If a Serper API key is configured in Settings, up to four web searches are run to gather real-world context (current best practices, tools, pricing, documentation). If no key is configured, this phase completes instantly
+3. **Generating Plan** — The blueprint and any web research are used to produce a detailed, structured plan document covering objective, scope, architecture, work breakdown (with task lists per work stream), dependencies, risk assessment, resources, and next steps
+4. **Naming Document** — A descriptive Title Case filename is generated for the new tab (e.g., `GraphQL Migration Plan.md`)
+
+Throughout the pipeline, the **Plan Progress Stepper** visualizes all four phases in the messages area with live typewriter-animated status messages, elapsed time badges, and a final "Plan Complete" indicator.
+
+#### Plan Output Structure
+
+Generated plans follow a standardized Markdown format:
+
+- **Objective** — What will be accomplished and why it matters
+- **Scope & Constraints** — Boundaries, limitations, and non-goals
+- **Architecture / Approach** — High-level strategy and key technical decisions
+- **Work Breakdown** — Per-work-stream task lists with effort estimates
+- **Dependencies & Critical Path** — Tasks that block other work and optimal sequencing
+- **Risk Assessment** — Table of risks with likelihood, impact, and mitigation strategies
+- **Resources & References** — Recommended tools, documentation links, and web research results
+- **Next Steps** — The 3–5 immediate actions to start execution
+
+#### Web Research Enhancement (Optional)
+
+If a Serper API key is configured under **AI API Keys** in Settings, Plan Mode automatically searches the web for current, practical context before generating the plan. This produces more accurate technology recommendations, up-to-date pricing estimates, and real-world implementation guidance. Without a Serper key, plans are generated purely from the AI's training data.
+
+> **Note:** Plan Mode is available with all four providers: Claude, OpenAI, Google Gemini, and xAI.
+
+---
+
 ### AI Provider Configuration
 
 Configure your AI providers by setting up API keys through the Settings dialog.
 
 #### Supported Providers
 
-| Provider                     | Models                                                      | Chat | Edit | Research | Go Deeper |
-| ---------------------------- | ----------------------------------------------------------- | ---- | ---- | -------- | --------- |
-| **Claude** (Anthropic) | Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5, etc. | Yes  | Yes  | Yes      | Yes       |
-| **OpenAI**             | GPT-5, GPT-5 Mini, GPT-4o Latest, o3, o4 Mini, etc.        | Yes  | Yes  | Yes      | Yes       |
-| **Google Gemini**      | Gemini 3 Pro Preview, Gemini 3 Flash Preview, etc.          | Yes  | Yes  | Yes      | Yes       |
-| **xAI (Grok)**         | Grok 4, Grok 4.1, Grok 4.1 Reasoning, etc.                 | Yes  | No   | Yes      | Yes       |
+| Provider                     | Models                                                      | Chat | Edit | Research | Go Deeper | Plan |
+| ---------------------------- | ----------------------------------------------------------- | ---- | ---- | -------- | --------- | ---- |
+| **Claude** (Anthropic) | Claude Opus 4.6, Claude Sonnet 4.6, Claude Haiku 4.5, etc. | Yes  | Yes  | Yes      | Yes       | Yes  |
+| **OpenAI**             | GPT-5, GPT-5 Mini, GPT-4o Latest, o3, o4 Mini, etc.        | Yes  | Yes  | Yes      | Yes       | Yes  |
+| **Google Gemini**      | Gemini 3 Pro Preview, Gemini 3 Flash Preview, etc.          | Yes  | Yes  | Yes      | Yes       | Yes  |
+| **xAI (Grok)**         | Grok 4, Grok 4.1, Grok 4.1 Reasoning, etc.                 | Yes  | No   | Yes      | Yes       | Yes  |
 
 #### Setting Up API Keys
 
@@ -763,14 +823,15 @@ The Nexus dialog and Settings show the status of each provider:
 
 ### Navigation
 
-| Shortcut   | Action                       |
-| ---------- | ---------------------------- |
-| `Ctrl+E` | Toggle Edit/Preview mode     |
-| `Ctrl+F` | Open Find dialog             |
-| `Ctrl+H` | Open Find and Replace dialog |
-| `Ctrl+,` | Open Settings dialog         |
-| `Enter`  | In Find dialog: Find Next    |
-| `Escape` | Close Find dialog            |
+| Shortcut   | Action                                        |
+| ---------- | --------------------------------------------- |
+| `Ctrl+E` | Toggle Edit/Preview mode                      |
+| `Ctrl+F` | Open Find panel (Find tab)                    |
+| `Ctrl+H` | Open Find panel (Replace tab)                 |
+| `Ctrl+G` | Open Find panel (Go to Line tab) — Edit only  |
+| `Ctrl+,` | Open Settings dialog                          |
+| `Enter`  | In Find tab: Find Next; in Go to Line: Go     |
+| `Escape` | Close Find/Replace/Go to Line panel           |
 
 ### List Editing (Smart Continuation)
 
@@ -1033,14 +1094,17 @@ When a file is modified outside of Markdown Nexus, the application detects the c
 
 #### Silent File Updates ON (default)
 
-- All externally modified files are automatically reloaded in place with no user interaction
+- Externally modified files are automatically reloaded in place with no user interaction
+- A brief info toast confirms the update: *`"filename" was updated from disk.`*
+- No save indicator (dirty icon) is shown after a silent reload
+- **Exception:** If you have unsaved local edits in the file when the external change arrives, the silent reload is skipped and a warning toast is shown instead — your edits are preserved until you save or discard them
 - The `config.json` file is always auto-reloaded silently
 
 #### Silent File Updates OFF
 
 - A prompt dialog appears asking: *"Would you like to refresh it with the latest changes?"*
-  - **Yes** - Refresh the file with the latest changes from disk
-  - **No** - Keep your current content; saving will overwrite the external changes on disk
+  - **Yes** - Reload the file from disk; no save indicator is shown
+  - **No** - Keep your current content; the file is marked as modified (save indicator shown). Be aware that saving at this point will overwrite the external changes on disk
 - The `config.json` file is always auto-reloaded regardless of this setting
 
 ### Line Ending Support

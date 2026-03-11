@@ -129,13 +129,17 @@ const electronAPI = {
   getAIProviderStatuses: () => ipcRenderer.invoke('ai:get-provider-status'),
 
   // Secure Storage operations (API Keys)
-  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini', key: string) =>
+  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper', key: string) =>
     ipcRenderer.invoke('secure-storage:set-api-key', { provider, key }),
-  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini') =>
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') =>
     ipcRenderer.invoke('secure-storage:has-api-key', provider),
-  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini') =>
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') =>
     ipcRenderer.invoke('secure-storage:delete-api-key', provider),
   getApiKeyStatus: () => ipcRenderer.invoke('secure-storage:get-key-status'),
+
+  // Serper web search
+  serperSearch: (query: string, numResults?: number) =>
+    ipcRenderer.invoke('ai:serper-search', query, numResults),
 };
 
 // Expose the API to the renderer process

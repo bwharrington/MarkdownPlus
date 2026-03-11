@@ -58,6 +58,7 @@ import {
     Telescope,
     Copy,
     ClipboardCopy,
+    ClipboardList,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -188,3 +189,4 @@ export const PlusIcon = createIcon(Plus);
 export const MinusIcon = createIcon(Minus);
 export const CopyIcon = createIcon(Copy);
 export const ClipboardCopyIcon = createIcon(ClipboardCopy);
+export const PlanIcon = createIcon(ClipboardList);

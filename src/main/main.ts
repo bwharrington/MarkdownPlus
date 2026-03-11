@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as dotenv from 'dotenv';
-import { initLogger, log, logError, flushLogsSync, getLogFilePath } from './logger';
+import { initLogger, log, logError, flushLogsSync, getLogFilePath, getLogsDir } from './logger';
 import { registerAIIpcHandlers } from './aiIpcHandlers';
 import { registerSecureStorageIpcHandlers } from './secureStorageIpcHandlers';
 import { loadEncryptedKeys } from './services/secureStorage';
@@ -271,10 +271,11 @@ async function syncAIModelsConfig() {
 
 // Watch a file for external changes
 function watchFile(filePath: string) {
-    // Never watch the app's own log file — doing so creates an infinite feedback
-    // loop: writing a log entry triggers the watcher, which logs the detection,
-    // which writes another log entry, ad infinitum.
-    if (filePath === getLogFilePath()) {
+    // Never watch any file inside the logs directory — doing so creates an infinite
+    // feedback loop: writing a log entry triggers the watcher, which logs the event,
+    // which triggers another write, ad infinitum.
+    const logsDir = getLogsDir();
+    if (logsDir && filePath.startsWith(logsDir + path.sep)) {
         return;
     }
 
@@ -927,6 +928,26 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
     app.quit();
 }
+
+// Global error handlers — catch crashes that would otherwise produce a blank screen
+process.on('uncaughtException', async (error: Error) => {
+    logError('Main process uncaught exception', error);
+    await flushLogsSync();
+});
+
+process.on('unhandledRejection', async (reason: unknown) => {
+    logError('Main process unhandled promise rejection', reason instanceof Error ? reason : new Error(String(reason)));
+    await flushLogsSync();
+});
+
+app.on('render-process-gone', (_event, webContents, details) => {
+    logError('Renderer process gone', {
+        message: `Renderer process gone: ${details.reason}`,
+        exitCode: details.exitCode,
+        reason: details.reason,
+    });
+    flushLogsSync();
+});
 
 // Flush logs before quit
 app.on('before-quit', async () => {

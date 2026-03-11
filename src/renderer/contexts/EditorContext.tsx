@@ -666,7 +666,9 @@ export function EditorProvider({ children }: EditorProviderProps) {
         const currentPaths = new Set(
             state.openFiles
                 .map(f => f.path)
-                .filter((p): p is string => p !== null && !p.endsWith('markdownplus-debug.log'))
+                // Never watch log files — the main process also enforces this but we
+                // skip the IPC call entirely for any file inside the logs directory.
+                .filter((p): p is string => p !== null && !/[\\/]logs[\\/][^\\/]+\.log$/.test(p))
         );
         
         // Watch newly opened files

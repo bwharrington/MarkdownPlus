@@ -2,7 +2,7 @@
 
 export type LineEnding = 'CRLF' | 'LF';
 export type ViewMode = 'edit' | 'preview' | 'diff';
-export type AIChatMode = 'chat' | 'edit' | 'research' | 'techresearch';
+export type AIChatMode = 'chat' | 'edit' | 'research' | 'techresearch' | 'plan';
 
 export interface IFileReference {
   fileName: string;
@@ -108,6 +108,18 @@ export interface AIEditResponse {
   error?: string;
 }
 
+export interface SerperOrganicResult {
+  title: string;
+  link: string;
+  snippet: string;
+}
+
+export interface SerperSearchResponse {
+  success: boolean;
+  results?: SerperOrganicResult[];
+  error?: string;
+}
+
 export interface ImageSaveResult {
   success: boolean;
   relativePath?: string;
@@ -202,10 +214,13 @@ export interface ElectronAPI {
   getAIProviderStatuses: () => Promise<AIProviderStatuses>;
 
   // Secure Storage operations (API Keys)
-  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini', key: string) => Promise<{ success: boolean; error?: string }>;
-  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini') => Promise<boolean>;
-  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini') => Promise<{ success: boolean; error?: string }>;
-  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean; gemini: boolean }>;
+  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper', key: string) => Promise<{ success: boolean; error?: string }>;
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => Promise<boolean>;
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => Promise<{ success: boolean; error?: string }>;
+  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean; gemini: boolean; serper: boolean }>;
+
+  // Serper web search
+  serperSearch: (query: string, numResults?: number) => Promise<SerperSearchResponse>;
 }
 
 declare global {

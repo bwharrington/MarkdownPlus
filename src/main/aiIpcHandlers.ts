@@ -1,10 +1,12 @@
 import { ipcMain, app } from 'electron';
+import * as https from 'https';
 import { log, logError } from './logger';
 import { callXAiApi, listModels, hasApiKey as hasXaiApiKey, DEFAULT_XAI_MODELS, Message } from './services/xaiApi';
 import { callClaudeApi, callClaudeApiWithSystemPrompt, listClaudeModels, hasApiKey as hasClaudeApiKey, DEFAULT_CLAUDE_MODELS } from './services/claudeApi';
 import { callOpenAIApi, callOpenAIApiWithJsonMode, listOpenAIModels, hasApiKey as hasOpenAIApiKey, DEFAULT_OPENAI_MODELS } from './services/openaiApi';
 import { callGeminiApi, callGeminiApiWithJsonMode, listGeminiModels, hasApiKey as hasGeminiApiKey, DEFAULT_GEMINI_MODELS } from './services/geminiApi';
 import { getDisplayName, formatModelName } from '../shared/modelDisplay';
+import { getApiKey } from './services/secureStorage';
 
 export interface AIChatRequestData {
     messages: Message[];
@@ -54,6 +56,18 @@ export interface AIEditResponse {
     success: boolean;
     modifiedContent?: string;
     summary?: string;
+    error?: string;
+}
+
+export interface SerperOrganicResult {
+    title: string;
+    link: string;
+    snippet: string;
+}
+
+export interface SerperSearchResponse {
+    success: boolean;
+    results?: SerperOrganicResult[];
     error?: string;
 }
 
@@ -441,6 +455,54 @@ export function registerAIIpcHandlers() {
 
         log('AI IPC: provider status result', result);
         return result;
+    });
+
+    // Serper web search
+    ipcMain.handle('ai:serper-search', async (_event, query: string, numResults: number = 5): Promise<SerperSearchResponse> => {
+        log('AI IPC: serper-search', { query });
+        try {
+            const apiKey = getApiKey('serper');
+            if (!apiKey) {
+                return { success: false, error: 'No Serper API key configured' };
+            }
+
+            const body = JSON.stringify({ q: query, num: numResults });
+            const results = await new Promise<SerperOrganicResult[]>((resolve, reject) => {
+                const req = https.request(
+                    {
+                        hostname: 'google.serper.dev',
+                        path: '/search',
+                        method: 'POST',
+                        headers: {
+                            'X-API-KEY': apiKey,
+                            'Content-Type': 'application/json',
+                            'Content-Length': Buffer.byteLength(body),
+                        },
+                    },
+                    (res) => {
+                        let data = '';
+                        res.on('data', (chunk: Buffer) => { data += chunk.toString(); });
+                        res.on('end', () => {
+                            try {
+                                const parsed = JSON.parse(data) as { organic?: SerperOrganicResult[] };
+                                resolve(parsed.organic ?? []);
+                            } catch (e) {
+                                reject(new Error(`Failed to parse Serper response: ${String(e)}`));
+                            }
+                        });
+                    }
+                );
+                req.on('error', reject);
+                req.write(body);
+                req.end();
+            });
+
+            log('AI IPC: serper-search complete', { query, resultCount: results.length });
+            return { success: true, results };
+        } catch (error) {
+            logError('AI IPC: serper-search failed', error as Error);
+            return { success: false, error: (error as Error).message };
+        }
     });
 
     log('AI IPC handlers registered');

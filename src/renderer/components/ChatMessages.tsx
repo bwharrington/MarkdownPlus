@@ -10,6 +10,9 @@ import { GoDeepProgress } from './GoDeepProgress';
 import { GoDeepButton } from './GoDeepButton';
 import { TechResearchProgress } from './TechResearchProgress';
 import type { TechResearchPhase } from '../hooks/useAITechResearch';
+import { PlanProgress } from './PlanProgress';
+import type { PlanPhase } from '../hooks/useAIPlan';
+import type { AIChatMode } from '../types/global';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
     flex: 1,
@@ -169,6 +172,13 @@ interface ChatMessagesProps {
     techResearchError: string | null;
     techResearchFileName: string | null;
     techResearchQuery: string | null;
+    isPlanLoading: boolean;
+    planPhase: PlanPhase;
+    planComplete: boolean;
+    planError: string | null;
+    planFileName: string | null;
+    planQuery: string | null;
+    mode: AIChatMode;
     hasDiffTab: boolean;
     loadingDisplayText: string;
     error: string | null;
@@ -205,6 +215,13 @@ export function ChatMessages({
     techResearchError,
     techResearchFileName,
     techResearchQuery,
+    isPlanLoading,
+    planPhase,
+    planComplete,
+    planError,
+    planFileName,
+    planQuery,
+    mode,
     hasDiffTab,
     loadingDisplayText,
     error,
@@ -216,15 +233,26 @@ export function ChatMessages({
         DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
     );
 
-    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !isGoDeepLoading && !goDeepComplete && !researchComplete && !isTechResearchLoading && !techResearchComplete && !hasDiffTab;
+    const showGreeting = messages.length === 0 && !isLoading && !isEditLoading && !isResearchLoading && !isGoDeepLoading && !goDeepComplete && !researchComplete && !isTechResearchLoading && !techResearchComplete && !isPlanLoading && !planComplete && !hasDiffTab;
 
     return (
         <MessagesContainer>
             {showGreeting ? (
                 <GreetingContainer>
-                    <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
-                        {greeting}
-                    </Typography>
+                    {mode === 'plan' ? (
+                        <Box sx={{ textAlign: 'center' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                                Plan Mode
+                            </Typography>
+                            <Typography color="text.secondary" variant="body2">
+                                Describe a project, feature, or task you want to plan. The AI will analyze your request, optionally search the web for relevant context, and generate a structured plan document with objectives, work breakdown, risk assessment, and next steps.
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <Typography color="text.secondary" variant="body2" sx={{ fontStyle: 'italic' }}>
+                            {greeting}
+                        </Typography>
+                    )}
                 </GreetingContainer>
             ) : (
                 messages.map((msg, idx) => (
@@ -292,6 +320,28 @@ export function ChatMessages({
                         Tech Research complete — {techResearchFileName}
                     </Typography>
                 </DiffTabBanner>
+            )}
+            {(isPlanLoading || planComplete) && planPhase && (
+                <>
+                    {planQuery && (
+                        <MessageBubble role="user">
+                            <Typography variant="body2">{planQuery}</Typography>
+                        </MessageBubble>
+                    )}
+                    <PlanProgress planPhase={planPhase} />
+                </>
+            )}
+            {planComplete && planFileName && (
+                <DiffTabBanner>
+                    <Typography variant="body2">
+                        Plan complete — {planFileName}
+                    </Typography>
+                </DiffTabBanner>
+            )}
+            {planError && (
+                <Typography color="error" variant="body2" sx={{ textAlign: 'center' }}>
+                    {planError}
+                </Typography>
             )}
             {(researchComplete || goDeepComplete) && !isResearchLoading && !isGoDeepLoading && (
                 <GoDeepButton

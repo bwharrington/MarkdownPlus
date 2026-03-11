@@ -1,11 +1,11 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { useActiveFile, useEditorDispatch } from '../contexts';
 import { useContentEditable } from '../hooks/useContentEditable';
 import { useEditorKeyboard } from '../hooks/useEditorKeyboard';
 import { useImagePaste } from '../hooks/useImagePaste';
 import { useFindReplace } from '../hooks/useFindReplace';
 import { getPlainText, getCursorPosition, setPlainText, clearWordHighlights } from '../utils/domUtils';
-import { EditorContainer, EditorWrapper, ContentEditableDiv } from '../styles/editor.styles';
+import { EditorContainer, EditorWrapper, ContentEditableDiv, LineNumberedArea, LineGutter } from '../styles/editor.styles';
 import { MarkdownToolbar } from './MarkdownToolbar';
 import { RstToolbar } from './RstToolbar';
 import { FindReplaceDialog } from './FindReplaceDialog';
@@ -16,6 +16,7 @@ export function EditView() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
     const scrollThrottleRef = useRef<NodeJS.Timeout | null>(null);
+    const lineGutterRef = useRef<HTMLDivElement>(null);
 
     // Check if this file has an open diff tab (make it read-only if so)
     const hasDiffForThisFile = useHasDiffTab(activeFile?.id);
@@ -52,13 +53,16 @@ export function EditView() {
         matchCount,
         replaceQuery,
         activeDialogTab,
+        gotoLineValue,
         setActiveDialogTab,
         setReplaceQuery,
+        setGotoLineValue,
         handleSearchQueryChange,
         handleFindNext,
         handleCount,
         handleReplace,
         handleReplaceAll,
+        handleGoToLine,
         handleOpenFind,
         handleCloseFind,
     } = useFindReplace(contentEditableRef, previewRef);
@@ -80,6 +84,9 @@ export function EditView() {
     const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
         const target = e.target as HTMLDivElement;
         handleScrollThrottled(target.scrollTop);
+        if (lineGutterRef.current) {
+            lineGutterRef.current.scrollTop = target.scrollTop;
+        }
     }, [handleScrollThrottled]);
 
     // Sync activeFile content to contenteditable when it changes programmatically
@@ -119,6 +126,13 @@ export function EditView() {
             });
         }
     }, [activeFile?.id, activeFile?.viewMode, activeFile, contentEditableRef]);
+
+    const lineNumbers = useMemo(() => {
+        const count = activeFile ? (activeFile.content.split('\n').length || 1) : 1;
+        return Array.from({ length: count }, (_, i) => (
+            <div key={i + 1}>{i + 1}</div>
+        ));
+    }, [activeFile?.content]);
 
     if (!activeFile) return null;
 
@@ -174,22 +188,27 @@ export function EditView() {
                 onExportPdf={handleExportPdf}
             />
             <EditorWrapper>
-                <ContentEditableDiv
-                    ref={contentEditableRef}
-                    contentEditable={!hasDiffForThisFile}
-                    suppressContentEditableWarning
-                    data-placeholder={placeholder}
-                    onInput={hasDiffForThisFile ? undefined : handleContentChange}
-                    onKeyDown={hasDiffForThisFile ? undefined : handleKeyDown}
-                    onClick={hasDiffForThisFile ? undefined : handleClick}
-                    onDoubleClick={hasDiffForThisFile ? undefined : handleDoubleClick}
-                    onPaste={hasDiffForThisFile ? undefined : handlePaste}
-                    onDragOver={hasDiffForThisFile ? undefined : handleDragOver}
-                    onDrop={hasDiffForThisFile ? undefined : handleDrop}
-                    spellCheck={false}
-                    onScroll={handleScroll}
-                    style={hasDiffForThisFile ? { cursor: 'default', opacity: 0.7 } : undefined}
-                />
+                <LineNumberedArea>
+                    <LineGutter ref={lineGutterRef}>
+                        {lineNumbers}
+                    </LineGutter>
+                    <ContentEditableDiv
+                        ref={contentEditableRef}
+                        contentEditable={!hasDiffForThisFile}
+                        suppressContentEditableWarning
+                        data-placeholder={placeholder}
+                        onInput={hasDiffForThisFile ? undefined : handleContentChange}
+                        onKeyDown={hasDiffForThisFile ? undefined : handleKeyDown}
+                        onClick={hasDiffForThisFile ? undefined : handleClick}
+                        onDoubleClick={hasDiffForThisFile ? undefined : handleDoubleClick}
+                        onPaste={hasDiffForThisFile ? undefined : handlePaste}
+                        onDragOver={hasDiffForThisFile ? undefined : handleDragOver}
+                        onDrop={hasDiffForThisFile ? undefined : handleDrop}
+                        spellCheck={false}
+                        onScroll={handleScroll}
+                        style={hasDiffForThisFile ? { cursor: 'default', opacity: 0.7 } : undefined}
+                    />
+                </LineNumberedArea>
                 <FindReplaceDialog
                     open={findDialogOpen}
                     mode="edit"
@@ -199,13 +218,17 @@ export function EditView() {
                     matchCount={matchCount}
                     currentMatchIndex={currentSearchIndex}
                     totalMatches={searchMatches.length}
+                    gotoLineValue={gotoLineValue}
+                    isEditMode={true}
                     onTabChange={setActiveDialogTab}
                     onSearchQueryChange={handleSearchQueryChange}
                     onReplaceQueryChange={setReplaceQuery}
+                    onGotoLineChange={setGotoLineValue}
                     onFindNext={handleFindNext}
                     onCount={handleCount}
                     onReplace={handleReplace}
                     onReplaceAll={handleReplaceAll}
+                    onGoToLine={handleGoToLine}
                     onClose={handleCloseFind}
                 />
             </EditorWrapper>

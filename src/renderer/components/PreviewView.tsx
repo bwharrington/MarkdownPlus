@@ -231,13 +231,17 @@ export function PreviewView() {
                     matchCount={matchCount}
                     currentMatchIndex={currentSearchIndex}
                     totalMatches={searchMatches.length}
+                    gotoLineValue=""
+                    isEditMode={false}
                     onTabChange={setActiveDialogTab}
                     onSearchQueryChange={handleSearchQueryChange}
                     onReplaceQueryChange={setReplaceQuery}
+                    onGotoLineChange={() => {}}
                     onFindNext={handleFindNext}
                     onCount={handleCount}
                     onReplace={handleReplace}
                     onReplaceAll={handleReplaceAll}
+                    onGoToLine={() => {}}
                     onClose={handleCloseFind}
                 />
             </EditorWrapper>

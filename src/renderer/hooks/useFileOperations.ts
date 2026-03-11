@@ -122,7 +122,9 @@ export function useFileOperations() {
                 recentFiles: newRecentFiles,
                 openFiles: uniqueOpenFiles,
             };
-            await saveConfigAndUpdateEditor(newConfig);
+            // Fire-and-forget: files are already dispatched to the UI — don't
+            // block React rendering on the config disk write.
+            void saveConfigAndUpdateEditor(newConfig);
         }
     }, [dispatch, state.config, state.openFiles, saveConfigAndUpdateEditor]);
 
@@ -170,7 +172,9 @@ export function useFileOperations() {
                 ...state.config,
                 openFiles: uniqueOpenFiles,
             };
-            await saveConfigAndUpdateEditor(newConfig);
+            // Fire-and-forget: file is already dispatched to the UI — don't
+            // block React rendering on the config disk write.
+            void saveConfigAndUpdateEditor(newConfig);
         } else {
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -294,37 +298,62 @@ export function useFileOperations() {
     }, [state.openFiles, saveFile, dispatch]);
 
     const closeFile = useCallback(async (fileId?: string) => {
-        const file = fileId 
+        const file = fileId
             ? state.openFiles.find(f => f.id === fileId)
             : activeFile;
-        
+
         if (!file) return;
 
-        if (file.isDirty) {
-            const result = await window.electronAPI.confirmClose(file.name);
-            
-            if (result.action === 'cancel') {
-                return;
+        console.log('[useFileOperations] closeFile called', { fileId: file.id, fileName: file.name, isDirty: file.isDirty });
+
+        try {
+            if (file.isDirty) {
+                const result = await window.electronAPI.confirmClose(file.name);
+                console.log('[useFileOperations] confirmClose result', { fileId: file.id, action: result.action });
+
+                if (result.action === 'cancel') {
+                    console.log('[useFileOperations] closeFile cancelled by user', { fileId: file.id });
+                    return;
+                }
+
+                if (result.action === 'save') {
+                    const saved = await saveFile(file.id);
+                    if (!saved) {
+                        console.warn('[useFileOperations] Save failed during close, aborting close', { fileId: file.id });
+                        return;
+                    }
+                }
             }
-            
-            if (result.action === 'save') {
-                const saved = await saveFile(file.id);
-                if (!saved) return;
-            }
+
+            dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
+            console.log('[useFileOperations] CLOSE_FILE dispatched', { fileId: file.id });
+
+            // Update config (exclude config.json from openFiles)
+            const openFileRefs = state.openFiles
+                .filter(f => f.id !== file.id && f.path !== null && !f.path.endsWith('config.json'))
+                .map(f => ({ fileName: f.path!, mode: f.viewMode }));
+
+            const newConfig: IConfig = {
+                ...state.config,
+                openFiles: openFileRefs,
+            };
+            await saveConfigAndUpdateEditor(newConfig);
+            console.log('[useFileOperations] closeFile complete', { fileId: file.id });
+        } catch (error) {
+            console.error('[useFileOperations] closeFile error', {
+                fileId: file.id,
+                fileName: file.name,
+                error: error instanceof Error ? error.message : String(error),
+                stack: error instanceof Error ? error.stack : undefined,
+            });
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: {
+                    message: `Failed to close "${file.name}". Please try again.`,
+                    severity: 'error',
+                },
+            });
         }
-
-        dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
-
-        // Update config (exclude config.json from openFiles)
-        const openFileRefs = state.openFiles
-            .filter(f => f.id !== file.id && f.path !== null && !f.path.endsWith('config.json'))
-            .map(f => ({ fileName: f.path!, mode: f.viewMode }));
-
-        const newConfig: IConfig = {
-            ...state.config,
-            openFiles: openFileRefs,
-        };
-        await saveConfigAndUpdateEditor(newConfig);
     }, [activeFile, state.openFiles, state.config, dispatch, saveFile, saveConfigAndUpdateEditor]);
 
     const closeAllFiles = useCallback(async () => {
@@ -433,7 +462,9 @@ export function useFileOperations() {
                 ...state.config,
                 openFiles: uniqueOpenFiles,
             };
-            await saveConfigAndUpdateEditor(newConfig);
+            // Fire-and-forget: files are already dispatched to the UI — don't
+            // block React rendering on the config disk write.
+            void saveConfigAndUpdateEditor(newConfig);
         }
     }, [dispatch, state.config, state.openFiles, saveConfigAndUpdateEditor]);
 

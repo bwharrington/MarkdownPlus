@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, styled, TextField, Button, IconButton, Typography, Tabs, Tab } from '@mui/material';
 import { CloseIcon, DragIndicatorIcon } from './AppIcons';
 import { useDraggableDialog } from '../hooks/useDraggableDialog';
+import type { FindReplaceTab } from '../hooks/useFindReplace';
 
 const DialogContainer = styled(Box)(({ theme }) => ({
     position: 'absolute',
@@ -50,19 +51,23 @@ const DialogContent = styled(Box)({
 interface FindReplaceDialogProps {
     open: boolean;
     mode: 'edit' | 'preview';
-    activeTab: 'find' | 'replace';
+    activeTab: FindReplaceTab;
     searchQuery: string;
     replaceQuery: string;
     matchCount: number | null;
     currentMatchIndex: number;
     totalMatches: number;
-    onTabChange: (tab: 'find' | 'replace') => void;
+    gotoLineValue: string;
+    isEditMode: boolean;
+    onTabChange: (tab: FindReplaceTab) => void;
     onSearchQueryChange: (query: string) => void;
     onReplaceQueryChange: (query: string) => void;
+    onGotoLineChange: (val: string) => void;
     onFindNext: () => void;
     onCount: () => void;
     onReplace: () => void;
     onReplaceAll: () => void;
+    onGoToLine: () => void;
     onClose: () => void;
 }
 
@@ -75,35 +80,44 @@ export function FindReplaceDialog({
     matchCount,
     currentMatchIndex,
     totalMatches,
+    gotoLineValue,
+    isEditMode,
     onTabChange,
     onSearchQueryChange,
     onReplaceQueryChange,
+    onGotoLineChange,
     onFindNext,
     onCount,
     onReplace,
     onReplaceAll,
+    onGoToLine,
     onClose,
 }: FindReplaceDialogProps) {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const replaceInputRef = useRef<HTMLInputElement>(null);
+    const gotoInputRef = useRef<HTMLInputElement>(null);
     const { dialogRef, position, isDragging, handleDragMouseDown } = useDraggableDialog(open, {
         initialPosition: { x: 0, y: 50 },
         positionStrategy: 'top-right',
     });
     const [isDialogFocused, setIsDialogFocused] = useState(true);
 
-    // Switch to Find tab if mode changes to preview while on Replace tab
+    // Switch to Find tab if mode changes to preview while on Replace or Go to Line tab
     useEffect(() => {
-        if (mode === 'preview' && activeTab === 'replace') {
+        if (mode === 'preview' && (activeTab === 'replace' || activeTab === 'goto')) {
             onTabChange('find');
         }
     }, [mode, activeTab, onTabChange]);
 
-    // Focus search input when dialog opens or tab changes
+    // Focus the appropriate input when dialog opens or tab changes
     useEffect(() => {
         if (open) {
             requestAnimationFrame(() => {
-                searchInputRef.current?.focus();
+                if (activeTab === 'goto') {
+                    gotoInputRef.current?.focus();
+                } else {
+                    searchInputRef.current?.focus();
+                }
                 setIsDialogFocused(true);
             });
         }
@@ -164,12 +178,22 @@ export function FindReplaceDialog({
     }, [onReplace, onClose]);
 
     const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: number) => {
-        onTabChange(newValue === 0 ? 'find' : 'replace');
+        const tabs: FindReplaceTab[] = ['find', 'replace', 'goto'];
+        onTabChange(tabs[newValue] ?? 'find');
     }, [onTabChange]);
+
+    const handleGotoKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            onGoToLine();
+        } else if (e.key === 'Escape') {
+            onClose();
+        }
+    }, [onGoToLine, onClose]);
 
     if (!open) return null;
 
     const isPreviewMode = mode === 'preview';
+    const tabIndex = activeTab === 'find' ? 0 : activeTab === 'replace' ? 1 : 2;
 
     const renderStatusText = () => {
         if (matchCount === null) return null;
@@ -221,19 +245,63 @@ export function FindReplaceDialog({
                 <DragIndicatorIcon fontSize="small" sx={{ color: 'text.secondary' }} />
             </DragHandle>
             <StyledTabs
-                value={activeTab === 'find' ? 0 : 1}
+                value={tabIndex}
                 onChange={handleTabChange}
             >
                 <StyledTab label="Find" />
-                <StyledTab 
-                    label="Replace" 
+                <StyledTab
+                    label="Replace"
                     disabled={isPreviewMode}
-                    title={isPreviewMode ? "Switch to edit mode to replace" : undefined}
+                    title={isPreviewMode ? 'Switch to edit mode to replace' : undefined}
                 />
+                {isEditMode && (
+                    <StyledTab
+                        label="Go to Line"
+                        disabled={isPreviewMode}
+                        title={isPreviewMode ? 'Switch to edit mode to use Go to Line' : undefined}
+                    />
+                )}
             </StyledTabs>
 
             <DialogContent>
-                {activeTab === 'find' ? (
+                {activeTab === 'goto' ? (
+                    // Go to Line Tab
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField
+                            inputRef={gotoInputRef}
+                            autoFocus
+                            size="small"
+                            type="number"
+                            placeholder="Line number:"
+                            value={gotoLineValue}
+                            onChange={(e) => onGotoLineChange(e.target.value)}
+                            onKeyDown={handleGotoKeyDown}
+                            fullWidth
+                            InputProps={{
+                                inputProps: { min: 1 },
+                                sx: {
+                                    '& input::placeholder': {
+                                        color: 'text.secondary',
+                                        opacity: 1,
+                                    },
+                                },
+                            }}
+                        />
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                            <Button
+                                variant="contained"
+                                size="small"
+                                onClick={onGoToLine}
+                                disabled={!gotoLineValue}
+                            >
+                                Go
+                            </Button>
+                            <IconButton size="small" onClick={onClose}>
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        </Box>
+                    </Box>
+                ) : activeTab === 'find' ? (
                     // Find Tab
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <TextField

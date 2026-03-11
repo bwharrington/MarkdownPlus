@@ -3,19 +3,20 @@ import type { IFile } from '../types';
 
 /**
  * Custom hook that handles external file change detection and reload behavior.
- * 
+ *
  * When a file is modified outside of Markdown Nexus, this hook determines whether
  * to reload it silently or prompt the user, based on the `silentFileUpdates`
  * config setting:
- * 
+ *
  * - **Silent Updates ON (default):** Files are automatically reloaded in place
- *   with no user interaction required.
+ *   with no user interaction required, UNLESS the user has unsaved local edits
+ *   in which case the silent reload is skipped and the user is notified.
  * - **Silent Updates OFF:** The user is always prompted with a dialog asking
- *   whether to refresh the file with the latest changes. Choosing "No" keeps
- *   the current editor content; saving will overwrite the external changes.
- * 
+ *   whether to refresh the file with the latest changes. Choosing "No" marks
+ *   the file dirty so the save icon clearly signals the on-disk version differs.
+ *
  * The `config.json` file is always auto-reloaded regardless of settings.
- * 
+ *
  * Performance notes:
  * - Accepts openFiles and dispatch as parameters so the hook does NOT call
  *   useEditorState() internally, avoiding an independent context subscription
@@ -29,13 +30,19 @@ import type { IFile } from '../types';
 interface UseExternalFileWatcherParams {
     openFiles: IFile[];
     dispatch: ReturnType<typeof import('../contexts').useEditorDispatch>;
+    silentFileUpdates: boolean;
 }
 
-export function useExternalFileWatcher({ openFiles, dispatch }: UseExternalFileWatcherParams): void {
+export function useExternalFileWatcher({ openFiles, dispatch, silentFileUpdates }: UseExternalFileWatcherParams): void {
     // Keep a ref to the latest openFiles so the IPC callback can read
     // current state without the effect needing to re-run on every change.
     const openFilesRef = useRef(openFiles);
     openFilesRef.current = openFiles;
+
+    // Keep a ref to silentFileUpdates so the single-mounted effect always
+    // reads the latest config value without re-subscribing the IPC listener.
+    const silentFileUpdatesRef = useRef(silentFileUpdates);
+    silentFileUpdatesRef.current = silentFileUpdates;
 
     // Debounce map to prevent multiple prompts for the same file.
     // File saves often trigger multiple fs.watch events (write, metadata, close).
@@ -45,62 +52,124 @@ export function useExternalFileWatcher({ openFiles, dispatch }: UseExternalFileW
     // Subscribe to the IPC events once on mount, clean up on unmount.
     // The callbacks read from the ref so they never go stale.
     useEffect(() => {
+        // Helper to reload a file's content from disk and update editor state
+        const reloadFile = async (openFile: IFile, filePath: string) => {
+            const fileData = await window.electronAPI.readFile(filePath);
+            if (fileData) {
+                dispatch({
+                    type: 'UPDATE_FILE_CONTENT',
+                    payload: {
+                        id: openFile.id,
+                        content: fileData.content,
+                        lineEnding: fileData.lineEnding,
+                    },
+                });
+                console.log('[useExternalFileWatcher] File reloaded from disk', {
+                    fileId: openFile.id,
+                    filePath,
+                    contentLength: fileData.content.length,
+                });
+            } else {
+                console.warn('[useExternalFileWatcher] readFile returned null — file may be inaccessible', { filePath });
+            }
+        };
+
         // Helper function that does the actual file change handling
         const handleFileChange = async (filePath: string) => {
+            try {
+                // Find if this file is open (read from ref for latest state)
+                const openFile = openFilesRef.current.find(f => f.path === filePath);
+                if (!openFile) {
+                    console.log('[useExternalFileWatcher] File not currently open, ignoring change', { filePath });
+                    return;
+                }
 
-            // Find if this file is open (read from ref for latest state)
-            const openFile = openFilesRef.current.find(f => f.path === filePath);
-            if (!openFile) {
-                return;
-            }
+                // Extract filename for display
+                const fileName = filePath.split(/[\\/]/).pop() || filePath;
 
-            // Helper to reload a file and update the editor state
-            const reloadFile = async () => {
-                const fileData = await window.electronAPI.readFile(filePath);
-                if (fileData) {
+                // Config file: always auto-reload without prompting or notification
+                if (filePath.endsWith('config.json')) {
+                    console.log('[useExternalFileWatcher] Auto-reloading config file');
+                    await reloadFile(openFile, filePath);
+                    return;
+                }
+
+                // Read silentFileUpdates from the ref (updated on every render via the
+                // assignment above) — avoids an IPC round-trip on every file change event.
+                const silentUpdates = silentFileUpdatesRef.current;
+
+                console.log('[useExternalFileWatcher] Handling external file change', {
+                    fileId: openFile.id,
+                    fileName,
+                    silentUpdates,
+                    isDirty: openFile.isDirty,
+                });
+
+                if (silentUpdates) {
+                    // Race condition guard: if the user has local unsaved edits, do NOT
+                    // silently overwrite them. Instead notify the user and leave the file as-is.
+                    if (openFile.isDirty) {
+                        console.log('[useExternalFileWatcher] Silent mode skipped — file has unsaved local edits', { fileName });
+                        dispatch({
+                            type: 'SHOW_NOTIFICATION',
+                            payload: {
+                                message: `"${fileName}" was changed externally but has unsaved local edits. Save or discard your changes to sync the file.`,
+                                severity: 'warning',
+                            },
+                        });
+                        return;
+                    }
+
+                    // Silent mode: reload automatically with no prompt
+                    console.log('[useExternalFileWatcher] Silent mode — auto-reloading file', { fileName });
+                    await reloadFile(openFile, filePath);
+
+                    // Notify the user that the file was refreshed so the update isn't invisible
                     dispatch({
-                        type: 'UPDATE_FILE_CONTENT',
+                        type: 'SHOW_NOTIFICATION',
                         payload: {
-                            id: openFile.id,
-                            content: fileData.content,
-                            lineEnding: fileData.lineEnding,
+                            message: `"${fileName}" was updated from disk.`,
+                            severity: 'info',
                         },
                     });
+                } else {
+                    // Prompt mode: always ask the user before refreshing
+                    console.log('[useExternalFileWatcher] Prompt mode — showing dialog for file', { fileName });
+                    const result = await window.electronAPI.showExternalChangeDialog(fileName);
+                    console.log('[useExternalFileWatcher] User response to external change dialog', { fileName, result });
+
+                    if (result === 'reload') {
+                        await reloadFile(openFile, filePath);
+                    } else {
+                        // User chose to keep their current content. Mark the file dirty so
+                        // the save icon signals that the on-disk version now differs.
+                        dispatch({
+                            type: 'SET_DIRTY',
+                            payload: { id: openFile.id, isDirty: true },
+                        });
+                        console.log('[useExternalFileWatcher] User kept local content — marked file dirty', { fileName });
+                    }
                 }
-            };
-
-            // Extract filename for display
-            const fileName = filePath.split(/[\\/]/).pop() || filePath;
-
-            // Config file: always auto-reload without prompting or notification
-            if (filePath.endsWith('config.json')) {
-                console.log('[useExternalFileWatcher] Auto-reloading config file');
-                await reloadFile();
-                return;
-            }
-
-            // Load current config to check silentFileUpdates setting
-            const config = await window.electronAPI.loadConfig();
-            const silentUpdates = config.silentFileUpdates !== false; // default true
-
-            if (silentUpdates) {
-                // Silent mode: reload automatically in place with no prompt
-                console.log('[useExternalFileWatcher] Silent mode - auto-reloading file:', fileName);
-                await reloadFile();
-            } else {
-                // Prompt mode: always ask the user before refreshing
-                console.log('[useExternalFileWatcher] Prompt mode - asking user about file:', fileName);
-                const result = await window.electronAPI.showExternalChangeDialog(fileName);
-                if (result === 'reload') {
-                    await reloadFile();
-                }
-                // If 'keep', do nothing - the user's current content is preserved.
-                // Saving will overwrite the external changes on disk.
+            } catch (error) {
+                const filePart = filePath.split(/[\\/]/).pop() || filePath;
+                console.error('[useExternalFileWatcher] Error handling external file change', {
+                    filePath,
+                    error: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                });
+                // Notify the user so they know the file state may be stale
+                dispatch({
+                    type: 'SHOW_NOTIFICATION',
+                    payload: {
+                        message: `Failed to handle external change for "${filePart}". The file may be out of sync.`,
+                        severity: 'error',
+                    },
+                });
             }
         };
 
         const cleanupChange = window.electronAPI.onExternalFileChange(async (filePath: string) => {
-            console.log('[useExternalFileWatcher] External file change detected:', filePath);
+            console.log('[useExternalFileWatcher] External file change detected', { filePath });
 
             // Clear any existing debounce timer for this file
             const existingTimer = debounceTimersRef.current.get(filePath);
@@ -118,7 +187,7 @@ export function useExternalFileWatcher({ openFiles, dispatch }: UseExternalFileW
         });
 
         const cleanupRename = window.electronAPI.onExternalFileRename((filePath: string) => {
-            console.log('[useExternalFileWatcher] External file rename/delete detected:', filePath);
+            console.log('[useExternalFileWatcher] External file rename/delete detected', { filePath });
 
             const openFile = openFilesRef.current.find(f => f.path === filePath);
             if (!openFile) return;

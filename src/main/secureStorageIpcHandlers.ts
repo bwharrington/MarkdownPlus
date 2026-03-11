@@ -23,6 +23,7 @@ export interface ApiKeyStatusResponse {
     claude: boolean;
     openai: boolean;
     gemini: boolean;
+    serper: boolean;
 }
 
 export function registerSecureStorageIpcHandlers() {
@@ -47,6 +48,10 @@ export function registerSecureStorageIpcHandlers() {
                     break;
                 case 'gemini':
                     validationResult = await validateGeminiKey(data.key);
+                    break;
+                case 'serper':
+                    // Serper: accept any non-empty key (no test call needed, lightweight)
+                    validationResult = { valid: data.key.trim().length > 0 };
                     break;
                 default:
                     return {
@@ -104,6 +109,7 @@ export function registerSecureStorageIpcHandlers() {
             claude: hasApiKey('claude'),
             openai: hasApiKey('openai'),
             gemini: hasApiKey('gemini'),
+            serper: hasApiKey('serper'),
         };
     });
 

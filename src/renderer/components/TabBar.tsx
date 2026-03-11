@@ -72,12 +72,13 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
 
     const handleClose = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
+        console.log('[TabBar] Tab close clicked', { fileId: file.id, fileName: file.name, isDirty: file.isDirty, isDiffTab });
         if (isDiffTab) {
             dispatch({ type: 'CLOSE_DIFF_TAB', payload: { diffTabId: file.id } });
         } else {
             closeFile(file.id);
         }
-    }, [file.id, isDiffTab, dispatch, closeFile]);
+    }, [file.id, file.name, file.isDirty, isDiffTab, dispatch, closeFile]);
 
     const tooltipTitle = isDiffTab ? 'AI Changes' : (file.path || 'Unsaved file');
 
@@ -156,8 +157,10 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
     const { renameFile, showInFolder, saveFileAs } = useFileOperations();
 
     const handleTabChange = useCallback((_event: React.SyntheticEvent, newValue: string) => {
+        const file = state.openFiles.find(f => f.id === newValue);
+        console.log('[TabBar] Tab selected', { fileId: newValue, fileName: file?.name, filePath: file?.path, isDirty: file?.isDirty });
         dispatch({ type: 'SELECT_TAB', payload: { id: newValue } });
-    }, [dispatch]);
+    }, [dispatch, state.openFiles]);
 
     const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
         setDraggedIndex(index);

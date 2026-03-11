@@ -3,6 +3,8 @@ import { useActiveFile, useEditorDispatch } from '../contexts';
 import { getCursorPosition, setCursorPosition, setPlainText, clearSearchHighlights } from '../utils/domUtils';
 import type { IFile } from '../types';
 
+export type FindReplaceTab = 'find' | 'replace' | 'goto';
+
 export interface FindReplaceState {
     findDialogOpen: boolean;
     searchQuery: string;
@@ -10,19 +12,22 @@ export interface FindReplaceState {
     currentSearchIndex: number;
     matchCount: number | null;
     replaceQuery: string;
-    activeDialogTab: 'find' | 'replace';
+    activeDialogTab: FindReplaceTab;
+    gotoLineValue: string;
 }
 
 export interface FindReplaceHandlers {
     setSearchQuery: (query: string) => void;
     setReplaceQuery: (query: string) => void;
-    setActiveDialogTab: (tab: 'find' | 'replace') => void;
+    setActiveDialogTab: (tab: FindReplaceTab) => void;
+    setGotoLineValue: (val: string) => void;
     handleSearchQueryChange: (query: string) => void;
     handleFindNext: () => void;
     handleCount: () => void;
     handleReplace: () => void;
     handleReplaceAll: () => void;
-    handleOpenFind: (tab?: 'find' | 'replace') => void;
+    handleGoToLine: () => void;
+    handleOpenFind: (tab?: FindReplaceTab) => void;
     handleCloseFind: () => void;
 }
 
@@ -42,7 +47,10 @@ export function useFindReplace(
 
     // Replace state
     const [replaceQuery, setReplaceQuery] = useState('');
-    const [activeDialogTab, setActiveDialogTab] = useState<'find' | 'replace'>('find');
+    const [activeDialogTab, setActiveDialogTab] = useState<FindReplaceTab>('find');
+
+    // Go to Line state
+    const [gotoLineValue, setGotoLineValue] = useState('');
 
     // Find all matches of search query in text (case-insensitive)
     const findAllMatches = useCallback((text: string, query: string): Array<{ start: number; end: number }> => {
@@ -374,8 +382,68 @@ export function useFindReplace(
         });
     }, [searchQuery, replaceQuery, activeFile, dispatch, findAllMatches, contentEditableRef]);
 
+    // Go to Line — scroll the contenteditable to the target line and place the cursor there
+    const handleGoToLine = useCallback(() => {
+        if (!activeFile || !contentEditableRef.current) return;
+
+        const parsed = parseInt(gotoLineValue, 10);
+        if (isNaN(parsed)) return;
+
+        const lines = activeFile.content.split('\n');
+        const targetLine = Math.max(1, Math.min(parsed, lines.length));
+
+        // Character offset of the first character on the target line
+        const charOffset = lines.slice(0, targetLine - 1).reduce((acc, l) => acc + l.length + 1, 0);
+
+        const element = contentEditableRef.current;
+
+        // Temporarily insert a marker span so we can call scrollIntoView
+        clearSearchHighlights(element);
+        element.textContent = activeFile.content;
+
+        const text = activeFile.content;
+        const lineStart = charOffset;
+        const lineEnd = text.indexOf('\n', lineStart);
+        const lineEndClamped = lineEnd === -1 ? text.length : lineEnd;
+
+        const beforeLine = text.substring(0, lineStart);
+        const lineContent = text.substring(lineStart, lineEndClamped);
+        const afterLine = text.substring(lineEndClamped);
+
+        element.textContent = '';
+
+        if (beforeLine) {
+            element.appendChild(document.createTextNode(beforeLine));
+        }
+
+        const markerSpan = document.createElement('span');
+        markerSpan.className = 'current-line-highlight';
+        markerSpan.textContent = lineContent || ' ';
+        element.appendChild(markerSpan);
+
+        if (afterLine) {
+            element.appendChild(document.createTextNode(afterLine));
+        }
+
+        requestAnimationFrame(() => {
+            markerSpan.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Restore plain text and set cursor at the beginning of the target line
+            setTimeout(() => {
+                if (contentEditableRef.current) {
+                    clearSearchHighlights(contentEditableRef.current);
+                    contentEditableRef.current.textContent = activeFile.content;
+                    setCursorPosition(contentEditableRef.current, charOffset);
+                }
+            }, 300);
+        });
+
+        setFindDialogOpen(false);
+        setGotoLineValue('');
+    }, [activeFile, gotoLineValue, contentEditableRef]);
+
     // Open Find dialog
-    const handleOpenFind = useCallback((tab: 'find' | 'replace' = 'find') => {
+    const handleOpenFind = useCallback((tab: FindReplaceTab = 'find') => {
         setFindDialogOpen(true);
         setActiveDialogTab(tab);
         setMatchCount(null);
@@ -386,6 +454,7 @@ export function useFindReplace(
         setFindDialogOpen(false);
         setSearchQuery('');
         setReplaceQuery('');
+        setGotoLineValue('');
         setSearchMatches([]);
         setCurrentSearchIndex(-1);
         setMatchCount(null);
@@ -413,11 +482,11 @@ export function useFindReplace(
         setMatchCount(null);
     }, []);
 
-    // Listen for Ctrl+F / Ctrl+H events from App.tsx
+    // Listen for Ctrl+F / Ctrl+H / Ctrl+G events from App.tsx
     useEffect(() => {
         const handleOpenFindEvent = (e: Event) => {
             if (activeFile) {
-                const customEvent = e as CustomEvent<{ tab?: 'find' | 'replace' }>;
+                const customEvent = e as CustomEvent<{ tab?: FindReplaceTab }>;
                 const tab = customEvent.detail?.tab || 'find';
                 handleOpenFind(tab);
             }
@@ -436,15 +505,18 @@ export function useFindReplace(
         matchCount,
         replaceQuery,
         activeDialogTab,
+        gotoLineValue,
         // Handlers
         setSearchQuery,
         setReplaceQuery,
         setActiveDialogTab,
+        setGotoLineValue,
         handleSearchQueryChange,
         handleFindNext,
         handleCount,
         handleReplace,
         handleReplaceAll,
+        handleGoToLine,
         handleOpenFind,
         handleCloseFind,
     };

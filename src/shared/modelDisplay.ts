@@ -11,9 +11,12 @@ export const MODEL_DISPLAY_OVERRIDES: Record<string, string> = {
     'claude-opus-4-6':             'Claude Opus 4.6',
     'claude-haiku-4-5-20251001':   'Claude Haiku 4.5',
     // xAI
-    'grok-4-1-fast-non-reasoning': 'Grok 4.1',
-    'grok-4-1-fast-reasoning':     'Grok 4.1 Reasoning',
-    'grok-4-0709':                 'Grok 4',
+    'grok-4-1-fast-non-reasoning':          'Grok 4.1',
+    'grok-4-1-fast-reasoning':              'Grok 4.1 Reasoning',
+    'grok-4-0709':                          'Grok 4',
+    'grok-4.20-beta-0309-non-reasoning':    'Grok 4.20',
+    'grok-4.20-beta-0309-reasoning':        'Grok 4.20 Reasoning',
+    'grok-4.20-multi-agent-beta-0309':      'Grok 4.20 Multi Agent',
     // OpenAI GPT-5 family (chat completions-compatible only)
     'gpt-5':                       'GPT-5',
     'gpt-5-mini':                  'GPT-5 Mini',

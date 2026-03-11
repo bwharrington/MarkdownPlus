@@ -157,7 +157,7 @@ function AIProviderSection({ title, provider, config, onModelToggle, expanded, o
 
 // Sub-component: API Key Input
 interface APIKeyInputProps {
-    provider: 'xai' | 'claude' | 'openai' | 'gemini';
+    provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper';
     label: string;
     hasKey: boolean;
     value: string;
@@ -170,6 +170,7 @@ interface APIKeyInputProps {
 }
 
 function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting, onChange, onSet, onClear, onTest }: APIKeyInputProps) {
+    const showTestButton = provider !== 'serper';
     return (
         <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
@@ -201,22 +202,24 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                 />
                 {hasKey ? (
                     <>
-                        <IconButton
-                            size="small"
-                            onClick={onTest}
-                            disabled={isTesting}
-                            title="Test connection"
-                            sx={{
-                                color: 'text.secondary',
-                                animation: isTesting ? 'spin 1s linear infinite' : 'none',
-                                '@keyframes spin': {
-                                    '0%': { transform: 'rotate(0deg)' },
-                                    '100%': { transform: 'rotate(360deg)' },
-                                },
-                            }}
-                        >
-                            <RefreshIcon fontSize="small" />
-                        </IconButton>
+                        {showTestButton && (
+                            <IconButton
+                                size="small"
+                                onClick={onTest}
+                                disabled={isTesting}
+                                title="Test connection"
+                                sx={{
+                                    color: 'text.secondary',
+                                    animation: isTesting ? 'spin 1s linear infinite' : 'none',
+                                    '@keyframes spin': {
+                                        '0%': { transform: 'rotate(0deg)' },
+                                        '100%': { transform: 'rotate(360deg)' },
+                                    },
+                                }}
+                            >
+                                <RefreshIcon fontSize="small" />
+                            </IconButton>
+                        )}
                         <Button
                             variant="outlined"
                             size="small"
@@ -324,11 +327,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         claude: boolean;
         openai: boolean;
         gemini: boolean;
+        serper: boolean;
     }>({
         xai: false,
         claude: false,
         openai: false,
         gemini: false,
+        serper: false,
     });
 
     const [apiKeyInputs, setApiKeyInputs] = useState<{
@@ -336,11 +341,13 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         claude: string;
         openai: string;
         gemini: string;
+        serper: string;
     }>({
         xai: '',
         claude: '',
         openai: '',
         gemini: '',
+        serper: '',
     });
 
     // Testing state for individual providers
@@ -404,7 +411,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }, []);
 
     // API Key handlers
-    const handleSetApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
+    const handleSetApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
         const key = apiKeyInputs[provider].trim();
         if (!key) {
             dispatch({
@@ -421,8 +428,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         if (result.success) {
             setApiKeyInputs(prev => ({ ...prev, [provider]: '' }));
             setApiKeyStatus(prev => ({ ...prev, [provider]: true }));
-            invalidateModelsForProvider(provider);
-            await refreshProviderStatuses();
+            if (provider !== 'serper') {
+                invalidateModelsForProvider(provider);
+                await refreshProviderStatuses();
+            }
             dispatch({
                 type: 'SHOW_NOTIFICATION',
                 payload: {
@@ -441,12 +450,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [apiKeyInputs, dispatch, refreshProviderStatuses, invalidateModelsForProvider]);
 
-    const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
+    const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
         const result = await window.electronAPI.deleteApiKey(provider);
         if (result.success) {
             setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
-            invalidateModelsForProvider(provider);
-            await refreshProviderStatuses();
+            if (provider !== 'serper') {
+                invalidateModelsForProvider(provider);
+                await refreshProviderStatuses();
+            }
             dispatch({
                 type: 'SHOW_NOTIFICATION',
                 payload: {
@@ -626,6 +637,22 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                     onSet={() => handleSetApiKey('gemini')}
                     onClear={() => handleClearApiKey('gemini')}
                     onTest={() => handleTestProvider('gemini')}
+                />
+
+                <SectionHeader>Web Search</SectionHeader>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: 12 }}>
+                    Used by Plan mode to fetch real-world context during planning. Get a free key at <strong>serper.dev</strong>.
+                </Typography>
+                <APIKeyInput
+                    provider="serper"
+                    label="Serper (Google Search)"
+                    hasKey={apiKeyStatus.serper}
+                    value={apiKeyInputs.serper}
+                    onChange={(value) => setApiKeyInputs(prev => ({ ...prev, serper: value }))}
+                    onSet={() => handleSetApiKey('serper')}
+                    onClear={() => handleClearApiKey('serper')}
+                    onTest={() => {}}
+                    isTesting={false}
                 />
 
                 {(providerStatuses.xai.enabled || providerStatuses.claude.enabled || providerStatuses.openai.enabled || providerStatuses.gemini.enabled) && (

@@ -102,6 +102,28 @@ export const EditorWrapper = styled(Box)({
     position: 'relative',
 });
 
+export const LineNumberedArea = styled(Box)({
+    display: 'flex',
+    flexDirection: 'row',
+    flex: 1,
+    overflow: 'hidden',
+});
+
+export const LineGutter = styled(Box)(({ theme }) => ({
+    overflow: 'hidden',
+    flexShrink: 0,
+    padding: '16px 8px 16px 12px',
+    minWidth: 40,
+    textAlign: 'right',
+    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+    fontSize: 14,
+    lineHeight: 1.6,
+    backgroundColor: theme.palette.background.default,
+    color: theme.palette.text.disabled,
+    borderRight: `1px solid ${theme.palette.divider}`,
+    userSelect: 'none',
+}));
+
 export const SplitContainer = styled(Box)({
     display: 'flex',
     flex: 1,

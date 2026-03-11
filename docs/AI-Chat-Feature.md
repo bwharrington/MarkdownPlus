@@ -40,12 +40,20 @@ This document describes the Nexus feature in Markdown Nexus, covering configurat
    - [Loading States — Nexus Progress Stepper](#loading-states--nexus-progress-stepper-1)
    - [Cancellation](#cancellation-1)
    - [Debugging & Logging](#debugging--logging-1)
-7. [Supported AI Providers](#supported-ai-providers)
+7. [Plan Mode](#plan-mode)
+   - [Activating Plan Mode](#activating-plan-mode)
+   - [How Plan Mode Works](#how-plan-mode-works)
+   - [Plan Output](#plan-output)
+   - [Web Research Enhancement](#web-research-enhancement)
+   - [Loading States — Plan Progress Stepper](#loading-states--plan-progress-stepper)
+   - [Cancellation](#cancellation-2)
+   - [Debugging & Logging](#debugging--logging-2)
+8. [Supported AI Providers](#supported-ai-providers)
    - [Claude (Anthropic)](#claude-anthropic)
    - [OpenAI](#openai)
    - [Google Gemini](#google-gemini)
    - [xAI (Grok)](#xai-grok)
-8. [Architecture](#architecture)
+9. [Architecture](#architecture)
    - [File Structure](#file-structure)
    - [IPC Communication](#ipc-communication)
    - [State Management](#state-management)
@@ -54,14 +62,15 @@ This document describes the Nexus feature in Markdown Nexus, covering configurat
 
 ## Overview
 
-The Nexus feature allows users to interact with AI language models directly within the Markdown Nexus editor. It supports four modes:
+The Nexus feature allows users to interact with AI language models directly within the Markdown Nexus editor. It supports five modes:
 
 - **Chat Mode**: A conversational interface for asking questions, brainstorming, or getting help with writing. The AI sees the current document as context and responds in a chat bubble format.
 - **Edit Mode**: The AI modifies the current markdown document based on user instructions. Changes are presented in a **dedicated diff tab** with a unified inline diff view, where the user can accept or reject changes on a per-hunk basis.
 - **Research Mode**: Deep research on any topic. The AI performs a multi-phase process — first inferring the target audience and relevant fields, then generating a comprehensive, structured research report with automatic deepening passes. The output opens as a new markdown file tab in preview mode.
 - **Go Deeper Mode**: Expands and enriches an existing research report. The AI analyzes the document, suggests expansion topics, lets the user select which to pursue, then generates exhaustive addendums and merges them back into a versioned document.
+- **Plan Mode**: Generates a comprehensive, actionable project plan for any task or initiative. The AI analyzes the request, optionally searches the web for current context (requires a Serper API key), then produces a structured plan document with objectives, work breakdown, risk assessment, and next steps. Opens as a new markdown file tab.
 
-Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research mode is supported by all four providers. Go Deeper mode is supported by all four providers. xAI is restricted from Edit mode only (structured output not yet available). Each provider's models are filtered at the API level to surface only the models relevant for chat use.
+Four AI providers are supported: **Claude (Anthropic)**, **OpenAI**, **Google Gemini**, and **xAI (Grok)**. Edit mode is supported by Claude, OpenAI, and Gemini. Research, Go Deeper, and Plan modes are supported by all four providers. xAI is restricted from Edit mode only (structured output not yet available). Each provider's models are filtered at the API level to surface only the models relevant for chat use.
 
 ---
 
@@ -741,6 +750,127 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 
 ---
 
+## Plan Mode
+
+Plan Mode generates a comprehensive, actionable project plan for any task or initiative and opens the result as a new document tab.
+
+### Activating Plan Mode
+
+- Select **Plan** from the Mode dropdown in the Nexus panel
+- Plan mode is supported for all four providers: **Claude**, **OpenAI**, **Google Gemini**, and **xAI**
+- The input placeholder changes to "Describe what you want to plan..." and the send button shows a plan icon
+
+### How Plan Mode Works
+
+Plan Mode uses a **four-phase AI pipeline**:
+
+**Phase 1 — Scoping (Automatic):**
+
+When the user submits a request, a quick preliminary LLM call analyzes it and returns a JSON blueprint:
+- **Goal summary** — 1–2 sentence distillation of what the user wants to accomplish
+- **Constraints** — inferred from context (tech stack, scope, timeline hints)
+- **Work streams** — 3–6 high-level categories of work needed
+- **Search queries** — 2–4 specific web search queries to gather relevant real-world context
+
+If the scoping call fails or returns invalid JSON, sensible defaults are used automatically.
+
+**Phase 2 — Web Research (Optional):**
+
+If a Serper API key is configured under AI API Keys in Settings, up to four web searches are run using the queries from the blueprint. Results are formatted as bulleted summaries and injected into the planning prompt as real-world context. This phase completes near-instantly if no Serper key is present (the step is shown but skipped).
+
+**Phase 3 — Plan Generation:**
+
+The blueprint and any web research results are injected into a detailed planning prompt template. The AI generates a full Markdown plan document covering all required sections (see [Plan Output](#plan-output) below). This call uses up to 16,384 output tokens and supports automatic continuation if the response is truncated.
+
+**Phase 4 — Naming:**
+
+A final lightweight LLM call generates a short, descriptive Title Case filename for the tab (e.g., `GraphQL Migration Plan.md`). The response is sanitized. Falls back to a slug derived from the request if naming fails.
+
+### Plan Output
+
+The generated plan is opened as a **new markdown file tab** in preview mode:
+- Tab name: AI-generated descriptive name with `.md` extension
+- File is virtual (not saved to disk) with `path: null`
+- Opens in preview mode for immediate reading
+- Can be saved to disk using `Ctrl+S` / Save As
+
+**Document structure:**
+
+```
+## Objective
+## Scope & Constraints
+## Architecture / Approach
+## Work Breakdown
+  ### Work Stream 1
+  ### Work Stream 2
+  ...
+## Dependencies & Critical Path
+## Risk Assessment (table: Risk / Likelihood / Impact / Mitigation)
+## Resources & References
+## Next Steps
+```
+
+A footer line `*Generated by Plan Mode*` closes the document.
+
+### Web Research Enhancement
+
+Plan Mode optionally integrates real-time web search via **Serper**. To enable it:
+
+1. Open Settings (`Ctrl+,`)
+2. Go to **AI API Keys**
+3. Enter your Serper API key and click **Set**
+
+When a Serper key is present, Plan Mode automatically runs up to 4 targeted search queries (generated by the scoping step) and incorporates the results as web research context in the plan. This typically produces more accurate technology recommendations, up-to-date pricing estimates, and real-world implementation guidance.
+
+Without a Serper key, plans are generated entirely from the AI's training data — the Searching the Web step still appears in the progress stepper but completes immediately.
+
+### Loading States — Plan Progress Stepper
+
+During a plan request, the chat panel shows the **Plan Progress Stepper** (`PlanProgress` component) — a vertical timeline that visualizes all four phases:
+
+```
+● Analyzing Request                  ✓ 1.3s
+
+● Searching the Web                  ✓ 2.8s   (or near-instant if no Serper key)
+
+◉ Generating Plan                    ⟳ active
+  "Building your plan..."
+
+○ Naming Document                    pending
+
+○ Plan Complete                      pending
+```
+
+**Step indicators:**
+- **Pending** (grey dot): Phase not yet started, label dimmed
+- **Active** (pulsing amber dot): Currently running, shows typewriter-animated message with blinking cursor
+- **Complete** (green checkmark): Phase finished, shows elapsed time badge (e.g., `2.8s`)
+- **Plan Complete**: Shows total elapsed time across all phases when finished
+
+**Phase-specific typewriter messages** rotate every 5 seconds:
+- **Scoping**: "Analyzing your request...", "Identifying work streams...", "Inferring constraints...", "Formulating search queries..."
+- **Researching**: "Searching the web for context...", "Gathering relevant information...", "Collecting best practices...", "Fetching current documentation..."
+- **Planning**: "Building your plan...", "Drafting work breakdown...", "Assessing risks...", "Writing architecture approach...", "Defining next steps...", "Structuring deliverables..."
+- **Naming**: "Generating filename...", "Picking a descriptive title...", "Naming your plan..."
+
+### Cancellation
+
+Plan requests can be canceled at any time using the Cancel button. All in-flight API calls (scoping, research searches, planning, and naming — including any continuation calls) are aborted.
+
+### Debugging & Logging
+
+All plan phases are logged to the browser console with `[Plan]` prefix, including:
+- Phase transitions with elapsed time
+- Scoping blueprint results (goal summary, constraints, work streams, search queries)
+- Web research details (queries run, whether Serper was available)
+- Plan content length and continuation count
+- Naming results (raw response, sanitized name, final filename)
+- Errors with the phase where failure occurred
+
+Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
+
+---
+
 ## Supported AI Providers
 
 ### Claude (Anthropic)
@@ -824,6 +954,8 @@ Open DevTools (Ctrl+Shift+I) to view these logs for troubleshooting.
 | `src/renderer/hooks/useAIDiffEdit.ts`                   | Edit mode logic, diff computation, opens diff tab                            |
 | `src/renderer/hooks/useAIResearch.ts`                   | Research mode logic, two-step inference + research, opens file tab           |
 | `src/renderer/hooks/useAIGoDeeper.ts`                   | Go Deeper orchestration: analysis, expansion batches, integration, versioning |
+| `src/renderer/hooks/useAIPlan.ts`                       | Plan Mode orchestration: scoping, web research, plan generation, naming      |
+| `src/renderer/components/PlanProgress.tsx`              | Plan Progress Stepper for plan phase visualization                           |
 | `src/renderer/hooks/useEditLoadingMessage.ts`           | Typewriter-animated loading messages                                         |
 | `src/renderer/utils/extractDocumentTopics.ts`           | Extracts `##`/`###` headings from markdown for Go Deeper topic selection     |
 | `src/renderer/aiProviderModeRestrictions.ts`            | Defines which providers are restricted from which chat modes                 |
@@ -912,12 +1044,21 @@ Diff state is no longer global — it lives on each diff tab's `IFile` object:
 
 - `useHasDiffTab(sourceFileId?)` - Returns `true` if any open file is a diff tab referencing the given source file (used to enforce read-only state on the source file)
 
+**Plan State** (managed by `useAIPlan` hook):
+
+- `isPlanLoading: boolean` — Whether a plan request is in progress
+- `planPhase: PlanPhase` — Current phase: `'scoping'`, `'researching'`, `'planning'`, `'naming'`, `'complete'`, or `null`
+- `planComplete: boolean` — Whether the last plan run finished successfully
+- `planFileName: string | null` — Filename of the generated plan document
+- `planError: string | null` — Error message if the plan failed
+- `planQuery: string | null` — The topic string from the user's last plan request (shown in the progress UI header)
+
 **Configuration State** (persisted in `config.json`):
 
 - `aiModels` - Per-provider model enable/disable flags (providers: `xai`, `claude`, `openai`, `gemini`)
 - `aiChatDocked` - Whether the chat panel is docked
 - `aiChatDockWidth` - Width of the docked chat panel
-- `aiChatMode` - Current AI chat mode (`'chat'`, `'edit'`, or `'research'`). Migrated from legacy `aiChatEditMode` boolean
+- `aiChatMode` - Current AI chat mode (`'chat'`, `'edit'`, `'research'`, `'tech-research'`, or `'plan'`). Migrated from legacy `aiChatEditMode` boolean
 - `aiChatProvider` - Last selected AI provider
 - `aiChatModel` - Last selected AI model
 
