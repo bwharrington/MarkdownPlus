@@ -79,6 +79,8 @@ export function useMarkdownComponents(
         // Override <pre> to intercept all fenced code blocks (with or without a language tag).
         // ReactMarkdown wraps every fenced block in <pre><code>...</code></pre>, so this is
         // the only reliable place to distinguish fenced blocks from inline `code` spans.
+        // Always return a stable <div> wrapper so React's reconciler never sees a root
+        // element type change between renders (prevents insertBefore DOM errors on tab switch).
         pre({ children }) {
             // The child is always a <code> element for fenced blocks
             if (React.isValidElement(children) && (children as React.ReactElement<{ className?: string; children?: React.ReactNode }>).props) {
@@ -89,11 +91,11 @@ export function useMarkdownComponents(
                 const code = String(codeEl.props.children ?? '').replace(/\n$/, '');
 
                 if (language === 'mermaid') {
-                    return <MermaidDiagram key={code} chart={code} />;
+                    return <div><MermaidDiagram chart={code} /></div>;
                 }
 
                 if (language) {
-                    return <CodeBlock language={language}>{code}</CodeBlock>;
+                    return <div><CodeBlock language={language}>{code}</CodeBlock></div>;
                 }
             }
 

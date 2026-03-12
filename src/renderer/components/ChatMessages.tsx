@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Box, Typography, CircularProgress, styled } from '@mui/material';
+import React, { useState, useCallback } from 'react';
+import { Box, Typography, CircularProgress, styled, IconButton, Tooltip } from '@mui/material';
+import { CopyIcon, CheckIcon } from './AppIcons';
 import ReactMarkdown, { Components } from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
 import type { ResearchPhase, DeepeningProgress, InferenceResult } from '../hooks/useAIResearch';
@@ -100,6 +101,115 @@ const LoadingCursor = styled('span')(({ theme }) => ({
     animation: 'blink 1s step-end infinite',
 }));
 
+const SectionWrapper = styled(Box)({
+    position: 'relative',
+    '&:hover .section-copy-btn': {
+        opacity: 1,
+    },
+});
+
+const SectionCopyButton = styled(IconButton)(({ theme }) => ({
+    position: 'absolute',
+    top: 0,
+    right: -28,
+    opacity: 0,
+    transition: 'opacity 0.15s',
+    padding: 3,
+    color: theme.palette.text.secondary,
+    '&:hover': {
+        color: theme.palette.text.primary,
+        backgroundColor: theme.palette.action.hover,
+    },
+}));
+
+const ResponseCopyRow = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    justifyContent: 'flex-end',
+    borderTop: `1px solid ${theme.palette.divider}`,
+    marginTop: 6,
+    paddingTop: 4,
+}));
+
+const ResponseCopyButton = styled(IconButton)(({ theme }) => ({
+    padding: '2px 6px',
+    borderRadius: 6,
+    fontSize: '0.7rem',
+    color: theme.palette.text.secondary,
+    gap: 4,
+    '&:hover': {
+        color: theme.palette.text.primary,
+        backgroundColor: theme.palette.action.hover,
+    },
+}));
+
+function extractText(children: React.ReactNode): string {
+    if (typeof children === 'string') return children;
+    if (typeof children === 'number') return String(children);
+    if (!children) return '';
+    if (Array.isArray(children)) return children.map(extractText).join('');
+    if (React.isValidElement(children)) {
+        const el = children as React.ReactElement<{ children?: React.ReactNode }>;
+        return extractText(el.props.children);
+    }
+    return '';
+}
+
+function CopyableSection({ children }: { children: React.ReactNode }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = useCallback(() => {
+        const text = extractText(children);
+        navigator.clipboard.writeText(text).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    }, [children]);
+
+    return (
+        <SectionWrapper>
+            {children}
+            <SectionCopyButton
+                className="section-copy-btn"
+                size="small"
+                onClick={handleCopy}
+                aria-label="Copy section"
+            >
+                {copied
+                    ? <CheckIcon size={14} />
+                    : <CopyIcon size={14} />
+                }
+            </SectionCopyButton>
+        </SectionWrapper>
+    );
+}
+
+function ResponseCopyButton_({ content }: { content: string }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = useCallback(() => {
+        navigator.clipboard.writeText(content).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+        });
+    }, [content]);
+
+    return (
+        <ResponseCopyRow>
+            <Tooltip title={copied ? 'Copied!' : 'Copy response'} placement="left">
+                <ResponseCopyButton size="small" onClick={handleCopy} aria-label="Copy response">
+                    {copied
+                        ? <CheckIcon size={13} />
+                        : <CopyIcon size={13} />
+                    }
+                    <Typography component="span" sx={{ fontSize: '0.68rem', lineHeight: 1 }}>
+                        {copied ? 'Copied' : 'Copy'}
+                    </Typography>
+                </ResponseCopyButton>
+            </Tooltip>
+        </ResponseCopyRow>
+    );
+}
+
 const DIFF_REVIEW_MESSAGES = [
     "Scan the upgrades.",
     "Inspect the implants.",
@@ -122,7 +232,11 @@ const chatMarkdownComponents: Components = {
 
         if (language && isBlock) {
             const code = String(children).replace(/\n$/, '');
-            return <CodeBlock language={language}>{code}</CodeBlock>;
+            return (
+                <CopyableSection>
+                    <CodeBlock language={language}>{code}</CodeBlock>
+                </CopyableSection>
+            );
         }
 
         return (
@@ -130,6 +244,36 @@ const chatMarkdownComponents: Components = {
                 {children}
             </code>
         );
+    },
+    p({ children }) {
+        return <CopyableSection><p>{children}</p></CopyableSection>;
+    },
+    h1({ children }) {
+        return <CopyableSection><h1>{children}</h1></CopyableSection>;
+    },
+    h2({ children }) {
+        return <CopyableSection><h2>{children}</h2></CopyableSection>;
+    },
+    h3({ children }) {
+        return <CopyableSection><h3>{children}</h3></CopyableSection>;
+    },
+    h4({ children }) {
+        return <CopyableSection><h4>{children}</h4></CopyableSection>;
+    },
+    h5({ children }) {
+        return <CopyableSection><h5>{children}</h5></CopyableSection>;
+    },
+    h6({ children }) {
+        return <CopyableSection><h6>{children}</h6></CopyableSection>;
+    },
+    blockquote({ children }) {
+        return <CopyableSection><blockquote>{children}</blockquote></CopyableSection>;
+    },
+    ul({ children }) {
+        return <CopyableSection><ul>{children}</ul></CopyableSection>;
+    },
+    ol({ children }) {
+        return <CopyableSection><ol>{children}</ol></CopyableSection>;
     },
 };
 
@@ -262,7 +406,10 @@ export function ChatMessages({
                 messages.map((msg, idx) => (
                     <MessageBubble key={idx} role={msg.role}>
                         {msg.role === 'assistant' ? (
-                            <ReactMarkdown components={chatMarkdownComponents}>{msg.content}</ReactMarkdown>
+                            <>
+                                <ReactMarkdown components={chatMarkdownComponents}>{msg.content}</ReactMarkdown>
+                                <ResponseCopyButton_ content={msg.content} />
+                            </>
                         ) : (
                             <Typography variant="body2">{msg.content}</Typography>
                         )}

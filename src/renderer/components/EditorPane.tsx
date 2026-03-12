@@ -12,12 +12,12 @@ export function EditorPane() {
     }
 
     if (activeFile.viewMode === 'diff' && activeFile.diffSession) {
-        return <DiffView file={activeFile} />;
+        return <DiffView key={activeFile.id} file={activeFile} />;
     }
 
     if (activeFile.viewMode === 'edit') {
-        return <EditView />;
+        return <EditView key={activeFile.id} />;
     }
 
-    return <PreviewView />;
+    return <PreviewView key={activeFile.id} />;
 }
