@@ -131,9 +131,11 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
+
         const renderDiagram = async () => {
             if (!chart.trim()) {
-                setError('Empty diagram definition');
+                if (!cancelled) setError('Empty diagram definition');
                 return;
             }
 
@@ -149,11 +151,18 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
 
                 // Validate the diagram syntax first
                 const isValid = await mermaid.parse(chart);
-                
+
+                // Guard: if chart changed or component unmounted while we were parsing, bail out
+                if (cancelled) return;
+
                 if (isValid) {
                     // Generate a unique ID for each render
                     const uniqueId = `${idRef.current}-${Date.now()}`;
                     const { svg: renderedSvg } = await mermaid.render(uniqueId, chart);
+
+                    // Guard: don't update state if this render is now stale
+                    if (cancelled) return;
+
                     setSvg(renderedSvg);
                     setError(null);
                     // Reset zoom and pan when diagram changes
@@ -161,6 +170,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
                     setPan({ x: 0, y: 0 });
                 }
             } catch (err) {
+                if (cancelled) return;
                 const errorMessage = err instanceof Error ? err.message : 'Failed to render Mermaid diagram';
                 setError(errorMessage);
                 setSvg('');
@@ -168,6 +178,10 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
         };
 
         renderDiagram();
+
+        return () => {
+            cancelled = true;
+        };
     }, [chart, muiTheme.palette.mode]);
 
     if (error) {

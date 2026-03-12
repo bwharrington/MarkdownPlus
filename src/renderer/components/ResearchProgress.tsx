@@ -281,12 +281,11 @@ export const ResearchProgress = React.memo(function ResearchProgress({
 
     return (
         <ProgressContainer>
-            {PHASE_ORDER.map((stepPhase, index) => {
+            {PHASE_ORDER.map((stepPhase) => {
                 const status = getStepStatus(researchPhase, stepPhase);
                 const label = PHASE_LABELS[stepPhase!] || stepPhase;
                 const elapsed = status === 'complete' ? getPhaseElapsed(stepPhase!) : null;
                 const isActive = status === 'active';
-                const isLast = false; // Never last — "Complete" step follows
 
                 // Build label with deepening progress
                 let displayLabel = label;
@@ -301,7 +300,7 @@ export const ResearchProgress = React.memo(function ResearchProgress({
                         <StepRow>
                             <StepIndicatorColumn>
                                 <StepDot status={status} />
-                                {!isLast && <StepConnector status={status} />}
+                                <StepConnector status={status} />
                             </StepIndicatorColumn>
                             <StepContent>
                                 <StepLabelRow>

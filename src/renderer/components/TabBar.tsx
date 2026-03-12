@@ -357,6 +357,16 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
     const row1Files = state.openFiles.slice(0, splitIndex);
     const row2Files = state.openFiles.slice(splitIndex);
 
+    const contextFile = contextMenu
+        ? state.openFiles.find(f => f.id === contextMenu.fileId)
+        : null;
+    const contextAttachedEntry = contextFile?.path
+        ? attachedFiles.find(af => af.path === contextFile.path)
+        : undefined;
+    const isContextFileContextDoc = contextAttachedEntry?.isContextDoc === true;
+    const isContextFileContextDocEnabled = contextAttachedEntry?.enabled !== false;
+    const isContextFileManuallyAttached = contextAttachedEntry !== undefined && !isContextFileContextDoc;
+
     const renderTab = (file: IFile, globalIndex: number) => (
         <StyledTab
             key={file.id}
@@ -448,47 +458,31 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
                     <SaveAsIcon size={18} sx={{ mr: 1 }} />
                     Save As
                 </MenuItem>
-                {(() => {
-                    const contextFile = contextMenu
-                        ? state.openFiles.find(f => f.id === contextMenu.fileId)
-                        : null;
-                    const attachedEntry = contextFile?.path
-                        ? attachedFiles.find(af => af.path === contextFile.path)
-                        : undefined;
-                    const isContextDoc = attachedEntry?.isContextDoc === true;
-                    const isContextDocEnabled = attachedEntry?.enabled !== false;
-                    const isManuallyAttached = attachedEntry !== undefined && !isContextDoc;
-
-                    if (isContextDoc) {
-                        return (
-                            <MenuItem
-                                onClick={handleContextDocToggleClick}
-                                disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
-                            >
-                                {isContextDocEnabled ? (
-                                    <VisibilityIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
-                                ) : (
-                                    <VisibilityOffIcon fontSize="small" sx={{ mr: 1, color: 'text.disabled' }} />
-                                )}
-                                {isContextDocEnabled ? `Hide "${contextFile?.name}" from AI` : `Show "${contextFile?.name}" to AI`}
-                            </MenuItem>
-                        );
-                    }
-
-                    return (
-                        <MenuItem
-                            onClick={handleAttachToggleClick}
-                            disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
-                        >
-                            {isManuallyAttached ? (
-                                <MinusIcon size={18} sx={{ mr: 1, color: 'error.main' }} />
-                            ) : (
-                                <PlusIcon size={18} sx={{ mr: 1, color: 'success.main' }} />
-                            )}
-                            {isManuallyAttached ? `Remove '${contextFile?.name}' from Nexus` : `Attach '${contextFile?.name}' to Nexus`}
-                        </MenuItem>
-                    );
-                })()}
+                {isContextFileContextDoc ? (
+                    <MenuItem
+                        onClick={handleContextDocToggleClick}
+                        disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
+                    >
+                        {isContextFileContextDocEnabled ? (
+                            <VisibilityIcon fontSize="small" sx={{ mr: 1, color: 'primary.main' }} />
+                        ) : (
+                            <VisibilityOffIcon fontSize="small" sx={{ mr: 1, color: 'text.disabled' }} />
+                        )}
+                        {isContextFileContextDocEnabled ? `Hide "${contextFile?.name}" from AI` : `Show "${contextFile?.name}" to AI`}
+                    </MenuItem>
+                ) : (
+                    <MenuItem
+                        onClick={handleAttachToggleClick}
+                        disabled={!contextFile?.path || contextFile?.viewMode === 'diff'}
+                    >
+                        {isContextFileManuallyAttached ? (
+                            <MinusIcon size={18} sx={{ mr: 1, color: 'error.main' }} />
+                        ) : (
+                            <PlusIcon size={18} sx={{ mr: 1, color: 'success.main' }} />
+                        )}
+                        {isContextFileManuallyAttached ? `Remove '${contextFile?.name}' from Nexus` : `Attach '${contextFile?.name}' to Nexus`}
+                    </MenuItem>
+                )}
             </Menu>
             <Dialog open={renameDialog.open} onClose={handleRenameDialogClose}>
                 <DialogTitle>Rename File</DialogTitle>

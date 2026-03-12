@@ -119,11 +119,13 @@ export async function callXAiApi(
 
         log('xAI API Response Status', { status: response.status, statusText: response.statusText });
 
-        const data: XAiApiResponse = await response.json();
-
         if (!response.ok) {
-            throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+            const errorBody = await response.text();
+            logError('xAI API Error Response', { message: errorBody, status: response.status, body: errorBody });
+            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
         }
+
+        const data: XAiApiResponse = await response.json();
 
         const truncated = data.choices[0]?.finish_reason === 'length';
         if (truncated) {

@@ -104,7 +104,7 @@ export function EditView() {
             const cursorPos = getCursorPosition(contentEditableRef.current);
             setPlainText(contentEditableRef.current, activeFile.content, cursorPos);
         }
-    }, [activeFile?.content, activeFile?.viewMode, activeFile, contentEditableRef, isUserInputRef]);
+    }, [activeFile, activeFile?.content, activeFile?.viewMode]);
 
     // Initialize contenteditable when switching to edit mode
     React.useEffect(() => {
@@ -114,7 +114,7 @@ export function EditView() {
             clearWordHighlights(contentEditableRef.current);
             contentEditableRef.current.textContent = activeFile.content;
         }
-    }, [activeFile?.viewMode, activeFile?.id, activeFile, contentEditableRef]);
+    }, [activeFile, activeFile?.viewMode, activeFile?.id]);
 
     // Restore scroll position
     React.useEffect(() => {
@@ -125,7 +125,7 @@ export function EditView() {
                 element.scrollTop = activeFile.scrollPosition;
             });
         }
-    }, [activeFile?.id, activeFile?.viewMode, activeFile, contentEditableRef]);
+    }, [activeFile, activeFile?.id, activeFile?.viewMode]);
 
     const lineNumbers = useMemo(() => {
         const count = activeFile ? (activeFile.content.split('\n').length || 1) : 1;
@@ -133,12 +133,6 @@ export function EditView() {
             <div key={i + 1}>{i + 1}</div>
         ));
     }, [activeFile?.content]);
-
-    if (!activeFile) return null;
-
-    const isRstFileEdit = activeFile.fileType === 'rst';
-    const EditToolbar = isRstFileEdit ? RstToolbar : MarkdownToolbar;
-    const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing markdown...';
 
     const handleExportPdf = useCallback(async () => {
         if (!activeFile) return;
@@ -176,6 +170,12 @@ export function EditView() {
             });
         }
     }, [activeFile, dispatch]);
+
+    if (!activeFile) return null;
+
+    const isRstFileEdit = activeFile.fileType === 'rst';
+    const EditToolbar = isRstFileEdit ? RstToolbar : MarkdownToolbar;
+    const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing markdown...';
 
     return (
         <EditorContainer>

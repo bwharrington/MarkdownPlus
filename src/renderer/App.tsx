@@ -155,6 +155,7 @@ function AppContent() {
     const [isResizingAiDock, setIsResizingAiDock] = useState(false);
     const mainContentRef = useRef<HTMLDivElement | null>(null);
     const aiDockResizeStartRef = useRef({ x: 0, width: DEFAULT_AI_DOCK_WIDTH });
+    const aiDockWidthRef = useRef(DEFAULT_AI_DOCK_WIDTH);
 
     const persistAiChatLayout = useCallback((updates: { aiChatDockWidth?: number }) => {
         const nextConfig = {
@@ -455,6 +456,9 @@ function AppContent() {
         silentFileUpdates: state.config.silentFileUpdates !== false,
     });
 
+    // Keep aiDockWidthRef in sync so the resize mouseup handler always reads the latest width
+    aiDockWidthRef.current = aiDockWidth;
+
     // Sync AI dock width from config once loaded.
     useEffect(() => {
         setAiDockWidth(Math.max(MIN_AI_DOCK_WIDTH, state.config.aiChatDockWidth ?? DEFAULT_AI_DOCK_WIDTH));
@@ -486,7 +490,8 @@ function AppContent() {
 
         const handleMouseUp = () => {
             setIsResizingAiDock(false);
-            persistAiChatLayout({ aiChatDockWidth: aiDockWidth });
+            // Read from ref to avoid capturing stale aiDockWidth state in this closure
+            persistAiChatLayout({ aiChatDockWidth: aiDockWidthRef.current });
         };
 
         document.addEventListener('mousemove', handleMouseMove);
@@ -495,7 +500,7 @@ function AppContent() {
             document.removeEventListener('mousemove', handleMouseMove);
             document.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [aiDockWidth, isResizingAiDock, persistAiChatLayout]);
+    }, [isResizingAiDock, persistAiChatLayout]);
 
     // Set up file opening from command line arguments (file associations)
     useEffect(() => {

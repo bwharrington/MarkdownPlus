@@ -16,6 +16,9 @@ import { buildPdfHtmlDocument } from '../utils/pdfExport';
 
 const markdownPlugins = [remarkGfm];
 
+// Stable no-op for disabled Find/Replace fields in preview mode
+const noop = () => {};
+
 export function PreviewView() {
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
@@ -136,21 +139,6 @@ export function PreviewView() {
         });
     }, []);
 
-    // Restore scroll position
-    React.useEffect(() => {
-        if (!activeFile) return;
-        const element = previewRef.current;
-        if (element && activeFile.scrollPosition > 0) {
-            requestAnimationFrame(() => {
-                element.scrollTop = activeFile.scrollPosition;
-            });
-        }
-    }, [activeFile?.id, activeFile?.viewMode, activeFile]);
-
-    if (!activeFile) return null;
-
-    const isRstFile = activeFile.fileType === 'rst';
-    const PreviewToolbar = isRstFile ? RstToolbar : MarkdownToolbar;
     const handleExportPdf = useCallback(async () => {
         if (!activeFile) return;
 
@@ -188,6 +176,22 @@ export function PreviewView() {
             });
         }
     }, [activeFile, dispatch]);
+
+    // Restore scroll position
+    React.useEffect(() => {
+        if (!activeFile) return;
+        const element = previewRef.current;
+        if (element && activeFile.scrollPosition > 0) {
+            requestAnimationFrame(() => {
+                element.scrollTop = activeFile.scrollPosition;
+            });
+        }
+    }, [activeFile?.id, activeFile?.viewMode, activeFile]);
+
+    if (!activeFile) return null;
+
+    const isRstFile = activeFile.fileType === 'rst';
+    const PreviewToolbar = isRstFile ? RstToolbar : MarkdownToolbar;
 
     return (
         <EditorContainer>
@@ -236,12 +240,12 @@ export function PreviewView() {
                     onTabChange={setActiveDialogTab}
                     onSearchQueryChange={handleSearchQueryChange}
                     onReplaceQueryChange={setReplaceQuery}
-                    onGotoLineChange={() => {}}
+                    onGotoLineChange={noop}
                     onFindNext={handleFindNext}
                     onCount={handleCount}
                     onReplace={handleReplace}
                     onReplaceAll={handleReplaceAll}
-                    onGoToLine={() => {}}
+                    onGoToLine={noop}
                     onClose={handleCloseFind}
                 />
             </EditorWrapper>

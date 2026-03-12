@@ -133,6 +133,7 @@ export function Toolbar() {
         window.dispatchEvent(new CustomEvent('open-settings'));
     }, []);
 
+
     const handleSave = useCallback(() => {
         saveFile();
     }, [saveFile]);

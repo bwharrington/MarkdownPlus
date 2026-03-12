@@ -68,17 +68,17 @@ export function NotificationSnackbar() {
     const dismissTimeout = currentNotification?.action ? 15000 : 5000;
 
     useEffect(() => {
-        if (currentNotification) {
-            const timer = setTimeout(() => {
-                dispatch({
-                    type: 'DISMISS_NOTIFICATION',
-                    payload: { id: currentNotification.id },
-                });
-            }, dismissTimeout);
+        if (!currentNotification) return;
+        const id = currentNotification.id;
+        const timer = setTimeout(() => {
+            dispatch({
+                type: 'DISMISS_NOTIFICATION',
+                payload: { id },
+            });
+        }, dismissTimeout);
 
-            return () => clearTimeout(timer);
-        }
-    }, [currentNotification, dismissTimeout, dispatch]);
+        return () => clearTimeout(timer);
+    }, [currentNotification?.id, dismissTimeout, dispatch]);
 
     const handleClose = () => {
         if (currentNotification) {

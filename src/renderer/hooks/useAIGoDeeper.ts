@@ -135,7 +135,7 @@ function parseAnalysisResponse(text: string): GoDeepAnalysis {
 
 // --- Phase D2: Deep Dive Expansion ---
 
-const DEPTH_INSTRUCTIONS: Record<string, string> = {
+const DEPTH_INSTRUCTIONS: Record<GoDeepDepthLevel, string> = {
     beginner: `Write for someone new to this topic. Prioritize clear explanations over jargon. Define technical terms when introduced. Use simple, well-commented code examples. Focus on "what it is" and "why it matters" before "how it works". Avoid assuming prior knowledge.`,
     practitioner: `Write for someone who actively works with this technology. Focus on practical patterns, real-world usage, and working code. Include common pitfalls and how to avoid them. Assume familiarity with fundamentals but explain non-obvious behaviors.`,
     expert: `Write for a deep technical expert. Prioritize internals, implementation trade-offs, edge cases, and production-scale concerns. Include advanced code patterns, performance considerations, and architectural decisions. Skip introductory explanations.`,

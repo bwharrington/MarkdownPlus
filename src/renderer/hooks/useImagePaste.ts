@@ -109,13 +109,15 @@ export function useImagePaste(
         if (!imageFiles.length) return;
         e.preventDefault();
 
-        // Process each dropped image
-        imageFiles.forEach(async (file) => {
-            const filePath = (file as File & { path: string }).path;
-            if (filePath) {
-                await saveAndInsertImage({ type: 'file', path: filePath });
+        // Process each dropped image sequentially to preserve insertion order
+        (async () => {
+            for (const file of imageFiles) {
+                const filePath = (file as File & { path: string }).path;
+                if (filePath) {
+                    await saveAndInsertImage({ type: 'file', path: filePath });
+                }
             }
-        });
+        })();
     }, [saveAndInsertImage]);
 
     return {

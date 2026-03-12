@@ -89,7 +89,7 @@ export function useMarkdownComponents(
                 const code = String(codeEl.props.children ?? '').replace(/\n$/, '');
 
                 if (language === 'mermaid') {
-                    return <MermaidDiagram chart={code} />;
+                    return <MermaidDiagram key={code} chart={code} />;
                 }
 
                 if (language) {

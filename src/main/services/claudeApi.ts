@@ -125,7 +125,7 @@ async function callClaudeApiInternal(
         maxTokens: options.maxTokens ?? 4096,
     });
 
-    const MAX_RETRIES = 2;
+    const MAX_RETRIES = 3;
     let lastError: unknown;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -167,11 +167,14 @@ async function callClaudeApiInternal(
             lastError = error;
             const isRetryable = error instanceof Error &&
                 !signal?.aborted &&
-                (error.message.includes('UND_ERR_HEADERS_TIMEOUT') ||
+                (error.message.includes('529') ||
+                 error.message.includes('UND_ERR_HEADERS_TIMEOUT') ||
                  error.message.includes('HeadersTimeoutError') ||
                  error.message.includes('fetch failed'));
             if (isRetryable && attempt < MAX_RETRIES) {
-                log(`Claude API: Retrying after fetch error (attempt ${attempt}/${MAX_RETRIES})`, {});
+                const delayMs = attempt * 2000;
+                log(`Claude API: Retrying after error (attempt ${attempt}/${MAX_RETRIES}), waiting ${delayMs}ms`, {});
+                await new Promise(resolve => setTimeout(resolve, delayMs));
                 continue;
             }
             break;
