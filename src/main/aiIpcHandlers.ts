@@ -374,21 +374,18 @@ export function registerAIIpcHandlers() {
                     summary: parsed.summary || 'Changes applied'
                 };
             } catch (parseError) {
-                // Write the full response to a separate file for debugging
-                const fsSync = require('fs');
-                const pathMod = require('path');
-                const debugPath = pathMod.join(app.getPath('userData'), 'ai-response-debug.txt');
-                try {
-                    fsSync.writeFileSync(debugPath, `=== Failed AI Edit Response ===\nTimestamp: ${new Date().toISOString()}\nProvider: ${data.provider}\nModel: ${data.model}\nResponse Length: ${response.length}\nCleaned Length: ${jsonStr.length}\n\n=== RAW RESPONSE ===\n${response}\n\n=== CLEANED JSON STRING ===\n${jsonStr}\n\n=== PARSE ERROR ===\n${parseError}\n`, 'utf-8');
-                    log('AI IPC: Full response written to debug file', { debugPath, responseLength: response.length, cleanedLength: jsonStr.length });
-                } catch (writeError) {
-                    logError('Failed to write debug file', writeError as Error);
-                }
-                
                 logError('AI IPC: Failed to parse edit response as JSON', parseError as Error);
+                log('AI IPC: Edit response parse failure details', {
+                    provider: data.provider,
+                    model: data.model,
+                    responseLength: response.length,
+                    cleanedLength: jsonStr.length,
+                    rawResponsePreview: response.substring(0, 500),
+                    parseError: String(parseError),
+                });
                 return {
                     success: false,
-                    error: `Failed to parse AI response as JSON. The AI may not have returned valid JSON. Debug file: ${debugPath}`
+                    error: 'Failed to parse AI response as JSON. The AI may not have returned valid JSON.'
                 };
             }
         } catch (error) {
