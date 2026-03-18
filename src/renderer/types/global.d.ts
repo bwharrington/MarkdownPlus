@@ -63,6 +63,8 @@ export interface IConfig {
   fileDirectoryOpen?: boolean;
   fileDirectoryWidth?: number;
   fileDirectorySort?: FileDirectorySortOrder;
+  openDirectoryPaths?: string[];
+  openDirectorySort?: Record<string, FileDirectorySortOrder>;
   openDirectories?: string[];
   recentDirectories?: string[];
 }

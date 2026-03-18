@@ -16,6 +16,7 @@ import {
     DescriptionIcon,
     PanelLeftOpenIcon,
     PanelLeftCloseIcon,
+    FolderPlusIcon,
 } from './AppIcons';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile, useTheme, useEditorDispatch } from '../contexts';
@@ -56,9 +57,10 @@ const DraggableSpacer = styled(Box)({
 interface ToolbarProps {
     fileDirOpen?: boolean;
     onToggleFileDirectory?: () => void;
+    onOpenFolder?: () => void;
 }
 
-export function Toolbar({ fileDirOpen, onToggleFileDirectory }: ToolbarProps) {
+export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: ToolbarProps) {
     const state = useEditorState();
     const activeFile = useActiveFile();
     const dispatch = useEditorDispatch();
@@ -177,6 +179,15 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory }: ToolbarProps) {
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
                         {fileDirOpen ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
+                    </IconButton>
+                </Tooltip>
+                <Tooltip title="Open Folder">
+                    <IconButton
+                        onClick={onOpenFolder}
+                        color="inherit"
+                        sx={{ WebkitAppRegion: 'no-drag' }}
+                    >
+                        <FolderPlusIcon />
                     </IconButton>
                 </Tooltip>
 

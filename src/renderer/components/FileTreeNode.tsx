@@ -149,10 +149,14 @@ export const FileTreeNode = React.memo(function FileTreeNode({
     const handleClick = useCallback(() => {
         if (node.isDirectory) {
             onToggle(node.path);
-        } else {
+        }
+    }, [node.isDirectory, node.path, onToggle]);
+
+    const handleDoubleClick = useCallback(() => {
+        if (!node.isDirectory) {
             onFileClick(node.path);
         }
-    }, [node.isDirectory, node.path, onToggle, onFileClick]);
+    }, [node.isDirectory, node.path, onFileClick]);
 
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -249,6 +253,7 @@ export const FileTreeNode = React.memo(function FileTreeNode({
                 isDragOver={isDragOver}
                 sx={{ paddingLeft: `${paddingLeft}px` }}
                 onClick={handleClick}
+                onDoubleClick={handleDoubleClick}
                 onContextMenu={handleContextMenu}
                 draggable={!node.isDirectory && !isRenaming}
                 onDragStart={handleDragStart}

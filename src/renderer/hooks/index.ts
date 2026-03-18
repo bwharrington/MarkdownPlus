@@ -10,4 +10,5 @@ export { useEditorKeyboard } from './useEditorKeyboard';
 export { useDraggableDialog } from './useDraggableDialog';
 export { useAIProviderCache } from './useAIProviderCache';
 export type { AIProviderCacheValue } from './useAIProviderCache';
-export { useFileDirectory } from './useFileDirectory';
+export { useFileDirectories } from './useFileDirectories';
+export type { DirectoryInstance, UseFileDirectoriesReturn } from './useFileDirectories';

@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback, useRef, useMemo, Component } from 'react';
 import { CssBaseline, Box, Button, styled, Typography } from '@mui/material';
 import { EditorProvider, useEditorState, useEditorDispatch, ThemeProvider, AIProviderCacheProvider } from './contexts';
-import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog, FileDirectory } from './components';
-import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType, useFileDirectory } from './hooks';
+import { Toolbar, TabBar, EditorPane, EmptyState, NotificationSnackbar, AIChatDialog, SettingsDialog, FileDirectoryContainer } from './components';
+import { useWindowTitle, useFileOperations, useExternalFileWatcher, getFileType, useFileDirectories } from './hooks';
 import { SplitDivider } from './styles/editor.styles';
 import type { AttachedFile } from './components/FileAttachmentsList';
 import type { IFile } from './types';
@@ -159,7 +159,7 @@ function AppContent() {
     const state = useEditorState();
     const dispatch = useEditorDispatch();
     const { saveFile, saveFileAs, saveAllFiles, openFile, closeFile, closeAllFiles, showInFolder, createNewFile } = useFileOperations();
-    const fileDirectory = useFileDirectory();
+    const fileDirectories = useFileDirectories();
 
     // File directory panel state
     const [fileDirOpen, setFileDirOpen] = useState(state.config.fileDirectoryOpen ?? false);
@@ -762,6 +762,7 @@ function AppContent() {
             <Toolbar
                 fileDirOpen={fileDirOpen}
                 onToggleFileDirectory={handleToggleFileDirectory}
+                onOpenFolder={fileDirectories.openFolder}
             />
             <TabBar
                 attachedFiles={attachedFiles}
@@ -770,10 +771,11 @@ function AppContent() {
             />
             <MainContent ref={mainContentRef}>
                 <FileDirectoryPanel sx={{ width: fileDirWidth, display: fileDirOpen ? undefined : 'none' }}>
-                    <FileDirectory
-                        directory={fileDirectory}
+                    <FileDirectoryContainer
+                        directories={fileDirectories.directories}
                         attachedFilePaths={attachedFilePaths}
                         onToggleNexusAttachment={handleToggleNexusAttachmentFromTree}
+                        onOpenFolder={fileDirectories.openFolder}
                     />
                 </FileDirectoryPanel>
                 <SplitDivider
@@ -781,7 +783,7 @@ function AppContent() {
                     sx={{ flexShrink: 0, zIndex: 2, display: fileDirOpen ? undefined : 'none' }}
                 />
                 <EditorArea>
-                    {hasOpenFiles ? <EditorPane /> : <EmptyState onOpenRecentDirectory={fileDirectory.openRecentDirectory} />}
+                    {hasOpenFiles ? <EditorPane /> : <EmptyState onOpenRecentDirectory={fileDirectories.openRecentDirectory} />}
                 </EditorArea>
                 <SplitDivider
                     onMouseDown={handleAiDockResizeStart}

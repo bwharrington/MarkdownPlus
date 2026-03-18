@@ -1,0 +1,533 @@
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useEditorState, useEditorDispatch } from '../contexts';
+import { getFileType } from './useFileOperations';
+import type { DirectoryNode, FileDirectorySortOrder, IConfig } from '../types';
+
+export interface DirectoryInstance {
+    id: string;
+    rootPath: string;
+    tree: DirectoryNode | null;
+    isLoading: boolean;
+    expandedPaths: Set<string>;
+    sortOrder: FileDirectorySortOrder;
+    isAllExpanded: boolean;
+    renamingPath: string | null;
+    refreshTree: () => Promise<void>;
+    closeDirectory: () => void;
+    toggleNode: (path: string) => void;
+    expandAll: () => void;
+    collapseAll: () => void;
+    setSortOrder: (order: FileDirectorySortOrder) => void;
+    createNewFile: (parentPath?: string) => Promise<void>;
+    createNewFolder: (parentPath?: string) => Promise<void>;
+    moveItem: (sourcePath: string, destDirPath: string) => Promise<void>;
+    deleteItem: (itemPath: string) => Promise<void>;
+    renameItem: (oldPath: string, newName: string) => Promise<void>;
+    startRename: (path: string) => void;
+    cancelRename: () => void;
+    openFileInEditor: (filePath: string) => Promise<void>;
+}
+
+export interface UseFileDirectoriesReturn {
+    directories: DirectoryInstance[];
+    openFolder: () => Promise<void>;
+    openRecentDirectory: (dirPath: string) => Promise<void>;
+}
+
+interface InstanceState {
+    tree: DirectoryNode | null;
+    isLoading: boolean;
+    expandedPaths: Set<string>;
+    sortOrder: FileDirectorySortOrder;
+    renamingPath: string | null;
+}
+
+function collectAllFolderPaths(node: DirectoryNode): string[] {
+    const paths: string[] = [];
+    if (node.isDirectory) {
+        paths.push(node.path);
+        if (node.children) {
+            for (const child of node.children) {
+                paths.push(...collectAllFolderPaths(child));
+            }
+        }
+    }
+    return paths;
+}
+
+export function useFileDirectories(): UseFileDirectoriesReturn {
+    const state = useEditorState();
+    const dispatch = useEditorDispatch();
+
+    const configRef = useRef(state.config);
+    configRef.current = state.config;
+
+    const openFilesRef = useRef(state.openFiles);
+    openFilesRef.current = state.openFiles;
+
+    const [instances, setInstances] = useState<Map<string, InstanceState>>(new Map());
+    const [orderedPaths, setOrderedPaths] = useState<string[]>([]);
+
+    const instancesRef = useRef(instances);
+    instancesRef.current = instances;
+
+    const orderedPathsRef = useRef(orderedPaths);
+    orderedPathsRef.current = orderedPaths;
+
+    const persistConfig = useCallback((updates: Partial<IConfig>) => {
+        const nextConfig = { ...configRef.current, ...updates };
+        dispatch({ type: 'SET_CONFIG', payload: nextConfig });
+        window.electronAPI.saveConfig(nextConfig).catch((err) => {
+            console.error('Failed to save file directory config:', err);
+        });
+    }, [dispatch]);
+
+    const updateInstance = useCallback((dirPath: string, updater: (prev: InstanceState) => InstanceState) => {
+        setInstances(prev => {
+            const existing = prev.get(dirPath);
+            if (!existing) return prev;
+            const next = new Map(prev);
+            next.set(dirPath, updater(existing));
+            return next;
+        });
+    }, []);
+
+    const readTree = useCallback(async (dirPath: string) => {
+        updateInstance(dirPath, s => ({ ...s, isLoading: true }));
+        try {
+            const result = await window.electronAPI.readDirectory(dirPath);
+            updateInstance(dirPath, s => {
+                const newState = { ...s, isLoading: false };
+                if (result) {
+                    newState.tree = result;
+                    if (s.expandedPaths.size === 0) {
+                        newState.expandedPaths = new Set([result.path]);
+                    }
+                }
+                return newState;
+            });
+        } catch (err) {
+            console.error('Failed to read directory:', err);
+            updateInstance(dirPath, s => ({ ...s, isLoading: false }));
+        }
+    }, [updateInstance]);
+
+    const addDirectory = useCallback((dirPath: string, sortOrder?: FileDirectorySortOrder) => {
+        setInstances(prev => {
+            if (prev.has(dirPath)) return prev;
+            const next = new Map(prev);
+            next.set(dirPath, {
+                tree: null,
+                isLoading: false,
+                expandedPaths: new Set<string>(),
+                sortOrder: sortOrder ?? 'asc',
+                renamingPath: null,
+            });
+            return next;
+        });
+        setOrderedPaths(prev => prev.includes(dirPath) ? prev : [...prev, dirPath]);
+    }, []);
+
+    const removeDirectory = useCallback((dirPath: string) => {
+        setInstances(prev => {
+            if (!prev.has(dirPath)) return prev;
+            const next = new Map(prev);
+            next.delete(dirPath);
+            return next;
+        });
+        setOrderedPaths(prev => prev.filter(p => p !== dirPath));
+    }, []);
+
+    // --- Config persistence helpers ---
+
+    const pushRecentDirectory = useCallback((dirPath: string) => {
+        const existing = configRef.current.recentDirectories ?? [];
+        const filtered = existing.filter(p => p !== dirPath);
+        const updated = [dirPath, ...filtered].slice(0, 10);
+        persistConfig({ recentDirectories: updated });
+    }, [persistConfig]);
+
+    const persistDirectoryList = useCallback((newOrderedPaths: string[]) => {
+        const existingOpen = configRef.current.openDirectories ?? [];
+        const openDirectories = [...new Set([...newOrderedPaths, ...existingOpen])];
+        persistConfig({
+            openDirectoryPaths: newOrderedPaths,
+            openDirectories,
+            fileDirectoryOpen: newOrderedPaths.length > 0 ? true : undefined,
+        });
+    }, [persistConfig]);
+
+    // --- Auto-restore on startup ---
+
+    const hasRestoredRef = useRef(false);
+    useEffect(() => {
+        if (hasRestoredRef.current) return;
+
+        // Migrate old single-directory config
+        const legacyPath = state.config.fileDirectoryPath;
+        const savedPaths = state.config.openDirectoryPaths;
+
+        let pathsToRestore: string[] = [];
+        if (savedPaths && savedPaths.length > 0) {
+            pathsToRestore = savedPaths;
+        } else if (legacyPath) {
+            pathsToRestore = [legacyPath];
+        }
+
+        if (pathsToRestore.length === 0) return;
+
+        hasRestoredRef.current = true;
+        const savedSorts = state.config.openDirectorySort ?? {};
+
+        for (const dirPath of pathsToRestore) {
+            addDirectory(dirPath, savedSorts[dirPath]);
+        }
+
+        // If migrating from legacy, persist the new format and clear legacy
+        if (!savedPaths && legacyPath) {
+            const legacySort = state.config.fileDirectorySort ?? 'asc';
+            persistConfig({
+                openDirectoryPaths: pathsToRestore,
+                openDirectorySort: { [legacyPath]: legacySort },
+                fileDirectoryPath: undefined,
+                fileDirectorySort: undefined,
+                fileDirectoryOpen: true,
+            });
+        } else if (!state.config.fileDirectoryOpen) {
+            persistConfig({ fileDirectoryOpen: true });
+        }
+
+        for (const dirPath of pathsToRestore) {
+            readTree(dirPath);
+        }
+    }, [state.config.openDirectoryPaths, state.config.fileDirectoryPath, state.config.openDirectorySort, state.config.fileDirectorySort, state.config.fileDirectoryOpen, addDirectory, readTree, persistConfig]);
+
+    // --- Public actions ---
+
+    const openFolder = useCallback(async () => {
+        const folderPath = await window.electronAPI.openFolderDialog();
+        if (!folderPath) return;
+
+        hasRestoredRef.current = true;
+
+        if (instancesRef.current.has(folderPath)) return;
+
+        const savedSorts = configRef.current.openDirectorySort ?? {};
+        addDirectory(folderPath, savedSorts[folderPath]);
+
+        const newOrdered = [...orderedPathsRef.current, folderPath];
+        const existingOpen = configRef.current.openDirectories ?? [];
+        const openDirectories = existingOpen.includes(folderPath)
+            ? existingOpen
+            : [folderPath, ...existingOpen];
+        const existingRecent = configRef.current.recentDirectories ?? [];
+        const recentDirectories = [folderPath, ...existingRecent.filter(p => p !== folderPath)].slice(0, 10);
+
+        persistConfig({
+            openDirectoryPaths: newOrdered,
+            openDirectories,
+            recentDirectories,
+            fileDirectoryOpen: true,
+        });
+
+        await readTree(folderPath);
+    }, [addDirectory, readTree, persistConfig]);
+
+    const openRecentDirectory = useCallback(async (dirPath: string) => {
+        hasRestoredRef.current = true;
+
+        if (instancesRef.current.has(dirPath)) return;
+
+        const savedSorts = configRef.current.openDirectorySort ?? {};
+        addDirectory(dirPath, savedSorts[dirPath]);
+
+        const newOrdered = [...orderedPathsRef.current, dirPath];
+        const existingOpen = configRef.current.openDirectories ?? [];
+        const openDirectories = existingOpen.includes(dirPath)
+            ? existingOpen
+            : [dirPath, ...existingOpen];
+
+        pushRecentDirectory(dirPath);
+        persistConfig({
+            openDirectoryPaths: newOrdered,
+            openDirectories,
+            fileDirectoryOpen: true,
+        });
+
+        await readTree(dirPath);
+    }, [addDirectory, readTree, persistConfig, pushRecentDirectory]);
+
+    // --- Shared openFileInEditor (same for all directories) ---
+
+    const openFileInEditor = useCallback(async (filePath: string) => {
+        const existing = openFilesRef.current.find(f => f.path === filePath);
+        if (existing) {
+            dispatch({ type: 'SELECT_TAB', payload: { id: existing.id } });
+            return;
+        }
+
+        try {
+            const fileData = await window.electronAPI.readFile(filePath);
+            if (fileData) {
+                const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+                const fileName = filePath.split(/[\\/]/).pop() || filePath;
+                dispatch({
+                    type: 'OPEN_FILE',
+                    payload: {
+                        id: fileId,
+                        path: fileData.filePath,
+                        name: fileName,
+                        content: fileData.content,
+                        lineEnding: fileData.lineEnding,
+                        fileType: getFileType(fileData.filePath),
+                    },
+                });
+
+                const newRef = { fileName: fileData.filePath, mode: 'edit' as const };
+                const openFileRefs = [
+                    ...openFilesRef.current
+                        .filter(f => f.path !== null && !f.path.endsWith('config.json') && f.viewMode !== 'diff')
+                        .map(f => ({ fileName: f.path!, mode: f.viewMode as 'edit' | 'preview' })),
+                    newRef,
+                ].filter((ref, idx, self) =>
+                    idx === self.findIndex(r => r.fileName === ref.fileName)
+                );
+                const newRecentFiles = [
+                    newRef,
+                    ...configRef.current.recentFiles.filter(ref => ref.fileName !== fileData.filePath),
+                ].slice(0, 10);
+
+                const nextConfig = { ...configRef.current, openFiles: openFileRefs, recentFiles: newRecentFiles };
+                dispatch({ type: 'SET_CONFIG', payload: nextConfig });
+                window.electronAPI.saveConfig(nextConfig).catch((err) => {
+                    console.error('Failed to persist config after opening file:', err);
+                });
+            }
+        } catch (err) {
+            console.error('Failed to open file from directory tree:', err);
+        }
+    }, [dispatch]);
+
+    // --- Build DirectoryInstance objects ---
+
+    const directories: DirectoryInstance[] = useMemo(() => {
+        return orderedPaths.map(dirPath => {
+            const inst = instances.get(dirPath);
+            if (!inst) return null;
+
+            const { tree, isLoading, expandedPaths, sortOrder, renamingPath } = inst;
+            const isAllExpanded = tree
+                ? collectAllFolderPaths(tree).every(p => expandedPaths.has(p))
+                : false;
+
+            const refreshTree = async () => {
+                const current = instancesRef.current.get(dirPath);
+                if (current) {
+                    updateInstance(dirPath, s => ({ ...s, isLoading: true }));
+                    try {
+                        const result = await window.electronAPI.readDirectory(dirPath);
+                        updateInstance(dirPath, s => ({
+                            ...s,
+                            isLoading: false,
+                            tree: result ?? s.tree,
+                        }));
+                    } catch {
+                        updateInstance(dirPath, s => ({ ...s, isLoading: false }));
+                    }
+                }
+            };
+
+            const closeDirectory = () => {
+                removeDirectory(dirPath);
+                const newOrdered = orderedPathsRef.current.filter(p => p !== dirPath);
+                const openDirs = (configRef.current.openDirectories ?? []).filter(p => p !== dirPath);
+                const sortMap = { ...(configRef.current.openDirectorySort ?? {}) };
+                delete sortMap[dirPath];
+                persistConfig({
+                    openDirectoryPaths: newOrdered,
+                    openDirectories: openDirs,
+                    openDirectorySort: sortMap,
+                    ...(newOrdered.length === 0 ? { fileDirectoryOpen: false } : {}),
+                });
+            };
+
+            const toggleNode = (nodePath: string) => {
+                updateInstance(dirPath, s => {
+                    const next = new Set(s.expandedPaths);
+                    if (next.has(nodePath)) next.delete(nodePath);
+                    else next.add(nodePath);
+                    return { ...s, expandedPaths: next };
+                });
+            };
+
+            const expandAll = () => {
+                const currentInst = instancesRef.current.get(dirPath);
+                if (!currentInst?.tree) return;
+                const allPaths = collectAllFolderPaths(currentInst.tree);
+                updateInstance(dirPath, s => ({ ...s, expandedPaths: new Set(allPaths) }));
+            };
+
+            const collapseAll = () => {
+                updateInstance(dirPath, s => ({ ...s, expandedPaths: new Set<string>() }));
+            };
+
+            const setSortOrder = (order: FileDirectorySortOrder) => {
+                updateInstance(dirPath, s => ({ ...s, sortOrder: order }));
+                const sortMap = { ...(configRef.current.openDirectorySort ?? {}), [dirPath]: order };
+                persistConfig({ openDirectorySort: sortMap });
+            };
+
+            const createNewFile = async (parentPath?: string) => {
+                const targetDir = parentPath ?? dirPath;
+                try {
+                    const result = await window.electronAPI.createFileOnDisk(targetDir);
+                    if (result.success && result.filePath) {
+                        await refreshTree();
+                        if (parentPath) {
+                            updateInstance(dirPath, s => {
+                                const next = new Set(s.expandedPaths);
+                                next.add(parentPath);
+                                return { ...s, expandedPaths: next };
+                            });
+                        }
+                        await openFileInEditor(result.filePath);
+                    }
+                } catch (err) {
+                    console.error('Failed to create file:', err);
+                }
+            };
+
+            const createNewFolder = async (parentPath?: string) => {
+                const targetDir = parentPath ?? dirPath;
+                try {
+                    const result = await window.electronAPI.createFolder(targetDir);
+                    if (result.success && result.folderPath) {
+                        await refreshTree();
+                        if (parentPath) {
+                            updateInstance(dirPath, s => {
+                                const next = new Set(s.expandedPaths);
+                                next.add(parentPath);
+                                return { ...s, expandedPaths: next };
+                            });
+                        }
+                        updateInstance(dirPath, s => ({ ...s, renamingPath: result.folderPath! }));
+                    }
+                } catch (err) {
+                    console.error('Failed to create folder:', err);
+                }
+            };
+
+            const moveItem = async (sourcePath: string, destDirPath: string) => {
+                try {
+                    const result = await window.electronAPI.moveItem(sourcePath, destDirPath);
+                    if (result.success && result.destPath) {
+                        const openFile = openFilesRef.current.find(f => f.path === sourcePath);
+                        if (openFile) {
+                            const newName = result.destPath.split(/[\\/]/).pop() || openFile.name;
+                            dispatch({
+                                type: 'UPDATE_FILE_PATH',
+                                payload: { id: openFile.id, path: result.destPath, name: newName },
+                            });
+                        }
+                        await refreshTree();
+                    }
+                } catch (err) {
+                    console.error('Failed to move item:', err);
+                }
+            };
+
+            const deleteItem = async (itemPath: string) => {
+                try {
+                    const result = await window.electronAPI.deleteItem(itemPath);
+                    if (result.success) {
+                        for (const file of openFilesRef.current) {
+                            if (file.path && (file.path === itemPath || file.path.startsWith(itemPath + '\\') || file.path.startsWith(itemPath + '/'))) {
+                                dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
+                            }
+                        }
+                        await refreshTree();
+                    }
+                } catch (err) {
+                    console.error('Failed to delete item:', err);
+                }
+            };
+
+            const renameItem = async (oldPath: string, newName: string) => {
+                if (!newName.trim()) {
+                    updateInstance(dirPath, s => ({ ...s, renamingPath: null }));
+                    return;
+                }
+                const parentDir = oldPath.substring(0, oldPath.lastIndexOf('\\') === -1
+                    ? oldPath.lastIndexOf('/')
+                    : oldPath.lastIndexOf('\\'));
+                const separator = oldPath.includes('\\') ? '\\' : '/';
+                const newPath = parentDir + separator + newName;
+
+                if (oldPath === newPath) {
+                    updateInstance(dirPath, s => ({ ...s, renamingPath: null }));
+                    return;
+                }
+
+                try {
+                    const result = await window.electronAPI.renameFile(oldPath, newPath);
+                    if (result.success) {
+                        const openFile = openFilesRef.current.find(f => f.path === oldPath);
+                        if (openFile) {
+                            dispatch({
+                                type: 'UPDATE_FILE_PATH',
+                                payload: { id: openFile.id, path: newPath, name: newName },
+                            });
+                        }
+                        await refreshTree();
+                        updateInstance(dirPath, s => {
+                            if (!s.expandedPaths.has(oldPath)) return { ...s, renamingPath: null };
+                            const next = new Set(s.expandedPaths);
+                            next.delete(oldPath);
+                            next.add(newPath);
+                            return { ...s, expandedPaths: next, renamingPath: null };
+                        });
+                    }
+                } catch (err) {
+                    console.error('Failed to rename item:', err);
+                } finally {
+                    updateInstance(dirPath, s => ({ ...s, renamingPath: null }));
+                }
+            };
+
+            const startRename = (path: string) => {
+                updateInstance(dirPath, s => ({ ...s, renamingPath: path }));
+            };
+
+            const cancelRename = () => {
+                updateInstance(dirPath, s => ({ ...s, renamingPath: null }));
+            };
+
+            return {
+                id: dirPath,
+                rootPath: dirPath,
+                tree,
+                isLoading,
+                expandedPaths,
+                sortOrder,
+                isAllExpanded,
+                renamingPath,
+                refreshTree,
+                closeDirectory,
+                toggleNode,
+                expandAll,
+                collapseAll,
+                setSortOrder,
+                createNewFile,
+                createNewFolder,
+                moveItem,
+                deleteItem,
+                renameItem,
+                startRename,
+                cancelRename,
+                openFileInEditor,
+            };
+        }).filter((d): d is DirectoryInstance => d !== null);
+    }, [orderedPaths, instances, updateInstance, removeDirectory, persistConfig, openFileInEditor, dispatch]);
+
+    return { directories, openFolder, openRecentDirectory };
+}

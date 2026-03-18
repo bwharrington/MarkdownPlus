@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useEditorState, useEditorDispatch, useActiveFile } from '../contexts';
 import type { IConfig, FileType } from '../types';
 
@@ -17,7 +17,7 @@ export function getFileType(filePath: string): FileType {
     if (MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'markdown';
     if (RST_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'rst';
     if (TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
-    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text'; // Treat as plain text
+    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
     return 'unknown';
 }
 
@@ -26,27 +26,32 @@ export function useFileOperations() {
     const dispatch = useEditorDispatch();
     const activeFile = useActiveFile();
 
-    // Helper function to save config and update the config file if it's open in the editor
+    const openFilesRef = useRef(state.openFiles);
+    openFilesRef.current = state.openFiles;
+
+    const configRef = useRef(state.config);
+    configRef.current = state.config;
+
+    const activeFileRef = useRef(activeFile);
+    activeFileRef.current = activeFile;
+
     const saveConfigAndUpdateEditor = useCallback(async (newConfig: IConfig) => {
         dispatch({ type: 'SET_CONFIG', payload: newConfig });
         await window.electronAPI.saveConfig(newConfig);
-        
-        // Find if config.json is currently open in the editor
-        const configFile = state.openFiles.find(f => f.path?.endsWith('config.json'));
+
+        const configFile = openFilesRef.current.find(f => f.path?.endsWith('config.json'));
         if (configFile) {
-            // Update the config file's content in the editor
             const updatedContent = JSON.stringify(newConfig, null, 2);
             dispatch({
                 type: 'UPDATE_CONTENT',
                 payload: { id: configFile.id, content: updatedContent },
             });
-            // Reset dirty flag since we just saved it
             dispatch({
                 type: 'SET_DIRTY',
                 payload: { id: configFile.id, isDirty: false },
             });
         }
-    }, [dispatch, state.openFiles]);
+    }, [dispatch]);
 
     const createNewFile = useCallback(() => {
         dispatch({ type: 'NEW_FILE' });
@@ -57,16 +62,13 @@ export function useFileOperations() {
         if (results && results.length > 0) {
             const openedFilePaths: string[] = [];
             const unsupportedFiles: string[] = [];
-            
-            // Open each file
+
             for (const result of results) {
-                // Skip if file is already open
-                if (state.openFiles.some(f => f.path === result.filePath)) {
+                if (openFilesRef.current.some(f => f.path === result.filePath)) {
                     openedFilePaths.push(result.filePath);
                     continue;
                 }
-                
-                // Check file type and track unsupported formats
+
                 const fileType = getFileType(result.filePath);
                 if (fileType === 'unknown') {
                     const fileName = result.filePath.split(/[\\/]/).pop() || 'Unknown';
@@ -87,7 +89,6 @@ export function useFileOperations() {
                 openedFilePaths.push(result.filePath);
             }
 
-            // Show notification for unsupported files
             if (unsupportedFiles.length > 0) {
                 dispatch({
                     type: 'SHOW_NOTIFICATION',
@@ -100,38 +101,33 @@ export function useFileOperations() {
                 });
             }
 
-            // Update recent files and open files in config
             const allOpenFileRefs = [
-                ...state.openFiles
+                ...openFilesRef.current
                     .filter(f => f.path !== null && !f.path.endsWith('config.json'))
                     .map(f => ({ fileName: f.path!, mode: f.viewMode })),
                 ...openedFilePaths.map(p => ({ fileName: p, mode: 'edit' as const }))
             ];
-            // Remove duplicates by fileName
             const uniqueOpenFiles = allOpenFileRefs.filter((ref, index, self) =>
                 index === self.findIndex(r => r.fileName === ref.fileName)
             );
 
             const newRecentFiles = [
                 ...openedFilePaths.map(p => ({ fileName: p, mode: 'edit' as const })),
-                ...state.config.recentFiles.filter(ref => !openedFilePaths.includes(ref.fileName)),
+                ...configRef.current.recentFiles.filter(ref => !openedFilePaths.includes(ref.fileName)),
             ].slice(0, 10);
 
             const newConfig: IConfig = {
-                ...state.config,
+                ...configRef.current,
                 recentFiles: newRecentFiles,
                 openFiles: uniqueOpenFiles,
             };
-            // Fire-and-forget: files are already dispatched to the UI — don't
-            // block React rendering on the config disk write.
             void saveConfigAndUpdateEditor(newConfig);
         }
-    }, [dispatch, state.config, state.openFiles, saveConfigAndUpdateEditor]);
+    }, [dispatch, saveConfigAndUpdateEditor]);
 
     const openRecentFile = useCallback(async (filePath: string) => {
         const result = await window.electronAPI.readFile(filePath);
         if (result) {
-            // Check file type and show notification for unsupported formats
             const fileType = getFileType(result.filePath);
             if (fileType === 'unknown') {
                 const fileName = result.filePath.split(/[\\/]/).pop() || 'Unknown';
@@ -155,25 +151,21 @@ export function useFileOperations() {
                     fileType: fileType,
                 },
             });
-            
-            // Update openFiles in config
+
             const openFileRefs = [
-                ...state.openFiles
+                ...openFilesRef.current
                     .filter(f => f.path !== null && !f.path.endsWith('config.json'))
                     .map(f => ({ fileName: f.path!, mode: f.viewMode })),
                 { fileName: result.filePath, mode: 'edit' as const }
             ];
-            // Remove duplicates by fileName
             const uniqueOpenFiles = openFileRefs.filter((ref, index, self) =>
                 index === self.findIndex(r => r.fileName === ref.fileName)
             );
 
             const newConfig: IConfig = {
-                ...state.config,
+                ...configRef.current,
                 openFiles: uniqueOpenFiles,
             };
-            // Fire-and-forget: file is already dispatched to the UI — don't
-            // block React rendering on the config disk write.
             void saveConfigAndUpdateEditor(newConfig);
         } else {
             dispatch({
@@ -184,32 +176,80 @@ export function useFileOperations() {
                 },
             });
         }
-    }, [dispatch, state.config, state.openFiles, saveConfigAndUpdateEditor]);
+    }, [dispatch, saveConfigAndUpdateEditor]);
+
+    const saveFileAs = useCallback(async (fileId?: string) => {
+        const file = fileId
+            ? openFilesRef.current.find(f => f.id === fileId)
+            : activeFileRef.current;
+
+        if (!file) return false;
+
+        if (file.path !== null) {
+            await window.electronAPI.unwatchFile(file.path);
+        }
+
+        const result = await window.electronAPI.saveFileAs(file.content, file.name);
+        if (result && result.success) {
+            const newName = result.filePath.split(/[\\/]/).pop() || file.name;
+
+            await window.electronAPI.watchFile(result.filePath);
+
+            dispatch({
+                type: 'UPDATE_FILE_PATH',
+                payload: { id: file.id, path: result.filePath, name: newName },
+            });
+            dispatch({
+                type: 'SHOW_NOTIFICATION',
+                payload: { message: `Saved "${newName}"`, severity: 'success' },
+            });
+
+            const openFileRefs = openFilesRef.current
+                .filter(f => (f.id === file.id ? result.filePath : f.path) !== null && !(f.id === file.id ? result.filePath : f.path)!.endsWith('config.json'))
+                .map(f => ({
+                    fileName: f.id === file.id ? result.filePath : f.path!,
+                    mode: f.viewMode,
+                }));
+
+            const newConfig: IConfig = {
+                ...configRef.current,
+                openFiles: openFileRefs,
+                recentFiles: [
+                    { fileName: result.filePath, mode: file.viewMode },
+                    ...configRef.current.recentFiles.filter(ref => ref.fileName !== result.filePath),
+                ].slice(0, 10),
+            };
+            await saveConfigAndUpdateEditor(newConfig);
+
+            return true;
+        } else {
+            if (file.path !== null) {
+                await window.electronAPI.watchFile(file.path);
+            }
+            return false;
+        }
+    }, [dispatch, saveConfigAndUpdateEditor]);
 
     const saveFile = useCallback(async (fileId?: string) => {
-        const file = fileId 
-            ? state.openFiles.find(f => f.id === fileId)
-            : activeFile;
-        
+        const file = fileId
+            ? openFilesRef.current.find(f => f.id === fileId)
+            : activeFileRef.current;
+
         if (!file) return false;
 
         if (file.path === null) {
-            // Untitled file - use Save As
             return saveFileAs(file.id);
         }
 
-        // If a pending external update exists, confirm before overwriting
         if (file.pendingExternalPath) {
             const choice = await window.electronAPI.confirmOverwriteExternal(file.name);
             if (choice === 'cancel') return false;
         }
 
-        // Unwatch file before saving to prevent file watcher from detecting our own save
         await window.electronAPI.unwatchFile(file.path);
 
         const result = await window.electronAPI.saveFile(file.path, file.content);
-        
-        // Re-watch file after saving
+
         await window.electronAPI.watchFile(file.path);
 
         if (result.success) {
@@ -226,66 +266,10 @@ export function useFileOperations() {
             });
             return false;
         }
-    }, [activeFile, state.openFiles, dispatch]);
-
-    const saveFileAs = useCallback(async (fileId?: string) => {
-        const file = fileId 
-            ? state.openFiles.find(f => f.id === fileId)
-            : activeFile;
-        
-        if (!file) return false;
-
-        // Unwatch old file path if it exists (not an untitled file)
-        if (file.path !== null) {
-            await window.electronAPI.unwatchFile(file.path);
-        }
-
-        const result = await window.electronAPI.saveFileAs(file.content, file.name);
-        if (result && result.success) {
-            const newName = result.filePath.split(/[\\/]/).pop() || file.name;
-            
-            // Watch the new file path
-            await window.electronAPI.watchFile(result.filePath);
-
-            dispatch({
-                type: 'UPDATE_FILE_PATH',
-                payload: { id: file.id, path: result.filePath, name: newName },
-            });
-            dispatch({
-                type: 'SHOW_NOTIFICATION',
-                payload: { message: `Saved "${newName}"`, severity: 'success' },
-            });
-
-            // Update config with new open files (exclude config.json)
-            const openFileRefs = state.openFiles
-                .filter(f => (f.id === file.id ? result.filePath : f.path) !== null && !(f.id === file.id ? result.filePath : f.path)!.endsWith('config.json'))
-                .map(f => ({
-                    fileName: f.id === file.id ? result.filePath : f.path!,
-                    mode: f.viewMode,
-                }));
-
-            const newConfig: IConfig = {
-                ...state.config,
-                openFiles: openFileRefs,
-                recentFiles: [
-                    { fileName: result.filePath, mode: file.viewMode },
-                    ...state.config.recentFiles.filter(ref => ref.fileName !== result.filePath),
-                ].slice(0, 10),
-            };
-            await saveConfigAndUpdateEditor(newConfig);
-
-            return true;
-        } else {
-            // Save was cancelled or failed - re-watch the old file if it existed
-            if (file.path !== null) {
-                await window.electronAPI.watchFile(file.path);
-            }
-            return false;
-        }
-    }, [activeFile, state.openFiles, state.config, dispatch]);
+    }, [dispatch, saveFileAs]);
 
     const saveAllFiles = useCallback(async () => {
-        const dirtyFiles = state.openFiles.filter(f => f.isDirty);
+        const dirtyFiles = openFilesRef.current.filter(f => f.isDirty);
         let allSaved = true;
 
         for (const file of dirtyFiles) {
@@ -301,12 +285,12 @@ export function useFileOperations() {
         }
 
         return allSaved;
-    }, [state.openFiles, saveFile, dispatch]);
+    }, [dispatch, saveFile]);
 
     const closeFile = useCallback(async (fileId?: string) => {
         const file = fileId
-            ? state.openFiles.find(f => f.id === fileId)
-            : activeFile;
+            ? openFilesRef.current.find(f => f.id === fileId)
+            : activeFileRef.current;
 
         if (!file) return;
 
@@ -334,13 +318,12 @@ export function useFileOperations() {
             dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
             console.log('[useFileOperations] CLOSE_FILE dispatched', { fileId: file.id });
 
-            // Update config (exclude config.json from openFiles)
-            const openFileRefs = state.openFiles
+            const openFileRefs = openFilesRef.current
                 .filter(f => f.id !== file.id && f.path !== null && !f.path.endsWith('config.json'))
                 .map(f => ({ fileName: f.path!, mode: f.viewMode }));
 
             const newConfig: IConfig = {
-                ...state.config,
+                ...configRef.current,
                 openFiles: openFileRefs,
             };
             await saveConfigAndUpdateEditor(newConfig);
@@ -360,20 +343,19 @@ export function useFileOperations() {
                 },
             });
         }
-    }, [activeFile, state.openFiles, state.config, dispatch, saveFile, saveConfigAndUpdateEditor]);
+    }, [dispatch, saveFile, saveConfigAndUpdateEditor]);
 
     const closeAllFiles = useCallback(async () => {
-        const dirtyFiles = state.openFiles.filter(f => f.isDirty);
-        
+        const dirtyFiles = openFilesRef.current.filter(f => f.isDirty);
+
         if (dirtyFiles.length > 0) {
-            // Ask to save all dirty files
             for (const file of dirtyFiles) {
                 const result = await window.electronAPI.confirmClose(file.name);
-                
+
                 if (result.action === 'cancel') {
                     return false;
                 }
-                
+
                 if (result.action === 'save') {
                     const saved = await saveFile(file.id);
                     if (!saved) return false;
@@ -381,26 +363,24 @@ export function useFileOperations() {
             }
         }
 
-        // Close all files
-        for (const file of [...state.openFiles]) {
+        for (const file of [...openFilesRef.current]) {
             dispatch({ type: 'CLOSE_FILE', payload: { id: file.id } });
         }
 
-        // Update config
         const newConfig: IConfig = {
-            ...state.config,
+            ...configRef.current,
             openFiles: [],
         };
         await saveConfigAndUpdateEditor(newConfig);
 
         return true;
-    }, [state.openFiles, state.config, dispatch, saveFile, saveConfigAndUpdateEditor]);
+    }, [dispatch, saveFile, saveConfigAndUpdateEditor]);
 
     const showInFolder = useCallback(async () => {
-        if (activeFile?.path) {
-            await window.electronAPI.showInFolder(activeFile.path);
+        if (activeFileRef.current?.path) {
+            await window.electronAPI.showInFolder(activeFileRef.current.path);
         }
-    }, [activeFile]);
+    }, []);
 
     const openConfigFile = useCallback(async () => {
         const result = await window.electronAPI.openConfig();
@@ -419,14 +399,12 @@ export function useFileOperations() {
     }, [dispatch]);
 
     const openAllRecentFiles = useCallback(async () => {
-        const recentFileRefs = state.config.recentFiles.filter(ref => !ref.fileName.endsWith('config.json'));
+        const recentFileRefs = configRef.current.recentFiles.filter(ref => !ref.fileName.endsWith('config.json'));
         const openedFileRefs: { fileName: string; mode: 'edit' | 'preview' }[] = [];
 
         for (const fileRef of recentFileRefs) {
-            // Skip if file is already open
-            if (state.openFiles.some(f => f.path === fileRef.fileName)) {
-                // Use existing file's mode
-                const existingFile = state.openFiles.find(f => f.path === fileRef.fileName);
+            if (openFilesRef.current.some(f => f.path === fileRef.fileName)) {
+                const existingFile = openFilesRef.current.find(f => f.path === fileRef.fileName);
                 if (existingFile) {
                     openedFileRefs.push({ fileName: fileRef.fileName, mode: existingFile.viewMode as 'edit' | 'preview' });
                 }
@@ -451,31 +429,27 @@ export function useFileOperations() {
             }
         }
 
-        // Update config with all opened files
         if (openedFileRefs.length > 0) {
             const allOpenFileRefs = [
-                ...state.openFiles
+                ...openFilesRef.current
                     .filter(f => f.path !== null && !f.path.endsWith('config.json'))
                     .map(f => ({ fileName: f.path!, mode: f.viewMode })),
                 ...openedFileRefs
             ];
-            // Remove duplicates by fileName
             const uniqueOpenFiles = allOpenFileRefs.filter((ref, index, self) =>
                 index === self.findIndex(r => r.fileName === ref.fileName)
             );
 
             const newConfig: IConfig = {
-                ...state.config,
+                ...configRef.current,
                 openFiles: uniqueOpenFiles,
             };
-            // Fire-and-forget: files are already dispatched to the UI — don't
-            // block React rendering on the config disk write.
             void saveConfigAndUpdateEditor(newConfig);
         }
-    }, [dispatch, state.config, state.openFiles, saveConfigAndUpdateEditor]);
+    }, [dispatch, saveConfigAndUpdateEditor]);
 
     const renameFile = useCallback(async (fileId: string, newName: string) => {
-        const file = state.openFiles.find(f => f.id === fileId);
+        const file = openFilesRef.current.find(f => f.id === fileId);
         if (!file || !file.path) {
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -484,17 +458,14 @@ export function useFileOperations() {
             return false;
         }
 
-        // Ensure the new name has the same extension
         const oldExt = file.name.includes('.') ? file.name.substring(file.name.lastIndexOf('.')) : '';
         const newNameWithExt = newName.includes('.') ? newName : newName + oldExt;
 
-        // Construct new path
         const directory = file.path.substring(0, file.path.lastIndexOf('\\') !== -1 ? file.path.lastIndexOf('\\') : file.path.lastIndexOf('/'));
         const separator = file.path.includes('\\') ? '\\' : '/';
         const newPath = directory + separator + newNameWithExt;
 
         try {
-            // Save file first if dirty
             if (file.isDirty) {
                 const saved = await saveFile(fileId);
                 if (!saved) {
@@ -502,17 +473,14 @@ export function useFileOperations() {
                 }
             }
 
-            // Rename the file using the electron API
             await window.electronAPI.renameFile(file.path, newPath);
 
-            // Update the file in state
             dispatch({
                 type: 'UPDATE_FILE_PATH',
                 payload: { id: fileId, path: newPath, name: newNameWithExt },
             });
 
-            // Update config
-            const openFileRefs = state.openFiles
+            const openFileRefs = openFilesRef.current
                 .filter(f => (f.id === fileId ? newPath : f.path) !== null && !(f.id === fileId ? newPath : f.path)!.endsWith('config.json'))
                 .map(f => ({
                     fileName: f.id === fileId ? newPath : f.path!,
@@ -520,9 +488,9 @@ export function useFileOperations() {
                 }));
 
             const newConfig: IConfig = {
-                ...state.config,
+                ...configRef.current,
                 openFiles: openFileRefs,
-                recentFiles: state.config.recentFiles.map(ref =>
+                recentFiles: configRef.current.recentFiles.map(ref =>
                     ref.fileName === file.path ? { ...ref, fileName: newPath } : ref
                 ),
             };
@@ -542,7 +510,7 @@ export function useFileOperations() {
             });
             return false;
         }
-    }, [state.openFiles, state.config, dispatch, saveFile, saveConfigAndUpdateEditor]);
+    }, [dispatch, saveFile, saveConfigAndUpdateEditor]);
 
     const hasDirtyFiles = state.openFiles.some(f => f.isDirty);
 

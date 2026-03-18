@@ -1,43 +1,26 @@
 import React, { useCallback } from 'react';
-import { Box, Button, Typography, styled, CircularProgress } from '@mui/material';
-import { FolderOpenIcon } from './AppIcons';
+import { Box, Typography, styled, CircularProgress } from '@mui/material';
 import { FileDirectoryToolbar } from './FileDirectoryToolbar';
 import { FileTreeNode } from './FileTreeNode';
 import { useEditorState } from '../contexts';
-import type { useFileDirectory } from '../hooks/useFileDirectory';
-
-type FileDirectoryHook = ReturnType<typeof useFileDirectory>;
+import type { DirectoryInstance } from '../hooks/useFileDirectories';
 
 interface FileDirectoryProps {
-    directory: FileDirectoryHook;
+    directory: DirectoryInstance;
     attachedFilePaths: Set<string>;
     onToggleNexusAttachment: (filePath: string, fileName: string) => void;
 }
 
-const PanelContainer = styled(Box)(({ theme }) => ({
+const DirectorySection = styled(Box)(({ theme }) => ({
     display: 'flex',
     flexDirection: 'column',
-    height: '100%',
     overflow: 'hidden',
-    backgroundColor: theme.palette.background.default,
-    borderRight: `1px solid ${theme.palette.divider}`,
+    borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
 const TreeScrollArea = styled(Box)({
-    flex: 1,
-    overflowY: 'auto',
     overflowX: 'hidden',
     padding: '4px 0',
-});
-
-const EmptyStateContainer = styled(Box)({
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    gap: 12,
-    padding: 24,
 });
 
 const LoadingContainer = styled(Box)({
@@ -65,8 +48,7 @@ export const FileDirectory = React.memo(function FileDirectory({
         sortOrder,
         isAllExpanded,
         renamingPath,
-        openFolder,
-        closeFolder,
+        closeDirectory,
         toggleNode,
         expandAll,
         collapseAll,
@@ -115,45 +97,27 @@ export const FileDirectory = React.memo(function FileDirectory({
         e.dataTransfer.dropEffect = 'move';
     }, []);
 
-    if (!tree) {
-        return (
-            <PanelContainer>
-                <EmptyStateContainer>
-                    <FolderOpenIcon fontSize="large" sx={{ color: 'text.secondary', opacity: 0.5 }} />
-                    <Typography variant="body2" color="text.secondary" textAlign="center">
-                        No folder opened
-                    </Typography>
-                    <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<FolderOpenIcon fontSize="small" />}
-                        onClick={openFolder}
-                    >
-                        Open Folder
-                    </Button>
-                </EmptyStateContainer>
-            </PanelContainer>
-        );
-    }
+    const folderName = tree?.name ?? directory.rootPath.split(/[\\/]/).pop() ?? directory.rootPath;
+    const folderPath = tree?.path ?? directory.rootPath;
 
     return (
-        <PanelContainer>
+        <DirectorySection>
             <FileDirectoryToolbar
-                folderName={tree.name}
-                folderPath={tree.path}
+                folderName={folderName}
+                folderPath={folderPath}
                 sortOrder={sortOrder}
                 isAllExpanded={isAllExpanded}
                 onNewFile={handleNewFile}
                 onNewFolder={handleNewFolder}
                 onToggleSort={handleToggleSort}
                 onToggleExpandCollapse={handleToggleExpandCollapse}
-                onCloseFolder={closeFolder}
+                onCloseFolder={closeDirectory}
             />
             {isLoading ? (
                 <LoadingContainer>
                     <CircularProgress size={24} />
                 </LoadingContainer>
-            ) : (
+            ) : tree ? (
                 <TreeScrollArea
                     onDrop={handleDropOnRoot}
                     onDragOver={handleDragOverRoot}
@@ -193,7 +157,7 @@ export const FileDirectory = React.memo(function FileDirectory({
                         </Typography>
                     )}
                 </TreeScrollArea>
-            )}
-        </PanelContainer>
+            ) : null}
+        </DirectorySection>
     );
 });
