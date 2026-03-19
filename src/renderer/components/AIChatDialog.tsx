@@ -24,7 +24,6 @@ import { useAIChat, useAIAsk } from '../hooks';
 import type { AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAICreate } from '../hooks/useAICreate';
-import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 import { useEditorState, useEditorDispatch } from '../contexts/EditorContext';
 import type { AIChatMode } from '../types/global';
 import type { IFile } from '../types';
@@ -147,12 +146,14 @@ export function AIChatDialog({
     // Mode state - persisted in config
     const [mode, setMode] = useState<AIChatMode>(editorState.config.aiChatMode ?? 'ask');
     const [editModeError, setEditModeError] = useState<string | null>(null);
+    const [hasSerperKey, setHasSerperKey] = useState(false);
+    const [webSearchEnabled, setWebSearchEnabled] = useState(false);
     const [isEditLoading, setIsEditLoading] = useState(false);
     const activeEditRequestIdRef = useRef<string | null>(null);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
 
     // AI Diff Edit hook
-    const { requestEdit, hasDiffTab } = useAIDiffEdit();
+    const { requestEdit, hasDiffTab, webSearchPhase: editWebSearchPhase, resetWebSearch: resetEditWebSearch } = useAIDiffEdit();
 
     // AI Create hook
     const {
@@ -164,6 +165,7 @@ export function AIChatDialog({
         createPhase,
         createComplete,
         createFileName,
+        webSearchPhase: createWebSearchPhase,
     } = useAICreate();
     const [createQuery, setCreateQuery] = useState<string | null>(null);
 
@@ -171,14 +173,13 @@ export function AIChatDialog({
     const {
         askMessages,
         isAskLoading,
+        askPhase,
+        webSearchPhase: askWebSearchPhase,
         askError,
         submitAsk,
         cancelAsk,
         clearAsk,
     } = useAIAsk();
-
-    // Rotating loading messages with typewriter effect
-    const { displayText: loadingDisplayText } = useEditLoadingMessage(isEditLoading);
 
     const {
         isStatusesLoaded,
@@ -229,9 +230,15 @@ export function AIChatDialog({
         persistConfig({ aiChatModel: newModel });
     }, [setSelectedModel, persistConfig]);
 
-    // Focus input when dialog opens
+    // Check Serper key availability once on mount
+    useEffect(() => {
+        window.electronAPI.hasSerperKey().then(has => setHasSerperKey(has)).catch(() => {});
+    }, []);
+
+    // Focus input and reset session state when dialog opens
     useEffect(() => {
         if (open) {
+            setWebSearchEnabled(false);
             requestAnimationFrame(() => {
                 inputRef.current?.focus();
             });
@@ -250,6 +257,10 @@ export function AIChatDialog({
             handleModeChange('ask');
         }
     }, [provider, mode, handleModeChange]);
+
+    const handleWebSearchToggle = useCallback(() => {
+        setWebSearchEnabled(prev => !prev);
+    }, []);
 
     // Open native file picker and add results as attachments
     const handleAttachFromDisk = useCallback(async () => {
@@ -288,7 +299,7 @@ export function AIChatDialog({
             const requestId = `ai-edit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             activeEditRequestIdRef.current = requestId;
             try {
-                await requestEdit(inputValue, currentProvider as 'claude' | 'openai', selectedModel, requestId);
+                await requestEdit(inputValue, currentProvider as 'claude' | 'openai' | 'gemini', selectedModel, requestId, webSearchEnabled);
                 if (activeEditRequestIdRef.current !== requestId) return;
                 setInputValue('');
             } catch (err) {
@@ -312,7 +323,7 @@ export function AIChatDialog({
                 setInputValue('');
                 setCreateQuery(request);
                 dismissCreateProgress();
-                await submitCreate(request, enabledFilesForCreate, currentProvider, selectedModel, requestId);
+                await submitCreate(request, enabledFilesForCreate, currentProvider, selectedModel, requestId, webSearchEnabled);
             } catch {
                 // Error is handled by the useAICreate hook (createError state)
             }
@@ -325,9 +336,9 @@ export function AIChatDialog({
             const question = inputValue;
             setInputValue('');
             setAttachedFiles([]);
-            await submitAsk(question, currentProvider, selectedModel, filesToAttach);
+            await submitAsk(question, currentProvider, selectedModel, filesToAttach, webSearchEnabled);
         }
-    }, [mode, selectedModel, getProviderForModel, inputValue, requestEdit, submitAsk, submitCreate, setInputValue, attachedFiles, setAttachedFiles, dismissCreateProgress]);
+    }, [mode, selectedModel, getProviderForModel, inputValue, requestEdit, submitAsk, submitCreate, setInputValue, attachedFiles, setAttachedFiles, dismissCreateProgress, webSearchEnabled]);
 
     const handleCancelRequest = useCallback(async () => {
         if (isAskLoading) {
@@ -340,6 +351,7 @@ export function AIChatDialog({
             activeEditRequestIdRef.current = null;
             setIsEditLoading(false);
             setEditModeError('Edit request canceled');
+            resetEditWebSearch();
 
             if (!requestId) return;
 
@@ -354,13 +366,14 @@ export function AIChatDialog({
         if (isCreateLoading) {
             await cancelCreate();
         }
-    }, [isAskLoading, isEditLoading, isCreateLoading, cancelAsk, cancelCreate]);
+    }, [isAskLoading, isEditLoading, isCreateLoading, cancelAsk, cancelCreate, resetEditWebSearch]);
 
     const handleClearChatConfirm = useCallback(() => {
         clearAsk();
         dismissCreateProgress();
         setCreateQuery(null);
         setAttachedFiles([]);
+        setWebSearchEnabled(false);
         setClearConfirmOpen(false);
     }, [clearAsk, dismissCreateProgress, setAttachedFiles]);
 
@@ -417,16 +430,20 @@ export function AIChatDialog({
                         askMessages={askMessages}
                         greeting={greeting}
                         isAskLoading={isAskLoading}
+                        askPhase={askPhase}
+                        askWebSearchPhase={askWebSearchPhase}
+                        webSearchEnabled={webSearchEnabled}
                         isEditLoading={isEditLoading}
+                        editWebSearchPhase={editWebSearchPhase}
                         isCreateLoading={isCreateLoading}
                         createPhase={createPhase}
+                        createWebSearchPhase={createWebSearchPhase}
                         createComplete={createComplete}
                         createError={createError}
                         createFileName={createFileName}
                         createQuery={createQuery}
                         mode={mode}
                         hasDiffTab={hasDiffTab}
-                        loadingDisplayText={loadingDisplayText}
                         askError={askError}
                         editModeError={editModeError}
                         messagesEndRef={messagesEndRef}
@@ -451,10 +468,13 @@ export function AIChatDialog({
                         hasActiveRequest={hasActiveRequest}
                         openFiles={editorState.openFiles}
                         attachedFiles={attachedFiles}
+                        hasSerperKey={hasSerperKey}
+                        webSearchEnabled={webSearchEnabled}
                         onModeChange={handleModeChange}
                         onModelChange={handleModelChange}
                         onAttachFromDisk={handleAttachFromDisk}
                         onToggleFileAttachment={onToggleFileAttachment}
+                        onWebSearchToggle={handleWebSearchToggle}
                         onInputChange={setInputValue}
                         onSend={handleSendMessage}
                         onCancel={handleCancelRequest}

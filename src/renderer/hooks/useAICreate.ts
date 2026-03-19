@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from 'react';
 import { useEditorDispatch, useEditorState } from '../contexts/EditorContext';
 import type { AIProvider } from './useAIChat';
+import { useWebSearch } from './useWebSearch';
+import { callProviderApi } from '../utils/callProviderApi';
 import { callWithContinuation } from '../utils/callWithContinuation';
 import type { AttachedFile } from '../components/FileAttachmentsList';
 import type { IFile } from '../types';
@@ -63,26 +65,6 @@ function sanitizeFilename(raw: string): string {
     return name;
 }
 
-// --- IPC helper (same pattern as other AI hooks) ---
-async function callChatApi(
-    provider: AIProvider,
-    messages: { role: 'user' | 'assistant'; content: string }[],
-    model: string,
-    requestId: string,
-    maxTokens?: number,
-) {
-    if (provider === 'claude') {
-        return window.electronAPI.claudeChatRequest(messages, model, requestId, maxTokens);
-    }
-    if (provider === 'xai') {
-        return window.electronAPI.aiChatRequest(messages, model, requestId, maxTokens);
-    }
-    if (provider === 'gemini') {
-        return window.electronAPI.geminiChatRequest(messages, model, requestId, maxTokens);
-    }
-    return window.electronAPI.openaiChatRequest(messages, model, requestId, maxTokens);
-}
-
 // Build file context text from open editor files and the enabled attached file list
 function buildFileContextFromOpenFiles(
     attachedFiles: AttachedFile[],
@@ -119,12 +101,15 @@ export function useAICreate() {
     const openFilesRef = useRef(state.openFiles);
     openFilesRef.current = state.openFiles;
 
+    const { webSearchPhase, performWebSearch, resetWebSearch } = useWebSearch();
+
     const submitCreate = useCallback(async (
         request: string,
         attachedFiles: AttachedFile[],
         provider: AIProvider,
         model: string,
         requestId: string,
+        webSearchEnabled?: boolean,
     ) => {
         if (!request.trim()) {
             throw new Error('Please describe what you want to create');
@@ -138,23 +123,38 @@ export function useAICreate() {
 
         const startTime = Date.now();
         let currentPhaseForError: CreatePhase = null;
-        console.log('[Create] Starting', { request, provider, model, requestId });
+        console.log('[Create] Starting', { request, provider, model, requestId, webSearchEnabled });
 
         const fileContext = buildFileContextFromOpenFiles(attachedFiles, openFilesRef.current);
 
         try {
+            // ── Optional: Web Search ────────────────────────────────────────────────
+            let webSearchBlock = '';
+            if (webSearchEnabled) {
+                const searchResult = await performWebSearch(request.trim(), provider, model, requestId);
+                if (activeRequestIdRef.current !== requestId) return;
+                if (searchResult) {
+                    webSearchBlock = searchResult.webSearchBlock;
+                }
+            }
+
             // ── Step 1: Content Generation ─────────────────────────────────────────
             setCreatePhase('creating');
             currentPhaseForError = 'creating';
 
+            // Combine file context with web search results
+            const fullContext = webSearchBlock
+                ? `${fileContext}\n\n**Relevant web search results:**${webSearchBlock}`
+                : fileContext;
+
             const creatingMessages = [{
                 role: 'user' as const,
-                content: buildCreatingPrompt(request, fileContext),
+                content: buildCreatingPrompt(request, fullContext),
             }];
 
             console.log('[Create] Phase: creating — calling API');
             const createResult = await callWithContinuation(
-                callChatApi, provider, creatingMessages, model,
+                callProviderApi, provider, creatingMessages, model,
                 `${requestId}-creating`, '[Create]', CREATING_MAX_TOKENS
             );
 
@@ -179,7 +179,7 @@ export function useAICreate() {
             console.log('[Create] Phase: naming — calling API');
             let fileName = `created-${request.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 30)}.md`;
 
-            const namingResponse = await callChatApi(
+            const namingResponse = await callProviderApi(
                 provider, namingMessages, model, `${requestId}-naming`
             );
 
@@ -238,7 +238,7 @@ export function useAICreate() {
                 setIsCreateLoading(false);
             }
         }
-    }, [dispatch]);
+    }, [dispatch, performWebSearch]);
 
     const dismissCreateProgress = useCallback(() => {
         setCreatePhase(null);
@@ -254,6 +254,7 @@ export function useAICreate() {
         setCreateComplete(false);
         setCreateFileName(null);
         setCreateError('Create request canceled');
+        resetWebSearch();
 
         if (requestId) {
             console.log('[Create] Canceling', { requestId });
@@ -265,7 +266,7 @@ export function useAICreate() {
                 }
             }
         }
-    }, []);
+    }, [resetWebSearch]);
 
     return {
         submitCreate,
@@ -276,5 +277,6 @@ export function useAICreate() {
         createPhase,
         createComplete,
         createFileName,
+        webSearchPhase,
     };
 }

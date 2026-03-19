@@ -1,11 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { Box, Typography, CircularProgress, styled, IconButton, Tooltip } from '@mui/material';
-import { CopyIcon, CheckIcon } from './AppIcons';
+import { Box, Typography, styled, IconButton, Tooltip } from '@mui/material';
+import { CopyIcon, CheckIcon, GlobeIcon } from './AppIcons';
 import ReactMarkdown, { Components } from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
 import { CodeBlock } from './CodeBlock';
 import { CreateProgress } from './CreateProgress';
+import { AskProgress } from './AskProgress';
+import { EditProgress } from './EditProgress';
 import type { CreatePhase } from '../hooks/useAICreate';
+import type { AskPhase } from '../hooks/useAIAsk';
+import type { WebSearchPhase } from '../hooks/useWebSearch';
 import type { AIChatMode } from '../types/global';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
@@ -71,29 +75,6 @@ const ChatLoadingContainer = styled(Box)({
     paddingBottom: 16,
 });
 
-const EditLoadingContainer = styled(Box)({
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingTop: 16,
-    paddingBottom: 16,
-    gap: 8,
-});
-
-const LoadingCursor = styled('span')(({ theme }) => ({
-    display: 'inline-block',
-    width: '2px',
-    height: '1em',
-    backgroundColor: theme.palette.text.secondary,
-    marginLeft: '1px',
-    verticalAlign: 'text-bottom',
-    '@keyframes blink': {
-        '0%, 100%': { opacity: 1 },
-        '50%': { opacity: 0 },
-    },
-    animation: 'blink 1s step-end infinite',
-}));
-
 const ResponseCopyRow = styled(Box)(({ theme }) => ({
     display: 'flex',
     justifyContent: 'flex-end',
@@ -112,6 +93,29 @@ const ResponseCopyButton = styled(IconButton)(({ theme }) => ({
         color: theme.palette.text.primary,
         backgroundColor: theme.palette.action.hover,
     },
+}));
+
+const WebSearchBadgeRow = styled(Box)({
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: 6,
+});
+
+const WebSearchBadgeChip = styled(Box)(({ theme }) => ({
+    fontSize: '0.65rem',
+    color: theme.palette.text.secondary,
+    backgroundColor: theme.palette.action.selected,
+    borderRadius: 4,
+    padding: '1px 6px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 3,
+}));
+
+const SourcesSection = styled(Box)(({ theme }) => ({
+    borderTop: `1px solid ${theme.palette.divider}`,
+    marginTop: 6,
+    paddingTop: 4,
 }));
 
 function ResponseCopyButton_({ content }: { content: string }) {
@@ -189,16 +193,20 @@ interface ChatMessagesProps {
     askMessages: AIMessage[];
     greeting: string;
     isAskLoading: boolean;
+    askPhase: AskPhase;
+    askWebSearchPhase: WebSearchPhase;
+    webSearchEnabled: boolean;
     isEditLoading: boolean;
+    editWebSearchPhase: WebSearchPhase;
     isCreateLoading: boolean;
     createPhase: CreatePhase;
+    createWebSearchPhase: WebSearchPhase;
     createComplete: boolean;
     createError: string | null;
     createFileName: string | null;
     createQuery: string | null;
     mode: AIChatMode;
     hasDiffTab: boolean;
-    loadingDisplayText: string;
     askError: string | null;
     editModeError: string | null;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
@@ -208,16 +216,20 @@ export function ChatMessages({
     askMessages,
     greeting,
     isAskLoading,
+    askPhase,
+    askWebSearchPhase,
+    webSearchEnabled,
     isEditLoading,
+    editWebSearchPhase,
     isCreateLoading,
     createPhase,
+    createWebSearchPhase,
     createComplete,
     createError,
     createFileName,
     createQuery,
     mode,
     hasDiffTab,
-    loadingDisplayText,
     askError,
     editModeError,
     messagesEndRef,
@@ -271,7 +283,35 @@ export function ChatMessages({
                     <MessageBubble key={idx} role={msg.role}>
                         {msg.role === 'assistant' ? (
                             <>
+                                {msg.webSearchUsed && (
+                                    <WebSearchBadgeRow>
+                                        <WebSearchBadgeChip>
+                                            <GlobeIcon size={10} />
+                                            Web search included
+                                        </WebSearchBadgeChip>
+                                    </WebSearchBadgeRow>
+                                )}
                                 <ReactMarkdown components={chatMarkdownComponents}>{msg.content}</ReactMarkdown>
+                                {msg.webSearchUsed && msg.sources && msg.sources.length > 0 && (
+                                    <SourcesSection>
+                                        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
+                                            Sources
+                                        </Typography>
+                                        {msg.sources.map((src, i) => (
+                                            <Typography key={i} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                                {i + 1}.{' '}
+                                                <Box
+                                                    component="a"
+                                                    href="#"
+                                                    onClick={(e: React.MouseEvent) => { e.preventDefault(); void window.electronAPI.openExternal(src.link); }}
+                                                    sx={{ color: 'inherit', textDecoration: 'underline', cursor: 'pointer' }}
+                                                >
+                                                    {src.title}
+                                                </Box>
+                                            </Typography>
+                                        ))}
+                                    </SourcesSection>
+                                )}
                                 <ResponseCopyButton_ content={msg.content} />
                             </>
                         ) : (
@@ -280,27 +320,19 @@ export function ChatMessages({
                     </MessageBubble>
                 ))
             )}
-            {isAskLoading && (
-                <ChatLoadingContainer>
-                    <CircularProgress size={24} />
-                </ChatLoadingContainer>
+            {isAskLoading && (askPhase || askWebSearchPhase) && (
+                <AskProgress
+                    askPhase={askPhase}
+                    webSearchPhase={askWebSearchPhase}
+                    webSearchEnabled={webSearchEnabled}
+                />
             )}
             {isEditLoading && (
-                <EditLoadingContainer>
-                    <CircularProgress size={24} color="success" />
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                            fontFamily: 'monospace',
-                            minHeight: '1.5em',
-                            textAlign: 'center',
-                        }}
-                    >
-                        {loadingDisplayText}
-                        <LoadingCursor />
-                    </Typography>
-                </EditLoadingContainer>
+                <EditProgress
+                    webSearchPhase={editWebSearchPhase}
+                    webSearchEnabled={webSearchEnabled}
+                    isEditing={editWebSearchPhase === null}
+                />
             )}
             {(isCreateLoading || createComplete) && createPhase && (
                 <>
@@ -309,7 +341,11 @@ export function ChatMessages({
                             <Typography variant="body2">{createQuery}</Typography>
                         </MessageBubble>
                     )}
-                    <CreateProgress createPhase={createPhase} />
+                    <CreateProgress
+                        createPhase={createPhase}
+                        webSearchPhase={createWebSearchPhase}
+                        webSearchEnabled={webSearchEnabled}
+                    />
                 </>
             )}
             {createComplete && createFileName && (

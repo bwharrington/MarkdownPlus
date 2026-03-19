@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
-import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader, Divider } from '@mui/material';
-import { AttachFileIcon, SendIcon, EditIcon, CreateIcon } from './AppIcons';
+import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader, Divider, Tooltip } from '@mui/material';
+import { AttachFileIcon, SendIcon, EditIcon, CreateIcon, GlobeIcon } from './AppIcons';
 import { AttachFilePopover } from './AttachFilePopover';
 import type { AttachedFile } from './FileAttachmentsList';
 import type { AIChatMode } from '../types/global';
@@ -60,8 +60,11 @@ interface MessageInputProps {
     attachedFiles: AttachedFile[];
     onModeChange: (mode: AIChatMode) => void;
     onModelChange: (model: string) => void;
+    hasSerperKey?: boolean;
+    webSearchEnabled?: boolean;
     onAttachFromDisk: () => void;
     onToggleFileAttachment: (file: IFile) => void;
+    onWebSearchToggle?: () => void;
     onInputChange: (value: string) => void;
     onSend: () => void;
     onCancel: () => void;
@@ -82,10 +85,13 @@ export function MessageInput({
     hasActiveRequest,
     openFiles,
     attachedFiles,
+    hasSerperKey,
+    webSearchEnabled,
     onModeChange,
     onModelChange,
     onAttachFromDisk,
     onToggleFileAttachment,
+    onWebSearchToggle,
     onInputChange,
     onSend,
     onCancel,
@@ -181,11 +187,11 @@ export function MessageInput({
                 size="small"
                 placeholder={
                     mode === 'ask'
-                        ? "Ask anything... (each question is independent)"
+                        ? (webSearchEnabled ? "Ask anything... (web search enabled)" : "Ask anything... (each question is independent)")
                         : mode === 'edit'
-                            ? "Describe the changes you want... (e.g., 'Add a table of contents')"
+                            ? (webSearchEnabled ? "Describe changes... (web search enabled)" : "Describe the changes you want... (e.g., 'Add a table of contents')")
                             : mode === 'create'
-                                ? "Describe what you want to create... (e.g., 'A blog post about React hooks', 'A project README')"
+                                ? (webSearchEnabled ? "Describe what to create... (web search enabled)" : "Describe what you want to create... (e.g., 'A blog post about React hooks', 'A project README')")
                                 : "Type a message... (Enter to send, Shift+Enter for newline)"
                 }
                 value={inputValue}
@@ -245,6 +251,27 @@ export function MessageInput({
                     >
                         <AttachFileIcon fontSize="small" />
                     </IconButton>
+
+                    {hasSerperKey && (
+                        <Tooltip title={
+                            webSearchEnabled
+                                ? "Web search on \u2014 click to disable"
+                                : mode === 'edit'
+                                    ? "Search the web for editing context"
+                                    : mode === 'create'
+                                        ? "Search the web for creation context"
+                                        : "Include latest web information"
+                        }>
+                            <IconButton
+                                size="small"
+                                onClick={onWebSearchToggle}
+                                disabled={hasActiveRequest}
+                                sx={{ color: webSearchEnabled ? 'primary.main' : 'text.secondary' }}
+                            >
+                                <GlobeIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </LeftControls>
                 <RightControls>
                     <Button

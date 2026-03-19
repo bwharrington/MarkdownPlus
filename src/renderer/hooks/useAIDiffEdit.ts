@@ -2,13 +2,19 @@ import { useCallback } from 'react';
 import { diffLines } from 'diff';
 import { useEditorDispatch, useEditorState, useActiveFile } from '../contexts/EditorContext';
 import type { DiffHunk } from '../types/diffTypes';
+import type { AIProvider } from './useAIChat';
+import { useWebSearch } from './useWebSearch';
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
 
 // Format the edit request for the AI
-function formatEditRequest(prompt: string, fileContent: string, fileName: string): string {
-    return `Edit the following markdown document.
+function formatEditRequest(prompt: string, fileContent: string, fileName: string, webSearchBlock?: string): string {
+    const webContext = webSearchBlock
+        ? `\n\nRelevant web context:${webSearchBlock}\n`
+        : '';
+
+    return `Edit the following markdown document.${webContext}
 
 File: ${fileName}
 
@@ -142,19 +148,31 @@ export function useAIDiffEdit() {
     // Check if a diff tab is currently open
     const hasDiffTab = state.openFiles.some(f => f.viewMode === 'diff');
 
+    const { webSearchPhase, performWebSearch, resetWebSearch } = useWebSearch();
+
     const requestEdit = useCallback(async (
         prompt: string,
         provider: 'claude' | 'openai' | 'gemini',
         model: string,
-        requestId?: string
+        requestId?: string,
+        webSearchEnabled?: boolean,
     ): Promise<{ hunkCount: number; summary: string }> => {
         if (!activeFile) {
             throw new Error('No active file');
         }
 
+        // Perform web search if enabled (phases managed by useWebSearch)
+        let webSearchBlock: string | undefined;
+        if (webSearchEnabled && requestId) {
+            const searchResult = await performWebSearch(prompt.trim(), provider, model, requestId);
+            if (searchResult) {
+                webSearchBlock = searchResult.webSearchBlock;
+            }
+        }
+
         const messages = [{
             role: 'user' as const,
-            content: formatEditRequest(prompt, activeFile.content, activeFile.name),
+            content: formatEditRequest(prompt, activeFile.content, activeFile.name, webSearchBlock),
         }];
 
         const response = await window.electronAPI.aiEditRequest(messages, model, provider, requestId);
@@ -190,10 +208,12 @@ export function useAIDiffEdit() {
         });
 
         return { hunkCount: hunks.length, summary: response.summary || 'Changes applied' };
-    }, [activeFile, dispatch]);
+    }, [activeFile, dispatch, performWebSearch]);
 
     return {
         hasDiffTab,
         requestEdit,
+        webSearchPhase,
+        resetWebSearch,
     };
 }

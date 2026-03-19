@@ -128,6 +128,26 @@ export interface PdfExportResult {
   error?: string;
 }
 
+export interface WebSearchResult {
+  title: string;
+  link: string;
+  snippet: string;
+  position?: number;
+}
+
+export interface WebSearchResponse {
+  success: boolean;
+  results?: WebSearchResult[];
+  error?: string;
+}
+
+export interface PageFetchResult {
+  success: boolean;
+  content?: string;
+  title?: string;
+  error?: string;
+}
+
 export interface DirectoryNode {
   name: string;
   path: string;
@@ -231,11 +251,17 @@ export interface ElectronAPI {
   listGeminiModels: () => Promise<AIModelsResponse>;
   getAIProviderStatuses: () => Promise<AIProviderStatuses>;
 
+  // Web Search operations (Serper)
+  webSearch: (query: string, numResults?: number, requestId?: string) => Promise<WebSearchResponse>;
+  webFetchPage: (url: string, requestId?: string) => Promise<PageFetchResult>;
+  hasSerperKey: () => Promise<boolean>;
+  serperSearch: (query: string, numResults?: number) => Promise<WebSearchResponse>;
+
   // Secure Storage operations (API Keys)
-  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini', key: string) => Promise<{ success: boolean; error?: string }>;
-  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini') => Promise<boolean>;
-  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini') => Promise<{ success: boolean; error?: string }>;
-  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean; gemini: boolean }>;
+  setApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper', key: string) => Promise<{ success: boolean; error?: string }>;
+  hasApiKeyInStorage: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => Promise<boolean>;
+  deleteApiKey: (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => Promise<{ success: boolean; error?: string }>;
+  getApiKeyStatus: () => Promise<{ xai: boolean; claude: boolean; openai: boolean; gemini: boolean; serper: boolean }>;
 }
 
 declare global {

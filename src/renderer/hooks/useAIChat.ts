@@ -9,6 +9,8 @@ export interface AIMessage {
     content: string;
     timestamp: Date;
     attachments?: AttachmentData[];
+    webSearchUsed?: boolean;
+    sources?: Array<{ title: string; link: string }>;
 }
 
 export interface AttachmentData {

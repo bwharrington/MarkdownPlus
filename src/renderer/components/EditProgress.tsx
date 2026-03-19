@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Box, Typography, styled, keyframes } from '@mui/material';
-import type { CreatePhase } from '../hooks/useAICreate';
 import type { WebSearchPhase } from '../hooks/useWebSearch';
 import { useEditLoadingMessage } from '../hooks/useEditLoadingMessage';
 
@@ -22,19 +21,13 @@ const SEARCHING_MESSAGES = [
     'Pulling fresh data...',
 ] as const;
 
-const CREATING_MESSAGES = [
-    'Generating your content...',
-    'Crafting the document...',
-    'Writing sections...',
-    'Building structure...',
-    'Adding detail...',
-    'Composing paragraphs...',
-] as const;
-
-const NAMING_MESSAGES = [
-    'Generating filename...',
-    'Picking a descriptive title...',
-    'Naming your document...',
+const EDITING_MESSAGES = [
+    'Applying edits...',
+    'Rewriting content...',
+    'Making changes...',
+    'Updating the document...',
+    'Refining the text...',
+    'Processing modifications...',
 ] as const;
 
 interface PhaseTiming {
@@ -42,7 +35,7 @@ interface PhaseTiming {
     end?: number;
 }
 
-// --- Styled components (same pattern as PlanProgress) ---
+// --- Styled components (same pattern as AskProgress / CreateProgress) ---
 
 const pulse = keyframes`
     0%, 100% { opacity: 1; transform: scale(1); }
@@ -82,9 +75,9 @@ const StepDot = styled(Box)<{ status: StepStatus }>(({ theme, status }) => ({
             : theme.palette.grey[400],
     }),
     ...(status === 'active' && {
-        backgroundColor: theme.palette.secondary.main,
+        backgroundColor: theme.palette.success.main,
         animation: `${pulse} 1.5s ease-in-out infinite`,
-        boxShadow: `0 0 8px ${theme.palette.secondary.main}`,
+        boxShadow: `0 0 8px ${theme.palette.success.main}`,
     }),
     ...(status === 'complete' && {
         backgroundColor: theme.palette.success.main,
@@ -154,65 +147,47 @@ const LoadingCursor = styled('span')(({ theme }) => ({
 
 // --- Component ---
 
-type ActiveStep = 'optimizing' | 'searching' | 'creating' | 'naming';
+type ActiveStep = 'optimizing' | 'searching' | 'editing';
 
-interface CreateProgressProps {
-    createPhase: CreatePhase;
-    webSearchPhase?: WebSearchPhase;
-    webSearchEnabled?: boolean;
+interface EditProgressProps {
+    webSearchPhase: WebSearchPhase;
+    webSearchEnabled: boolean;
+    isEditing: boolean; // true when the actual edit API call is in flight
 }
 
 function getMessagePool(step: ActiveStep): readonly string[] {
     switch (step) {
         case 'optimizing': return OPTIMIZING_MESSAGES;
         case 'searching':  return SEARCHING_MESSAGES;
-        case 'creating':   return CREATING_MESSAGES;
-        case 'naming':     return NAMING_MESSAGES;
-        default:           return CREATING_MESSAGES;
+        case 'editing':    return EDITING_MESSAGES;
+        default:           return EDITING_MESSAGES;
     }
 }
 
-function getActiveStep(webSearchPhase: WebSearchPhase | undefined, createPhase: CreatePhase): ActiveStep | null {
+function getActiveStep(webSearchPhase: WebSearchPhase, isEditing: boolean): ActiveStep | null {
     if (webSearchPhase === 'optimizing') return 'optimizing';
     if (webSearchPhase === 'searching') return 'searching';
-    if (createPhase === 'creating') return 'creating';
-    if (createPhase === 'naming') return 'naming';
+    if (isEditing) return 'editing';
     return null;
 }
 
-function getStepStatus(
-    step: ActiveStep,
-    webSearchPhase: WebSearchPhase | undefined,
-    createPhase: CreatePhase,
-    webSearchEnabled: boolean,
-): StepStatus {
-    // Web search steps
+function getStepStatus(step: ActiveStep, webSearchPhase: WebSearchPhase, isEditing: boolean, webSearchEnabled: boolean): StepStatus {
     if (step === 'optimizing') {
         if (!webSearchEnabled) return 'pending';
         if (webSearchPhase === 'optimizing') return 'active';
-        if (webSearchPhase === 'searching') return 'complete';
-        if (webSearchPhase === null && createPhase !== null) return 'complete';
+        if (webSearchPhase === 'searching' || (webSearchPhase === null && isEditing)) return 'complete';
         return 'pending';
     }
     if (step === 'searching') {
         if (!webSearchEnabled) return 'pending';
         if (webSearchPhase === 'optimizing') return 'pending';
         if (webSearchPhase === 'searching') return 'active';
-        if (webSearchPhase === null && createPhase !== null) return 'complete';
+        if (webSearchPhase === null && isEditing) return 'complete';
         return 'pending';
     }
-
-    // Create-specific steps — use ordered index comparison
-    const createStepOrder: Exclude<CreatePhase, 'complete' | null>[] = ['creating', 'naming'];
-    const stepIndex = createStepOrder.indexOf(step as Exclude<CreatePhase, 'complete' | null>);
-
-    if (createPhase === 'complete') return 'complete';
-    if (webSearchPhase !== null) return 'pending'; // still in web search
-
-    const currentIndex = createStepOrder.indexOf(createPhase as Exclude<CreatePhase, 'complete' | null>);
-    if (currentIndex < 0 || stepIndex < 0) return 'pending';
-    if (stepIndex < currentIndex) return 'complete';
-    if (stepIndex === currentIndex) return 'active';
+    // step === 'editing'
+    if (isEditing && webSearchPhase === null) return 'active';
+    if (webSearchPhase !== null) return 'pending';
     return 'pending';
 }
 
@@ -221,15 +196,15 @@ function formatElapsed(ms: number): string {
     return `${(ms / 1000).toFixed(1)}s`;
 }
 
-export const CreateProgress = React.memo(function CreateProgress({
-    createPhase,
+export const EditProgress = React.memo(function EditProgress({
     webSearchPhase,
-    webSearchEnabled = false,
-}: CreateProgressProps) {
-    const activeStep = getActiveStep(webSearchPhase, createPhase);
+    webSearchEnabled,
+    isEditing,
+}: EditProgressProps) {
+    const activeStep = getActiveStep(webSearchPhase, isEditing);
     const isWorking = activeStep !== null;
     const messagePool = useMemo(
-        () => getMessagePool(activeStep ?? 'creating'),
+        () => getMessagePool(activeStep ?? 'editing'),
         [activeStep],
     );
     const { displayText } = useEditLoadingMessage(isWorking, messagePool);
@@ -247,12 +222,10 @@ export const CreateProgress = React.memo(function CreateProgress({
             }
             if (curr) {
                 // Reset timings at the start of a fresh request
-                if (curr === 'optimizing' || (curr === 'creating' && !webSearchEnabled)) {
+                if (curr === 'optimizing' || (curr === 'editing' && !webSearchEnabled)) {
                     timingsRef.current = {};
                 }
-                if (!timingsRef.current[curr]) {
-                    timingsRef.current[curr] = { start: Date.now() };
-                }
+                timingsRef.current[curr] = { start: Date.now() };
             }
             prevStepRef.current = curr;
         }
@@ -260,18 +233,8 @@ export const CreateProgress = React.memo(function CreateProgress({
 
     const getPhaseElapsed = (phase: string): string | null => {
         const timing = timingsRef.current[phase];
-        if (!timing) return null;
-        if (timing.end) return formatElapsed(timing.end - timing.start);
-        return null;
-    };
-
-    const getTotalElapsed = (): string | null => {
-        const entries = Object.values(timingsRef.current);
-        if (entries.length === 0) return null;
-        const firstStart = Math.min(...entries.map(t => t.start));
-        const lastEnd = Math.max(...entries.filter(t => t.end).map(t => t.end!));
-        if (!lastEnd) return null;
-        return formatElapsed(lastEnd - firstStart);
+        if (!timing || !timing.end) return null;
+        return formatElapsed(timing.end - timing.start);
     };
 
     const steps: Array<{ key: ActiveStep; label: string }> = [
@@ -279,27 +242,23 @@ export const CreateProgress = React.memo(function CreateProgress({
             { key: 'optimizing' as ActiveStep, label: 'Optimizing Query' },
             { key: 'searching' as ActiveStep, label: 'Searching the Web' },
         ] : []),
-        { key: 'creating' as ActiveStep, label: 'Generating Content' },
-        { key: 'naming' as ActiveStep, label: 'Naming Document' },
+        { key: 'editing' as ActiveStep, label: 'Applying Edits' },
     ];
-
-    const isComplete = createPhase === 'complete';
-    const completeStatus: StepStatus = isComplete ? 'complete' : 'pending';
 
     return (
         <ProgressContainer>
-            {steps.map((step) => {
-                const status = getStepStatus(step.key, webSearchPhase, createPhase, webSearchEnabled);
-                const label = step.label;
+            {steps.map((step, index) => {
+                const status = getStepStatus(step.key, webSearchPhase, isEditing, webSearchEnabled);
                 const elapsed = status === 'complete' ? getPhaseElapsed(step.key) : null;
                 const isActive = status === 'active';
+                const isLast = index === steps.length - 1;
 
                 return (
                     <React.Fragment key={step.key}>
                         <StepRow>
                             <StepIndicatorColumn>
                                 <StepDot status={status} />
-                                <StepConnector status={status} />
+                                {!isLast && <StepConnector status={status} />}
                             </StepIndicatorColumn>
                             <StepContent>
                                 <StepLabelRow>
@@ -310,7 +269,7 @@ export const CreateProgress = React.memo(function CreateProgress({
                                             opacity: status === 'pending' ? 0.5 : 1,
                                         }}
                                     >
-                                        {label}
+                                        {step.label}
                                     </Typography>
                                     {elapsed && <TimeBadge>{elapsed}</TimeBadge>}
                                 </StepLabelRow>
@@ -325,30 +284,6 @@ export const CreateProgress = React.memo(function CreateProgress({
                     </React.Fragment>
                 );
             })}
-
-            {/* Final "Complete" step */}
-            <StepRow>
-                <StepIndicatorColumn>
-                    <StepDot status={completeStatus} />
-                </StepIndicatorColumn>
-                <StepContent>
-                    <StepLabelRow>
-                        <Typography
-                            variant="body2"
-                            sx={{
-                                fontWeight: isComplete ? 600 : 400,
-                                opacity: isComplete ? 1 : 0.5,
-                                color: isComplete ? 'success.main' : undefined,
-                            }}
-                        >
-                            Document Created
-                        </Typography>
-                        {isComplete && getTotalElapsed() && (
-                            <TimeBadge>{getTotalElapsed()}</TimeBadge>
-                        )}
-                    </StepLabelRow>
-                </StepContent>
-            </StepRow>
         </ProgressContainer>
     );
 });
