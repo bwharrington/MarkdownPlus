@@ -1,6 +1,6 @@
 # File Directory Panel
 
-This document describes the File Directory Panel feature in Markdown Nexus — a collapsible, resizable left-hand panel that displays a full directory tree for one or more folders, inspired by the workspace explorer in tools like Obsidian and VS Code.
+This document describes the File Directory Panel feature in Nexus — a collapsible, resizable left-hand panel that displays a full directory tree for one or more folders, inspired by the workspace explorer in tools like Obsidian and VS Code.
 
 ---
 
@@ -338,4 +338,4 @@ All file system operations are handled in the Electron main process and called f
 
 ---
 
-*Markdown Nexus — File Directory Panel*
+*Nexus — File Directory Panel*

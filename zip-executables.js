@@ -3,7 +3,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const releaseDir = path.join(__dirname, 'release');
-const outputZip = path.join(releaseDir, 'MarkdownPlus-Installers.zip');
+const outputZip = path.join(releaseDir, 'Nexus-Installers.zip');
 
 // Find all .exe files in the release folder
 const exeFiles = fs.readdirSync(releaseDir)

@@ -298,11 +298,21 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         case 'UPDATE_FILE_PATH': {
             return {
                 ...state,
-                openFiles: state.openFiles.map(f =>
-                    f.id === action.payload.id
-                        ? { ...f, path: action.payload.path, name: action.payload.name, isDirty: false, originalContent: f.content }
-                        : f
-                ),
+                openFiles: state.openFiles.map(f => {
+                    if (f.id !== action.payload.id) return f;
+                    const newFileType = getFileTypeFromPath(action.payload.path);
+                    // If renamed to a text-only format, force edit mode (no preview for .txt)
+                    const newViewMode = (newFileType === 'text' && f.viewMode === 'preview') ? 'edit' : f.viewMode;
+                    return {
+                        ...f,
+                        path: action.payload.path,
+                        name: action.payload.name,
+                        isDirty: false,
+                        originalContent: f.content,
+                        fileType: newFileType,
+                        viewMode: newViewMode,
+                    };
+                }),
             };
         }
 

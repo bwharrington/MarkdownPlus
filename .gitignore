@@ -3,5 +3,5 @@ node_modules
 dist
 release
 /config.json
-*.log
+/nexus-debug.log
 NO_FILE.MD

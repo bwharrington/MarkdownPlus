@@ -1,4 +1,23 @@
 import * as path from 'path';
+import type { FileType } from '../types';
+
+// Supported file extensions
+export const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn', '.mdc'];
+export const RST_EXTENSIONS = ['.rst', '.rest'];
+export const TEXT_EXTENSIONS = ['.txt'];
+export const BEST_EFFORT_EXTENSIONS = ['.adoc', '.asciidoc', '.org', '.textile'];
+
+/**
+ * Determine the FileType from a file path based on its extension.
+ */
+export function getFileType(filePath: string): FileType {
+    const lowerPath = filePath.toLowerCase();
+    if (MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'markdown';
+    if (RST_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'rst';
+    if (TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
+    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
+    return 'unknown';
+}
 
 /**
  * Extract filename from a file path

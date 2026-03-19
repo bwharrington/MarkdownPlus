@@ -342,6 +342,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         providerStatuses,
         refreshProviderStatuses: cacheRefreshStatuses,
         invalidateModelsForProvider,
+        fetchModels: cacheFetchModels,
     } = useAIProviderCacheContext();
 
     // Active settings tab (0=Basic, 1=AI, 2=Web Search, 3=Files)
@@ -471,6 +472,21 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             if (provider !== 'serper') {
                 invalidateModelsForProvider(provider);
                 await refreshProviderStatuses();
+
+                // Sync fetched models into config so the Settings model toggles populate
+                try {
+                    const models = await cacheFetchModels(provider);
+                    const existingProviderConfig = config?.aiModels?.[provider] ?? {};
+                    const newProviderConfig: Record<string, { enabled: boolean }> = {};
+                    for (const m of models) {
+                        newProviderConfig[m.id] = existingProviderConfig[m.id] ?? { enabled: true };
+                    }
+                    const newAiModels = { ...config?.aiModels, [provider]: newProviderConfig };
+                    updateConfig({ aiModels: newAiModels });
+                    dispatch({ type: 'SET_CONFIG', payload: { ...config, aiModels: newAiModels } as IConfig });
+                } catch {
+                    // Model sync is best-effort; key was saved successfully regardless
+                }
             }
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -488,7 +504,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 },
             });
         }
-    }, [apiKeyInputs, dispatch, refreshProviderStatuses, invalidateModelsForProvider]);
+    }, [apiKeyInputs, dispatch, refreshProviderStatuses, invalidateModelsForProvider, cacheFetchModels, config, updateConfig]);
 
     const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
         const result = await window.electronAPI.deleteApiKey(provider);
@@ -497,6 +513,14 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             if (provider !== 'serper') {
                 invalidateModelsForProvider(provider);
                 await refreshProviderStatuses();
+
+                // Remove this provider's models from config
+                if (config?.aiModels?.[provider]) {
+                    const newAiModels = { ...config.aiModels };
+                    delete newAiModels[provider];
+                    updateConfig({ aiModels: newAiModels });
+                    dispatch({ type: 'SET_CONFIG', payload: { ...config, aiModels: newAiModels } as IConfig });
+                }
             }
             dispatch({
                 type: 'SHOW_NOTIFICATION',
@@ -514,7 +538,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 },
             });
         }
-    }, [dispatch, refreshProviderStatuses, invalidateModelsForProvider]);
+    }, [dispatch, refreshProviderStatuses, invalidateModelsForProvider, config, updateConfig]);
 
     const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
         setTestingProvider(provider);

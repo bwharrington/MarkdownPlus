@@ -149,7 +149,7 @@ const FileDirectoryPanel = styled(Box)({
 
 // Inner app component that uses context
 function AppContent() {
-    const DEFAULT_AI_DOCK_WIDTH = 420;
+    const DEFAULT_AI_DOCK_WIDTH = 425;
     const MIN_AI_DOCK_WIDTH = 320;
     const MIN_EDITOR_WIDTH = 320;
     const DEFAULT_FILE_DIR_WIDTH = 260;
@@ -245,6 +245,7 @@ function AppContent() {
     }, [isResizingFileDir, persistFileDirLayout]);
 
     const handleOpenAIChat = useCallback(() => {
+        setAiDockWidth(DEFAULT_AI_DOCK_WIDTH);
         setAiChatOpen(true);
     }, []);
 
@@ -471,20 +472,20 @@ function AppContent() {
                 return;
             }
 
-            // Ctrl+E - Toggle Edit/Preview Mode
+            // Ctrl+E - Toggle Edit/Preview Mode (not available for .txt files)
             if (e.ctrlKey && e.key === 'e' && state.activeFileId) {
                 e.preventDefault();
                 const activeFile = state.openFiles.find(f => f.id === state.activeFileId);
-                if (activeFile) {
+                if (activeFile && activeFile.fileType !== 'text') {
                     // Get current scroll position before toggling
-                    const element = activeFile.viewMode === 'edit' 
+                    const element = activeFile.viewMode === 'edit'
                         ? document.querySelector('textarea') as HTMLTextAreaElement
                         : document.querySelector('[class*="MarkdownPreview"]') as HTMLDivElement;
                     const scrollPosition = element?.scrollTop || 0;
-                    
-                    dispatch({ 
-                        type: 'TOGGLE_VIEW_MODE', 
-                        payload: { id: state.activeFileId, scrollPosition } 
+
+                    dispatch({
+                        type: 'TOGGLE_VIEW_MODE',
+                        payload: { id: state.activeFileId, scrollPosition }
                     });
                 }
                 return;
@@ -723,6 +724,7 @@ function AppContent() {
                                 console.log('[App] Restoring recent file:', fileRef.fileName, 'with mode:', fileRef.mode);
                                 const result = await window.electronAPI.readFile(fileRef.fileName);
                                 if (result) {
+                                    const restoredFileType = getFileType(result.filePath);
                                     dispatch({
                                         type: 'OPEN_FILE',
                                         payload: {
@@ -731,8 +733,9 @@ function AppContent() {
                                             name: getFilename(result.filePath),
                                             content: result.content,
                                             lineEnding: result.lineEnding,
-                                            viewMode: fileRef.mode as 'edit' | 'preview',
-                                            fileType: getFileType(result.filePath),
+                                            // .txt files are always edit-only; ignore any saved preview mode
+                                            viewMode: restoredFileType === 'text' ? 'edit' : fileRef.mode as 'edit' | 'preview',
+                                            fileType: restoredFileType,
                                         },
                                     });
                                     console.log('[App] Recent file restored:', fileRef.fileName);

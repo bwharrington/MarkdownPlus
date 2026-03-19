@@ -142,7 +142,7 @@ const FileTab = React.memo(function FileTab({ file, isActive }: FileTabProps) {
                 </Tooltip>
             )}
             <FileName>{file.name}</FileName>
-            {!isDiffTab && (
+            {!isDiffTab && file.fileType !== 'text' && (
                 <Tooltip title={file.viewMode === 'edit' ? 'Switch to preview (Ctrl+E)' : 'Switch to edit (Ctrl+E)'}>
                     <IconButton
                         component="span"
@@ -480,7 +480,7 @@ export function TabBar({ attachedFiles, onToggleFileAttachment, onToggleContextD
                         ) : (
                             <PlusIcon size={18} sx={{ mr: 1, color: 'success.main' }} />
                         )}
-                        {isContextFileManuallyAttached ? `Remove '${contextFile?.name}' from Nexus` : `Attach '${contextFile?.name}' to Nexus`}
+                        {isContextFileManuallyAttached ? `Remove '${contextFile?.name}' from Nexus AI` : `Attach '${contextFile?.name}' to Nexus AI`}
                     </MenuItem>
                 )}
             </Menu>

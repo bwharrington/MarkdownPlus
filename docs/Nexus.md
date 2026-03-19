@@ -1,9 +1,9 @@
-# Markdown Nexus Documentation
+# Nexus Documentation
 
 **Version:** 1.0.0
 **A multi-tab Markdown editor with live preview**
 
-Markdown Nexus is a modern, feature-rich Markdown editor built with Electron, React, and Material UI (MUI). It provides a seamless editing experience with dual viewing modes, extensive keyboard shortcuts, and a clean, intuitive interface.
+Nexus is a modern, feature-rich Markdown editor built with Electron, React, and Material UI (MUI). It provides a seamless editing experience with dual viewing modes, extensive keyboard shortcuts, and a clean, intuitive interface.
 
 ---
 
@@ -43,7 +43,7 @@ Markdown Nexus is a modern, feature-rich Markdown editor built with Electron, Re
 
 ## Overview
 
-Markdown Nexus is a desktop Markdown editor designed for writers, developers, and anyone who works with Markdown documents. It features:
+Nexus is a desktop Markdown editor designed for writers, developers, and anyone who works with Markdown documents. It features:
 
 - **File Directory Panel** - Collapsible sidebar for browsing and managing multiple project folders simultaneously
 - **Dual viewing modes** - Switch between raw Markdown editing and rendered preview
@@ -63,13 +63,13 @@ Markdown Nexus is a desktop Markdown editor designed for writers, developers, an
 
 Download the appropriate installer for your platform from the releases page:
 
-- **Windows:** `Markdown Nexus-Setup.exe` (installer) or `Markdown Nexus-Portable.exe` (portable)
-- **macOS:** `Markdown Nexus.dmg`
-- **Linux:** `Markdown Nexus.AppImage` or `Markdown Nexus.deb`
+- **Windows:** `Nexus-Setup.exe` (installer) or `Nexus-Portable.exe` (portable)
+- **macOS:** `Nexus.dmg`
+- **Linux:** `Nexus.AppImage` or `Nexus.deb`
 
 ### File Associations
 
-Markdown Nexus automatically registers as the default handler for markup files:
+Nexus automatically registers as the default handler for markup files:
 
 **Markdown:**
 
@@ -79,7 +79,7 @@ Markdown Nexus automatically registers as the default handler for markup files:
 
 - `.rst`, `.rest`
 
-Double-clicking any of these file types will open them in Markdown Nexus.
+Double-clicking any of these file types will open them in Nexus.
 
 ---
 
@@ -105,7 +105,7 @@ The File Directory Panel is a collapsible, resizable left-hand sidebar for brows
 
 ### Dual View Modes
 
-Markdown Nexus provides two viewing modes for each document:
+Nexus provides two viewing modes for each document:
 
 #### Edit Mode
 
@@ -251,7 +251,7 @@ In Edit mode, a comprehensive formatting toolbar provides quick access to Markdo
 
 ### reStructuredText Support
 
-Markdown Nexus provides full support for reStructuredText (RST) files with live preview rendering and a dedicated formatting toolbar.
+Nexus provides full support for reStructuredText (RST) files with live preview rendering and a dedicated formatting toolbar.
 
 #### Supported RST Elements
 
@@ -295,7 +295,7 @@ When editing RST files, a specialized toolbar appears with RST-specific formatti
 
 ### Mermaid Diagrams
 
-Markdown Nexus supports embedded Mermaid diagrams in both Markdown and RST files. Diagrams are rendered live in preview mode.
+Nexus supports embedded Mermaid diagrams in both Markdown and RST files. Diagrams are rendered live in preview mode.
 
 #### Mermaid in Markdown
 
@@ -338,7 +338,7 @@ Use the `code-block` directive with `mermaid` as the language:
 
 ### Link Navigation
 
-Markdown Nexus supports clickable link navigation in Preview mode, allowing you to follow both internal and external links directly from the rendered document.
+Nexus supports clickable link navigation in Preview mode, allowing you to follow both internal and external links directly from the rendered document.
 
 #### Supported Link Types
 
@@ -357,13 +357,13 @@ Clicking a link that starts with `#` navigates to the matching heading within th
 
 #### External URLs
 
-Clicking a link that starts with `http://` or `https://` opens the URL in your system's default web browser. The link opens externally so you stay in Markdown Nexus without interruption.
+Clicking a link that starts with `http://` or `https://` opens the URL in your system's default web browser. The link opens externally so you stay in Nexus without interruption.
 
 > **Note:** Link navigation is available in Preview mode only. In Edit mode, links are displayed as raw Markdown syntax.
 
 ### PDF Export
 
-Markdown Nexus can export documents to PDF format:
+Nexus can export documents to PDF format:
 
 - Click the **PDF export** icon in the toolbar while viewing a document
 - The rendered preview content is exported to a PDF file
@@ -372,7 +372,7 @@ Markdown Nexus can export documents to PDF format:
 
 ### Theme Support
 
-Markdown Nexus supports both light and dark themes:
+Nexus supports both light and dark themes:
 
 - **Toggle Theme** - Click the sun/moon icon in the toolbar
 - **Persistent preference** - Theme choice is remembered across sessions
@@ -380,7 +380,7 @@ Markdown Nexus supports both light and dark themes:
 
 ### Visual Configuration Menu
 
-Markdown Nexus provides a visual Settings dialog for configuring the application without manually editing files.
+Nexus provides a visual Settings dialog for configuring the application without manually editing files.
 
 #### Opening the Settings Dialog
 
@@ -440,7 +440,7 @@ Securely manage API keys for AI providers:
 
 #### Configuration Storage
 
-Markdown Nexus stores its configuration in `config.json` located in the user data directory:
+Nexus stores its configuration in `config.json` located in the user data directory:
 
 - **Windows:** `C:\Users\<user>\AppData\Roaming\markdownplus\config.json`
 - **macOS:** `~/Library/Application Support/markdownplus/config.json`
@@ -450,9 +450,9 @@ Settings are preserved across application updates and reinstalls. While direct e
 
 ### Logging
 
-Markdown Nexus maintains daily rotating debug log files for troubleshooting:
+Nexus maintains daily rotating debug log files for troubleshooting:
 
-- **Location:** `{userData}/logs/markdown-nexus-YYYY-MM-DD.log`
+- **Location:** `{userData}/logs/nexus-YYYY-MM-DD.log`
 - **View Log:** Click the document icon in the toolbar to open the current day's log
 - **Content:** Timestamped entries for app events, IPC calls, errors, and crashes
 - **Rotation:** A new log file is created each calendar day. Logs from previous sessions on the same day are appended (not overwritten). Each session starts with a `=== Session Start ===` header.
@@ -478,7 +478,7 @@ Unhandled errors in both the main and renderer processes are caught and logged b
 
 ## AI Features
 
-Markdown Nexus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, Google Gemini, and xAI.
+Nexus includes integrated AI capabilities to assist with writing and editing your documents. The AI features support multiple providers including Claude (Anthropic), OpenAI, Google Gemini, and xAI.
 
 ### Nexus Assistant
 
@@ -563,7 +563,7 @@ When the AI returns edits, a **dedicated diff tab** opens in the tab bar (simila
 
 ### AI Research Mode
 
-Research Mode generates comprehensive, structured research reports on any topic directly inside Markdown Nexus.
+Research Mode generates comprehensive, structured research reports on any topic directly inside Nexus.
 
 #### Activating Research Mode
 
@@ -1107,7 +1107,7 @@ Build outputs are placed in the `release/` directory.
 
 The build process is configured in `package.json` under the `build` key. Key settings include:
 
-- **App ID:** `com.markdownplus.app`
+- **App ID:** `com.nexus.app`
 - **File associations:** Automatic registration for Markdown file types
 - **Windows targets:** NSIS installer and portable executable
 - **macOS target:** DMG
@@ -1127,7 +1127,7 @@ Double-click any word in the editor to highlight all occurrences:
 
 ### External File Change Detection
 
-When a file is modified outside of Markdown Nexus, the application detects the change in real-time via file system watching. The behavior depends on the **Silent File Updates** setting in Settings:
+When a file is modified outside of Nexus, the application detects the change in real-time via file system watching. The behavior depends on the **Silent File Updates** setting in Settings:
 
 #### Silent File Updates ON (default)
 
@@ -1146,7 +1146,7 @@ When a file is modified outside of Markdown Nexus, the application detects the c
 
 ### Line Ending Support
 
-Markdown Nexus preserves line endings when saving files:
+Nexus preserves line endings when saving files:
 
 - Detects original line ending style (CRLF or LF)
 - Maintains consistency throughout the file
@@ -1154,14 +1154,14 @@ Markdown Nexus preserves line endings when saving files:
 
 ### Single Instance Lock
 
-Only one instance of Markdown Nexus runs at a time:
+Only one instance of Nexus runs at a time:
 
 - Opening files while the app is running focuses the existing window
 - New files are opened in tabs within the running instance
 
 ### Frameless Window
 
-Markdown Nexus uses a custom frameless window:
+Nexus uses a custom frameless window:
 
 - Draggable title bar area
 - Custom minimize, maximize, and close buttons
@@ -1175,4 +1175,4 @@ For issues, feature requests, or contributions, please visit the project reposit
 
 ---
 
-*Markdown Nexus - Write Markdown, Beautifully.*
+*Nexus - Write Markdown, Beautifully.*

@@ -57,6 +57,7 @@ const AI_GREETINGS = [
     "Let's make the robots jealous. Start now.",
     "I am Groot\u2026 and I want to chat.",
     "The machines are listening. Impress them.",
+    "You must construct additional pylons.",
 ];
 
 const DialogContainer = styled(Box)(({ theme }) => ({
@@ -574,7 +575,7 @@ export function AIChatDialog({
             <PanelHeader>
                 <HeaderControls>
                     <Typography variant="subtitle2" fontWeight={600}>
-                        Nexus
+                        Nexus AI
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>

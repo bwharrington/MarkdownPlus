@@ -175,7 +175,7 @@ export function EditView() {
 
     const isRstFileEdit = activeFile.fileType === 'rst';
     const EditToolbar = isRstFileEdit ? RstToolbar : MarkdownToolbar;
-    const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing markdown...';
+    const placeholder = isRstFileEdit ? 'Start typing RST...' : 'Start typing something... or just let Nexus AI start it for you.';
 
     return (
         <EditorContainer>

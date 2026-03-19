@@ -1,7 +1,7 @@
-# Stop any running Markdown Nexus instance before building/installing
-$process = Get-Process -Name "Markdown Nexus" -ErrorAction SilentlyContinue
+# Stop any running Nexus instance before building/installing
+$process = Get-Process -Name "Nexus" -ErrorAction SilentlyContinue
 if ($process) {
-    Write-Host "Stopping running Markdown Nexus instance..."
+    Write-Host "Stopping running Nexus instance..."
     $process | Stop-Process -Force
     Start-Sleep -Seconds 1
 }
@@ -13,6 +13,6 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-$installer = Join-Path $PSScriptRoot "release\Markdown Nexus-Setup.exe"
+$installer = Join-Path $PSScriptRoot "release\Nexus-Setup.exe"
 Write-Host "Launching installer: $installer"
 Start-Process -FilePath $installer

@@ -36,7 +36,7 @@ const SERPER_API_URL = 'https://google.serper.dev/search';
 const SERPER_TIMEOUT_MS = 5000;
 const PAGE_FETCH_TIMEOUT_MS = 10000;
 const MAX_PAGE_CONTENT_BYTES = 16384; // 16KB per page
-const USER_AGENT = 'MarkdownPlus/1.0 (Documentation Fetcher)';
+const USER_AGENT = 'Nexus/1.0 (Documentation Fetcher)';
 
 // --- Serper Search ---
 

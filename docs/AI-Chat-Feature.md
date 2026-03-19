@@ -1,6 +1,6 @@
 # Nexus Feature Documentation 1.2
 
-This document describes the Nexus feature in Markdown Nexus, covering configuration, the chat dialog, edit mode, diff visualization, and the underlying architecture.
+This document describes the Nexus feature in Nexus, covering configuration, the chat dialog, edit mode, diff visualization, and the underlying architecture.
 
 ---
 
@@ -62,7 +62,7 @@ This document describes the Nexus feature in Markdown Nexus, covering configurat
 
 ## Overview
 
-The Nexus feature allows users to interact with AI language models directly within the Markdown Nexus editor. It supports five modes:
+The Nexus feature allows users to interact with AI language models directly within the Nexus editor. It supports five modes:
 
 - **Chat Mode**: A conversational interface for asking questions, brainstorming, or getting help with writing. The AI sees the current document as context and responds in a chat bubble format.
 - **Edit Mode**: The AI modifies the current markdown document based on user instructions. Changes are presented in a **dedicated diff tab** with a unified inline diff view, where the user can accept or reject changes on a per-hunk basis.

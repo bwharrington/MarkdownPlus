@@ -1,4 +1,4 @@
-# Claude Instructions for MarkdownPlus
+# Claude Instructions for Nexus
 
 ## Architecture Guidelines
 

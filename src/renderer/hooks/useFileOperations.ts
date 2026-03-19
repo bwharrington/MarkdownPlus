@@ -1,25 +1,12 @@
 import { useCallback, useRef } from 'react';
 import { useEditorState, useEditorDispatch, useActiveFile } from '../contexts';
-import type { IConfig, FileType } from '../types';
+import type { IConfig } from '../types';
+import { getFileType } from '../utils/fileHelpers';
+
+export { getFileType };
 
 // Generate unique ID
 const generateId = () => Math.random().toString(36).substring(2, 11);
-
-// Supported file extensions
-const MARKDOWN_EXTENSIONS = ['.md', '.markdown', '.mdown', '.mkd', '.mkdn', '.mdx', '.mdwn', '.mdc'];
-const RST_EXTENSIONS = ['.rst', '.rest'];
-const TEXT_EXTENSIONS = ['.txt'];
-const BEST_EFFORT_EXTENSIONS = ['.adoc', '.asciidoc', '.org', '.textile'];
-
-// Check file type
-export function getFileType(filePath: string): FileType {
-    const lowerPath = filePath.toLowerCase();
-    if (MARKDOWN_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'markdown';
-    if (RST_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'rst';
-    if (TEXT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
-    if (BEST_EFFORT_EXTENSIONS.some(ext => lowerPath.endsWith(ext))) return 'text';
-    return 'unknown';
-}
 
 export function useFileOperations() {
     const state = useEditorState();
@@ -149,6 +136,7 @@ export function useFileOperations() {
                     content: result.content,
                     lineEnding: result.lineEnding,
                     fileType: fileType,
+                    viewMode: fileType === 'text' ? 'edit' : undefined,
                 },
             });
 

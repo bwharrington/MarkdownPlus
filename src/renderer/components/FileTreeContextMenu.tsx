@@ -100,8 +100,8 @@ export const FileTreeContextMenu = React.memo(function FileTreeContextMenu({
                     </ListItemIcon>
                     <ListItemText>
                         {isAttachedToNexus
-                            ? `Hide '${itemName}' from Nexus`
-                            : `Attach '${itemName}' to Nexus`}
+                            ? `Hide '${itemName}' from Nexus AI`
+                            : `Attach '${itemName}' to Nexus AI`}
                     </ListItemText>
                 </MenuItem>,
             ]}

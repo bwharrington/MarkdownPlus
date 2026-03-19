@@ -20,7 +20,7 @@ function getTodayDateString(): string {
 
 // Compute path for a given date string
 function buildLogFilePath(dateStr: string): string {
-    return path.join(logsDir, `markdown-nexus-${dateStr}.log`);
+    return path.join(logsDir, `nexus-${dateStr}.log`);
 }
 
 // Ensure the log directory exists and return today's log file path.
@@ -53,7 +53,7 @@ export function initLogger() {
     getOrRotateLogFilePath();
 
     // Append a session-start header (do NOT overwrite previous entries for the day)
-    const header = `\n=== Markdown Nexus Session Start ===\n`;
+    const header = `\n=== Nexus Session Start ===\n`;
     try {
         fsSync.appendFileSync(currentLogFilePath, header, 'utf-8');
     } catch {

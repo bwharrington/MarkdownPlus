@@ -1,15 +1,15 @@
-; Custom NSIS installer script for MarkdownPlus
-; This adds MarkdownPlus to the Windows "Open with" context menu list
+; Custom NSIS installer script for Nexus
+; This adds Nexus to the Windows "Open with" context menu list
 
 !macro customInstall
-  ; Register MarkdownPlus in the Applications registry
+  ; Register Nexus in the Applications registry
   WriteRegStr SHCTX "SOFTWARE\Classes\Applications\${PRODUCT_FILENAME}" "FriendlyAppName" "${PRODUCT_NAME}"
   WriteRegStr SHCTX "SOFTWARE\Classes\Applications\${PRODUCT_FILENAME}\shell\open\command" "" '"$INSTDIR\${PRODUCT_FILENAME}" "%1"'
   WriteRegStr SHCTX "SOFTWARE\Classes\Applications\${PRODUCT_FILENAME}\DefaultIcon" "" "$INSTDIR\${PRODUCT_FILENAME},0"
   WriteRegStr SHCTX "SOFTWARE\Classes\Applications\${PRODUCT_FILENAME}\SupportedTypes" ".md" ""
   WriteRegStr SHCTX "SOFTWARE\Classes\Applications\${PRODUCT_FILENAME}\SupportedTypes" ".mdc" ""
   
-  ; Add MarkdownPlus to the OpenWithList for .md and .mdc files
+  ; Add Nexus to the OpenWithList for .md and .mdc files
   WriteRegStr SHCTX "SOFTWARE\Classes\.md\OpenWithList\${PRODUCT_FILENAME}" "" ""
   WriteRegStr SHCTX "SOFTWARE\Classes\.mdc\OpenWithList\${PRODUCT_FILENAME}" "" ""
   

@@ -20,9 +20,9 @@ import {
 } from './AppIcons';
 import { useFileOperations } from '../hooks';
 import { useEditorState, useActiveFile, useTheme, useEditorDispatch } from '../contexts';
-import AppIcon from '../../../assets/markdown-nexus.svg';
-import NexusIconLight from '../../../assets/markdown-nexus-light-mode.svg';
-import NexusIconDark from '../../../assets/markdown-nexus-dark-mode.svg';
+import AppIcon from '../../../assets/nexus.svg';
+import NexusIconLight from '../../../assets/nexus-light-mode.svg';
+import NexusIconDark from '../../../assets/nexus-dark-mode.svg';
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
     backgroundColor: theme.palette.background.paper,
@@ -151,9 +151,9 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
         <StyledAppBar position="static">
             <StyledToolbar variant="dense">
                 <AppLogo>
-                    <img src={AppIcon} alt="Markdown Nexus" width={28} height={28} />
+                    <img src={AppIcon} alt="Nexus" width={28} height={28} />
                     <Typography variant="subtitle1" fontWeight={600}>
-                        Markdown Nexus
+                        Nexus
                     </Typography>
                 </AppLogo>
 
@@ -235,7 +235,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
 
                 <ToolbarDivider orientation="vertical" flexItem />
 
-                <Tooltip title="Nexus (Ctrl+Shift+A)">
+                <Tooltip title="Nexus AI (Ctrl+Shift+A)">
                     <IconButton
                         onClick={handleOpenAIChat}
                         color="inherit"
@@ -243,7 +243,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                     >
                         <img
                             src={mode === 'dark' ? NexusIconDark : NexusIconLight}
-                            alt="Nexus"
+                            alt="Nexus AI"
                             width={24}
                             height={24}
                         />

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useEditorState, useEditorDispatch } from '../contexts';
-import { getFileType } from './useFileOperations';
+import { getFileType } from '../utils/fileHelpers';
 import type { DirectoryNode, FileDirectorySortOrder, IConfig } from '../types';
 
 export interface DirectoryInstance {
@@ -271,6 +271,7 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
             if (fileData) {
                 const fileId = `file-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
                 const fileName = filePath.split(/[\\/]/).pop() || filePath;
+                const fileType = getFileType(fileData.filePath);
                 dispatch({
                     type: 'OPEN_FILE',
                     payload: {
@@ -279,7 +280,8 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
                         name: fileName,
                         content: fileData.content,
                         lineEnding: fileData.lineEnding,
-                        fileType: getFileType(fileData.filePath),
+                        fileType,
+                        viewMode: fileType === 'text' ? 'edit' : undefined,
                     },
                 });
 

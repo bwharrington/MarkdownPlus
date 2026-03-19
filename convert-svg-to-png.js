@@ -2,8 +2,8 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const INPUT = path.join('assets', 'markdown-nexus.svg');
-const OUTPUT = path.join('assets', 'markdown-nexus.png');
+const INPUT = path.join('assets', 'nexus.svg');
+const OUTPUT = path.join('assets', 'nexus.png');
 
 async function convert() {
   if (!fs.existsSync(INPUT)) {

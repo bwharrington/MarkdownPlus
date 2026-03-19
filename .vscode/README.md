@@ -1,8 +1,8 @@
-# MarkdownPlus Development Guide
+# Nexus Development Guide
 
 ## Overview
 
-MarkdownPlus is a multi-tab Markdown editor built with Electron, React, and TypeScript. It features live preview, undo/redo functionality, and a comprehensive markdown toolbar.
+Nexus is a multi-tab Markdown editor built with Electron, React, and TypeScript. It features live preview, undo/redo functionality, and a comprehensive markdown toolbar.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   cd MarkdownPlus
+   cd Nexus
    ```
 
 2. **Install dependencies:**
@@ -55,7 +55,7 @@ npm run watch
 
 ## Creating Installers
 
-MarkdownPlus uses electron-builder to create distributable packages.
+Nexus uses electron-builder to create distributable packages.
 
 ### Windows Installers
 
@@ -67,8 +67,8 @@ npm run dist
 ```
 
 This creates:
-- `release/MarkdownPlus-Setup.exe` - Windows installer
-- `release/MarkdownPlus-Portable.exe` - Portable version
+- `release/Nexus-Setup.exe` - Windows installer
+- `release/Nexus-Portable.exe` - Portable version
 
 ### Cross-Platform Installers
 
@@ -76,25 +76,25 @@ This creates:
 ```bash
 npm run package-mac
 ```
-Creates: `release/MarkdownPlus.dmg`
+Creates: `release/Nexus.dmg`
 
 **Linux:**
 ```bash
 npm run package-linux
 ```
-Creates: `release/MarkdownPlus.AppImage` and `release/MarkdownPlus.deb`
+Creates: `release/Nexus.AppImage` and `release/Nexus.deb`
 
 ## File Associations
 
-MarkdownPlus supports file associations on Windows, allowing you to right-click .md files in Windows Explorer and select "Edit with MarkdownPlus".
+Nexus supports file associations on Windows, allowing you to right-click .md files in Windows Explorer and select "Edit with Nexus".
 
 ### Windows File Associations
 
 The Windows installers automatically register file associations for .md files:
 
-1. **During installation**, the NSIS installer registers MarkdownPlus as the default handler for .md files
-2. **Right-click any .md file** in Windows Explorer to see "Edit with MarkdownPlus" option
-3. **Double-clicking .md files** will open them directly in MarkdownPlus
+1. **During installation**, the NSIS installer registers Nexus as the default handler for .md files
+2. **Right-click any .md file** in Windows Explorer to see "Edit with Nexus" option
+3. **Double-clicking .md files** will open them directly in Nexus
 4. **Single instance behavior** - opening multiple .md files opens them as tabs in the same window
 
 ### Manual File Association Setup
@@ -104,16 +104,16 @@ If you need to manually set up file associations:
 1. Right-click a .md file in Windows Explorer
 2. Select "Open with" > "Choose another app"
 3. Click "More apps" > "Look for another app on this PC"
-4. Navigate to the MarkdownPlus installation folder
-5. Select `MarkdownPlus.exe`
+4. Navigate to the Nexus installation folder
+5. Select `Nexus.exe`
 
 ### Testing File Associations
 
 To test file associations after installation:
 
-1. Install MarkdownPlus using the setup executable
+1. Install Nexus using the setup executable
 2. Create or find a .md file on your desktop
-3. Right-click the file and verify "Edit with MarkdownPlus" appears in the context menu
+3. Right-click the file and verify "Edit with Nexus" appears in the context menu
 4. Test opening multiple .md files to ensure they open as tabs in a single window
 
 ## Project Structure
@@ -152,7 +152,7 @@ To test file associations after installation:
 - **Comprehensive markdown toolbar** with formatting buttons
 - **File operations** (new, open, save, save as, close)
 - **Dark/Light theme toggle**
-- **File associations** - Right-click .md files in Windows Explorer to "Edit with MarkdownPlus"
+- **File associations** - Right-click .md files in Windows Explorer to "Edit with Nexus"
 - **Keyboard shortcuts:**
   - `Ctrl+N` - New file
   - `Ctrl+O` - Open file

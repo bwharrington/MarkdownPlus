@@ -57,7 +57,7 @@ export function EmptyState({ onOpenRecentDirectory }: EmptyStateProps) {
         <Container>
             <WelcomeCard>
                 <Typography variant="h4" component="h1" gutterBottom>
-                    Welcome to Markdown Nexus
+                    Welcome to Nexus
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
                     A simple, elegant Markdown editor for creating and editing your documents.

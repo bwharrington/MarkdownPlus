@@ -6,11 +6,11 @@ export function useWindowTitle() {
     const activeFile = useActiveFile();
 
     useEffect(() => {
-        let title = 'Markdown Nexus';
+        let title = 'Nexus';
 
         if (activeFile) {
             const dirtyIndicator = activeFile.isDirty ? '*' : '';
-            title = `${dirtyIndicator}${activeFile.name} - Markdown Nexus`;
+            title = `${dirtyIndicator}${activeFile.name} - Nexus`;
         }
 
         window.electronAPI.setWindowTitle(title);

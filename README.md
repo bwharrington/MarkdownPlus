@@ -1,4 +1,4 @@
-# Markdown Nexus
+# Nexus
 
 A modern, feature-rich Markdown editor with live preview, AI assistance, and multi-tab support.
 
@@ -14,7 +14,7 @@ A modern, feature-rich Markdown editor with live preview, AI assistance, and mul
 
 ## AI Features
 
-Markdown Nexus includes integrated AI capabilities:
+Nexus includes integrated AI capabilities:
 
 - **AI Chat Assistant** - Get help with writing and editing
 - **AI Edit Mode** - Make AI-powered edits with visual diff review
@@ -67,7 +67,7 @@ npm run package-linux
 
 ## Documentation
 
-See [docs/Markdown-Nexus.md](docs/Markdown-Nexus.md) for complete documentation.
+See [docs/Nexus.md](docs/Nexus.md) for complete documentation.
 
 ## Technologies
 
