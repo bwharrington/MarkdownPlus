@@ -27,6 +27,7 @@ Nexus is a modern, feature-rich Markdown editor built with Electron, React, and 
    - [Logging](#logging)
 4. [AI Features](#ai-features)
    - [Nexus Assistant](#nexus-assistant)
+   - [Web Search](#web-search)
    - [Ask Mode](#ask-mode)
    - [AI Edit Mode](#ai-edit-mode)
    - [Create Mode](#create-mode)
@@ -42,13 +43,14 @@ Nexus is a modern, feature-rich Markdown editor built with Electron, React, and 
 
 Nexus is a desktop Markdown editor designed for writers, developers, and anyone who works with Markdown documents. It features:
 
-- **File Directory Panel** - Collapsible sidebar for browsing and managing multiple project folders simultaneously
+- **File Directory Panel** - Collapsible sidebar for browsing and managing multiple project folders simultaneously, with multi-file selection and live directory watching
 - **Dual viewing modes** - Switch between raw Markdown editing and rendered preview
 - **Multi-tab interface** - Work on multiple documents simultaneously
 - **GitHub Flavored Markdown** - Full GFM support including tables, task lists, and strikethrough
 - **reStructuredText support** - Full RST rendering with dedicated formatting toolbar
 - **Mermaid diagrams** - Embedded diagram support in both Markdown and RST files
 - **PDF export** - Export rendered documents to PDF
+- **AI assistant** - Ask questions, edit documents with diff review, and generate new documents using Claude, OpenAI, Gemini, or xAI — with optional live web search powered by Serper
 - **Modern UI** - Built with Material UI for a clean, responsive interface
 - **Cross-platform** - Available for Windows, macOS, and Linux
 
@@ -88,12 +90,15 @@ The File Directory Panel is a collapsible, resizable left-hand sidebar for brows
 
 - **Multiple open directories** - Open any number of folders simultaneously, each with its own tree view and toolbar
 - **Full directory tree** - Displays all supported Markdown, RST, and text files recursively, with folders shown before files
-- **Double-click to open** - Single-click selects a file; double-click opens it as a new editor tab
-- **Per-directory toolbar** - Each directory has its own toolbar with buttons for creating files/folders, sorting, expand/collapse all, and closing
+- **Multi-file selection** - Ctrl+click or Shift+click to select multiple files; right-click a selection for Open All, Attach All, and Delete All actions
+- **Show All Files toggle** - Per-directory toggle to display all file types instead of just supported markup and text files
+- **Double-click to open** - Single-click selects; double-click opens as a new editor tab; clicking an already-open file switches to its tab
+- **Per-directory toolbar** - Each directory has its own toolbar with buttons for creating files/folders, sorting, expand/collapse all, show all files, and closing
 - **File and folder operations** - Create, rename, delete, and move files and folders without leaving the editor
 - **Drag-and-drop** - Reorganize files within a directory by dragging them to new folders
-- **Right-click context menu** - Rename, delete, reveal in Explorer, copy path/name, and toggle Nexus AI attachment per file or folder
-- **Sort order** - Sort files A-to-Z or Z-to-A per directory; sort preference is remembered across sessions
+- **Right-click context menu** - Rename, delete, open file location, copy path/name, and toggle Nexus AI attachment per file or folder
+- **Sort order** - Files sorted A-to-Z or Z-to-A per directory; folders always sorted A-to-Z; preference persists across sessions
+- **Live directory watching** - The tree auto-refreshes when files are added, removed, or renamed outside of Nexus (debounced 500ms per directory)
 - **Nexus AI integration** - Attach any file in the tree to the Nexus AI chat context without opening it in the editor
 - **Auto-restore** - Previously opened directories are automatically re-opened on application startup
 - **Recent directories** - Recently opened directories appear on the landing page and in Settings for quick re-access
@@ -422,6 +427,14 @@ Securely manage API keys for AI providers:
 - Click the **refresh** icon next to Clear to re-test the connection — a toast shows the result
 - Provider statuses are automatically refreshed when you set or clear an API key
 
+##### Web Search
+
+Configure the Serper API key to enable live web search in all AI modes (Ask, Edit, Create):
+
+- Obtain a key at [serper.dev](https://serper.dev) and enter it in the **Web Search** settings tab
+- Once set, a globe icon toggle appears in the AI input area — click it to include web search context in your request
+- The key is stored using the same encrypted secure-storage mechanism as AI provider keys
+
 ##### AI Models
 
 - Displays available models for each configured provider in collapsible accordion sections
@@ -487,9 +500,11 @@ Access the Nexus Assistant by clicking the **AI** button in the toolbar (`Ctrl+S
 - **Multi-provider support** - Choose between Claude, OpenAI, Google Gemini, or xAI
 - **Dynamic model selection** - Available models are fetched from each provider and grouped by provider in a dropdown
 - **Three AI modes** - Ask (stateless Q&A), Edit (document modification with diff review), Create (generate new documents)
+- **Web search** - Optional Serper-powered live web search injects current context into any mode before the AI call
 - **File attachments** - Attach files for context in Ask and Create mode requests
 - **Docked panel** - Resizable panel docked to the right side of the editor
 - **Persistent session** - Q&A history, mode, and model selection are maintained during your session
+- **Nexus Aura** - Animated conic gradient border effect visible on the panel while any AI request is active
 
 #### Opening the Nexus Panel
 
@@ -497,6 +512,25 @@ Access the Nexus Assistant by clicking the **AI** button in the toolbar (`Ctrl+S
 2. Choose a mode (**Ask**, **Edit**, or **Create**) from the mode dropdown
 3. Select a model from the model dropdown
 4. Type your message and press **Enter**
+
+---
+
+### Web Search
+
+All three AI modes support optional live web search powered by the Serper API. When enabled, a two-phase pipeline runs before the main AI call:
+
+1. **Query optimization** — A lightweight AI call rewrites your natural-language request into a precise, search-engine-friendly query (with a broader fallback variant).
+2. **Web search execution** — The optimized query is sent to Serper, and the top results are formatted into a context block injected into the AI prompt.
+
+**How to enable:**
+
+1. Add a Serper API key in **Settings → Web Search**
+2. A **globe icon** toggle appears in the AI input area — click it to turn web search on or off for the current request
+3. The progress indicator shows extra steps (Optimizing Query, Searching the Web) while web search is active
+
+In **Ask Mode**, responses that used web search show a **"Web search included"** badge and a **Sources** section with clickable links to the pages referenced.
+
+> For full details, see [AI-Chat-Feature.md](AI-Chat-Feature.md).
 
 ---
 
@@ -508,8 +542,10 @@ Ask Mode is a **stateless Q&A** interface — every question is completely indep
 
 1. Select **Ask** from the mode dropdown
 2. Optionally attach files via the paperclip icon for additional context
-3. Type your question and press **Enter**
-4. The response appears as a chat bubble; attached files are cleared after sending
+3. Optionally toggle the globe icon to include live web search results
+4. Type your question and press **Enter**
+5. A progress stepper shows active phases (Optimizing Query → Searching the Web → Getting Answer)
+6. The response appears as a chat bubble; if web search was used, a badge and sources list appear below the answer
 
 > **Note:** Ask Mode is available with all four providers: Claude, OpenAI, Google Gemini, and xAI.
 
@@ -529,13 +565,14 @@ AI Edit Mode allows you to make AI-powered edits directly to your document with 
 
 #### Making Edits
 
-1. With Edit Mode selected, describe the changes you want in natural language
-2. Examples:
+1. With Edit Mode selected, optionally toggle the globe icon to include live web search context
+2. Describe the changes you want in natural language:
    - "Add a table of contents at the beginning"
    - "Fix the grammar in paragraph 3"
    - "Convert the bullet list to a numbered list"
    - "Add code examples for each function"
 3. Press **Enter** to submit the edit request
+4. A progress stepper shows active phases (Optimizing Query → Searching the Web → Applying Edits)
 
 #### Reviewing Changes
 
@@ -579,9 +616,10 @@ Create Mode generates a **complete new Markdown document** from a description an
 1. Open the Nexus panel (`Ctrl+Shift+A`)
 2. Select **Create** from the mode dropdown
 3. Optionally attach files to provide context for the generated content
-4. Describe what you want to create (e.g., "A blog post about React hooks", "A project README", "A spec for a REST API") and press **Enter**
-5. The **Create Progress Stepper** shows live progress through two phases: Generating Content → Naming Document
-6. When complete, a new document tab opens in preview mode with an AI-generated filename
+4. Optionally toggle the globe icon to enrich the generated content with live web search results
+5. Describe what you want to create (e.g., "A blog post about React hooks", "A project README", "A spec for a REST API") and press **Enter**
+6. The **Create Progress Stepper** shows live progress: Optimizing Query → Searching the Web (if enabled) → Generating Content → Naming Document
+7. When complete, a new document tab opens in preview mode with an AI-generated filename
 
 > **Note:** Create Mode is available with all four providers: Claude, OpenAI, Google Gemini, and xAI.
 
@@ -605,10 +643,8 @@ Configure your AI providers by setting up API keys through the Settings dialog.
 API keys are managed through the Settings dialog:
 
 1. Click the **Settings** (gear) icon in the toolbar or press `Ctrl+,`
-2. Navigate to the **AI API Keys** section
-3. Enter your API keys for each provider:
-   - **Anthropic Claude** - For Claude models
-   - **OpenAI** - For GPT models
+2. Navigate to the **AI** tab and enter your API keys for each AI provider
+3. Navigate to the **Web Search** tab to add a Serper API key (optional, enables web search in all AI modes)
 4. Click **Set** to save each key securely
 
 API keys are encrypted and stored securely using your operating system's credential storage:
@@ -626,7 +662,9 @@ For development purposes, you can use a `.env` file to override secure storage:
    ```
    ANTHROPIC_API_KEY=your_key_here
    OPENAI_API_KEY=your_key_here
+   GEMINI_API_KEY=your_key_here
    XAI_API_KEY=your_key_here
+   SERPER_API_KEY=your_key_here
    ```
 3. Restart the application
 
@@ -796,10 +834,13 @@ src/
 │   │   ├── FileDirectoryToolbar.tsx   # Per-directory toolbar with actions
 │   │   ├── FileTreeNode.tsx    # Recursive file/folder tree row
 │   │   ├── FileTreeContextMenu.tsx    # Right-click context menu for tree items
+│   │   ├── MultiSelectContextMenu.tsx # Multi-file selection context menu
 │   │   ├── AIChatDialog.tsx    # AI chat dialog (orchestrator)
 │   │   ├── ChatMessages.tsx    # Chat message bubbles and rendering
 │   │   ├── FileAttachmentsList.tsx # File attachment chips
 │   │   ├── MessageInput.tsx    # Chat input with mode/model controls
+│   │   ├── AskProgress.tsx     # Ask mode progress stepper
+│   │   ├── EditProgress.tsx    # Edit mode progress stepper
 │   │   ├── CreateProgress.tsx  # Create mode progress stepper
 │   │   ├── DiffView.tsx        # Dedicated diff tab view
 │   │   ├── DiffNavigationToolbar.tsx  # Diff review controls
@@ -817,12 +858,14 @@ src/
 │   ├── hooks/             # Custom React hooks
 │   │   ├── useFileOperations.ts
 │   │   ├── useFileDirectories.ts  # Multi-directory panel state management
+│   │   ├── useDirectoryWatcher.ts # Live FS change detection for open directories
 │   │   ├── useWindowTitle.ts
 │   │   ├── useExternalFileWatcher.ts  # External file change handling
 │   │   ├── useAIChat.ts        # Provider/model loading and selection
 │   │   ├── useAIAsk.ts         # Ask mode stateless Q&A logic
 │   │   ├── useAIDiffEdit.ts    # Edit mode diff logic
 │   │   ├── useAICreate.ts      # Create mode two-phase pipeline
+│   │   ├── useWebSearch.ts     # Two-phase web search (optimize + Serper execute)
 │   │   ├── useEditLoadingMessage.ts  # Typewriter loading animations
 │   │   ├── useSettingsConfig.ts     # Settings configuration hook
 │   │   ├── useContentEditable.ts    # Content editable behavior
@@ -831,6 +874,7 @@ src/
 │   │   └── useImagePaste.ts         # Image paste handling
 │   │
 │   ├── utils/             # Utility functions
+│   │   ├── callProviderApi.ts  # Unified routing to provider-specific IPC channels
 │   │   ├── diffUtils.ts        # Diff computation and normalization
 │   │   ├── fileHelpers.ts      # File operation helpers
 │   │   ├── domUtils.ts         # DOM manipulation utilities
@@ -855,7 +899,8 @@ The application uses React Context with a reducer pattern for state management:
 
 - **EditorContext** - Manages open files, active tab, undo/redo stacks, and application config
 - **ThemeContext** - Manages light/dark theme preference
-- **useFileDirectories** - Local hook state (outside EditorContext) managing the map of open directory instances and their per-directory trees, expanded paths, sort orders, and rename states
+- **AIProviderCacheContext** - Shared context for provider connection statuses and cached model lists; prevents redundant API calls when multiple components need provider state
+- **useFileDirectories** - Local hook state (outside EditorContext) managing the map of open directory instances and their per-directory trees, expanded paths, sort orders, multi-selection, and rename states
 
 ### IPC Communication
 
@@ -868,7 +913,9 @@ window.electronAPI.saveFile(path, content)
 window.electronAPI.loadConfig()
 
 // File Directory Operations
-window.electronAPI.readDirectory(dirPath)
+window.electronAPI.readDirectory(dirPath, showAllFiles)
+window.electronAPI.watchDirectory(dirPath)
+window.electronAPI.unwatchDirectory(dirPath)
 window.electronAPI.createFile(parentPath, name)
 window.electronAPI.createFolder(dirPath)
 window.electronAPI.deleteItem(itemPath)
@@ -876,13 +923,22 @@ window.electronAPI.renameFile(oldPath, newPath)
 window.electronAPI.revealInExplorer(itemPath)
 
 // AI Operations
-window.electronAPI.aiChatRequest(messages, model, provider)
+window.electronAPI.claudeChatRequest(messages, model)
+window.electronAPI.openaiChatRequest(messages, model)
+window.electronAPI.geminiChatRequest(messages, model)
+window.electronAPI.aiChatRequest(messages, model)      // xAI
 window.electronAPI.aiEditRequest(messages, model, provider)
+window.electronAPI.cancelAIChatRequest(requestId)
 window.electronAPI.getAvailableModels(provider)
 window.electronAPI.getAIProviderStatus()
 
+// Web Search
+window.electronAPI.webSearch(query, numResults)
+window.electronAPI.hasSerperKey()
+
 // Events (Main → Renderer)
 onExternalFileChange(callback)
+onDirectoryChange(callback)
 onOpenFilesFromArgs(callback)
 ```
 

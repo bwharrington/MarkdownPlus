@@ -15,22 +15,26 @@ This document describes the File Directory Panel feature in Nexus — a collapsi
    - [Supported File Types](#supported-file-types)
    - [Expanding and Collapsing Folders](#expanding-and-collapsing-folders)
    - [Selecting and Opening Files](#selecting-and-opening-files)
+   - [Multi-file Selection](#multi-file-selection)
 4. [Per-Directory Toolbar](#per-directory-toolbar)
 5. [File and Folder Operations](#file-and-folder-operations)
    - [Creating a New File](#creating-a-new-file)
    - [Creating a New Folder](#creating-a-new-folder)
    - [Sorting](#sorting)
    - [Expand / Collapse All](#expand--collapse-all)
+   - [Show All Files](#show-all-files)
 6. [Context Menu](#context-menu)
+   - [Multi-select Context Menu](#multi-select-context-menu)
 7. [Drag and Drop](#drag-and-drop)
-8. [Multiple Directories](#multiple-directories)
-9. [Nexus AI Integration](#nexus-ai-integration)
-10. [Persistence and Auto-Restore](#persistence-and-auto-restore)
+8. [Live Directory Watching](#live-directory-watching)
+9. [Multiple Directories](#multiple-directories)
+10. [Nexus AI Integration](#nexus-ai-integration)
+11. [Persistence and Auto-Restore](#persistence-and-auto-restore)
     - [Open Directories](#open-directories)
     - [Recent Directories](#recent-directories)
     - [Landing Page Integration](#landing-page-integration)
     - [Settings Dialog Integration](#settings-dialog-integration)
-11. [Architecture](#architecture)
+12. [Architecture](#architecture)
     - [Key Components](#key-components)
     - [Key Hooks](#key-hooks)
     - [Config Fields](#config-fields)
@@ -98,7 +102,9 @@ The tree displays all files with the following extensions:
 | Plain Text | `.txt` |
 | Best-Effort | `.adoc`, `.asciidoc`, `.org`, `.textile` |
 
-Files with other extensions and all hidden files/folders (names starting with `.`) are excluded from the tree. Folders are shown regardless of their contents.
+Files with other extensions and all hidden files/folders (names starting with `.`) are excluded from the tree by default. Folders are shown regardless of their contents.
+
+The **Show All Files** toggle in the per-directory toolbar overrides this filter to display every file in the directory regardless of extension. Hidden files and folders (names starting with `.`) remain excluded even in Show All Files mode.
 
 ### Expanding and Collapsing Folders
 
@@ -108,8 +114,23 @@ Files with other extensions and all hidden files/folders (names starting with `.
 
 ### Selecting and Opening Files
 
-- **Single-click** a file to select it (highlights the row). This does not open the file.
+- **Single-click** a file to select it (highlights the row). If the file is already open in a tab, that tab becomes the active editor tab without reopening the file.
 - **Double-click** a file to open it in the main editor as a new tab. If the file is already open in a tab, that tab becomes active without opening a duplicate.
+- The active editor tab is always reflected as the highlighted row in the directory panel — switching tabs updates the selection automatically.
+
+### Multi-file Selection
+
+Multiple files can be selected simultaneously using standard keyboard modifiers:
+
+| Interaction | Behavior |
+|---|---|
+| **Ctrl+click** (Cmd+click on macOS) | Add or remove a single file from the selection |
+| **Shift+click** | Select a contiguous range from the last-clicked file to the clicked file, based on visible order in the tree |
+| **Ctrl+Shift+click** | Extend the selection with a range without clearing the existing selection |
+
+When multiple files are selected, right-clicking any selected file shows the **multi-select context menu** instead of the single-item menu (see [Multi-select Context Menu](#multi-select-context-menu)).
+
+Selection is cleared (reset to the active editor file) whenever you switch editor tabs.
 
 ---
 
@@ -124,6 +145,7 @@ Each open directory has its own toolbar displayed at the top of its tree section
 | **New Folder** (FolderPlus icon) | Creates a new empty folder in the root of the directory |
 | **Sort** (A↓Z / Z↑A icon) | Toggles file sort order between A-to-Z and Z-to-A |
 | **Expand/Collapse All** (double chevron icon) | Expands or collapses all folder nodes in the tree |
+| **Show All Files** (eye / eye-off icon) | Toggles between showing only supported file types and showing all files in the directory |
 | **Close** (X icon) | Closes the directory with a confirmation prompt |
 
 ---
@@ -153,13 +175,21 @@ Each directory maintains its own sort order, persisted across sessions in `confi
 - **A-to-Z (asc):** Files within each folder are sorted alphabetically ascending. This is the default.
 - **Z-to-A (desc):** Files within each folder are sorted alphabetically descending.
 
-Folders themselves are **not** sorted — they always appear before files in each directory level and maintain their natural file system order.
+Folders appear before files at every directory level and are always sorted **alphabetically ascending** regardless of the selected sort order. Only files are affected by the A-to-Z / Z-to-A toggle.
 
 ### Expand / Collapse All
 
 - **Expand All** sets all folder nodes in the tree as expanded.
 - **Collapse All** collapses all folder nodes back to the root level.
 - The toolbar button icon changes to reflect the current state: chevrons-down-up when all expanded, chevrons-up-down when not.
+
+### Show All Files
+
+Click the **eye icon** in the toolbar to show all files in the directory regardless of extension. Click again (eye-off icon) to return to the default filtered view showing only supported file types.
+
+- The setting is **per-directory** and persisted across sessions in `config.json` under `openDirectoryShowAllFiles`
+- When toggled, the directory tree is re-read immediately from disk with the new filter setting
+- Hidden files and folders (names starting with `.`) remain excluded in all modes
 
 ---
 
@@ -175,7 +205,7 @@ Right-clicking any file or folder in the tree opens a context menu. The availabl
 | **New Folder** | Create a new subfolder inside this folder |
 | **Rename** | Rename the folder inline (activates the inline rename input) |
 | **Delete** | Delete the folder and all its contents (with OS confirmation via system dialog) |
-| **Reveal in Explorer** | Open the folder's location in the OS file explorer / Finder |
+| **Open File Location** | Open the folder's location in the OS file explorer / Finder |
 | **Copy Path** | Copy the full absolute path to the clipboard |
 | **Copy Name** | Copy just the folder name to the clipboard |
 
@@ -185,10 +215,10 @@ Right-clicking any file or folder in the tree opens a context menu. The availabl
 |---|---|
 | **Rename** | Rename the file inline |
 | **Delete** | Delete the file from disk (with OS confirmation) |
-| **Reveal in Explorer** | Reveal the file in the OS file explorer / Finder |
+| **Open File Location** | Reveal the file in the OS file explorer / Finder |
 | **Copy Path** | Copy the full absolute path to the clipboard |
 | **Copy Name** | Copy the filename (with extension) to the clipboard |
-| **Attach to Nexus** / **Hide from Nexus** | Toggle whether the file is attached to the Nexus AI chat context (see [Nexus AI Integration](#nexus-ai-integration)) |
+| **Attach to Nexus AI** / **Remove from Nexus AI** | Toggle whether the file is attached to the Nexus AI chat context (see [Nexus AI Integration](#nexus-ai-integration)) |
 
 ### Inline Rename
 
@@ -197,6 +227,18 @@ When **Rename** is selected:
 - Press **Enter** or click away to confirm the rename.
 - Press **Escape** to cancel without renaming.
 - For files, the existing extension is preserved if the new name doesn't include one.
+
+### Multi-select Context Menu
+
+When **two or more files are selected**, right-clicking any of them shows a dedicated multi-select context menu instead of the single-item menu:
+
+| Action | Description |
+|---|---|
+| **Open All (N files)** | Opens all selected files as editor tabs. The first file in the selection becomes the active tab. |
+| **Attach All to Nexus AI** | Attaches all selected files to the Nexus AI chat context. Already-attached files are skipped. |
+| **Delete All (N files)** | Deletes all selected files after a browser `confirm()` prompt. Any deleted files that are open in editor tabs are closed automatically. A toast notification confirms how many files were deleted. |
+
+Right-clicking a file that is **not** in the current selection while multiple files are selected will first reset the selection to just that file, then show the normal single-item context menu.
 
 ---
 
@@ -209,6 +251,16 @@ Files and folders can be **dragged within a directory** to move them to a differ
 - A visual drop indicator shows where the item will land.
 - Drag-and-drop is **isolated within a single directory** — dragging between two open directories is not currently supported.
 - The tree refreshes automatically after a move.
+
+---
+
+## Live Directory Watching
+
+Every open directory is **automatically watched** for file system changes via the `useDirectoryWatcher` hook. When files are added, removed, or renamed outside of the panel (e.g., by an external editor, terminal, or file manager), the directory tree refreshes automatically.
+
+- **Debouncing**: Changes are coalesced with a 500ms debounce per directory to avoid redundant refreshes during bulk operations (e.g., a git checkout touching many files at once).
+- **IPC**: Watching starts via `watchDirectory` when a directory is first read, and stops via `unwatchDirectory` when the directory is closed.
+- **Scope**: Only the specific directory that changed is re-read; other open directories are unaffected.
 
 ---
 
@@ -275,12 +327,14 @@ Both tables update reactively as directories are opened and closed.
 | `FileDirectoryToolbar` | `src/renderer/components/FileDirectoryToolbar.tsx` | Per-directory toolbar with folder name label, action buttons, and the close confirmation dialog. |
 | `FileTreeNode` | `src/renderer/components/FileTreeNode.tsx` | Recursive component for a single file or folder row in the tree. Handles click, double-click, drag, drop, inline rename, and context menu. |
 | `FileTreeContextMenu` | `src/renderer/components/FileTreeContextMenu.tsx` | Right-click context menu for file/folder rows with all available actions. |
+| `MultiSelectContextMenu` | `src/renderer/components/MultiSelectContextMenu.tsx` | Context menu shown when multiple files are selected; provides Open All, Attach All, and Delete All actions. |
 
 ### Key Hooks
 
 | Hook | File | Purpose |
 |---|---|---|
 | `useFileDirectories` | `src/renderer/hooks/useFileDirectories.ts` | Central hook that manages the `Map<path, InstanceState>` for all open directories. Exposes `openFolder`, `openRecentDirectory`, and the `directories` array of `DirectoryInstance` objects. Handles auto-restore on startup and config persistence. |
+| `useDirectoryWatcher` | `src/renderer/hooks/useDirectoryWatcher.ts` | Subscribes to the `onDirectoryChange` IPC event and debounces tree refreshes (500ms) per directory when file system changes are detected. Reads current directory instances via a ref to avoid re-subscribing on each render. |
 
 Each `DirectoryInstance` (produced by `useFileDirectories`) exposes the complete per-directory API consumed by `FileDirectory` and its children:
 
@@ -294,20 +348,26 @@ interface DirectoryInstance {
     sortOrder: FileDirectorySortOrder;
     isAllExpanded: boolean;
     renamingPath: string | null;
+    selectedPaths: Set<string>;    // currently selected file paths (multi-select)
+    showAllFiles: boolean;         // whether to show all files or only supported types
     refreshTree: () => Promise<void>;
     closeDirectory: () => void;
     toggleNode: (path: string) => void;
     expandAll: () => void;
     collapseAll: () => void;
     setSortOrder: (order: FileDirectorySortOrder) => void;
+    selectFileMulti: (path: string, ctrlKey: boolean, shiftKey: boolean) => void;
+    toggleShowAllFiles: () => Promise<void>;
     createNewFile: (parentPath?: string) => Promise<void>;
     createNewFolder: (parentPath?: string) => Promise<void>;
     moveItem: (sourcePath: string, destDirPath: string) => Promise<void>;
     deleteItem: (itemPath: string) => Promise<void>;
+    deleteMultipleItems: (paths: string[]) => Promise<void>;
     renameItem: (oldPath: string, newName: string) => Promise<void>;
     startRename: (path: string) => void;
     cancelRename: () => void;
     openFileInEditor: (filePath: string) => Promise<void>;
+    openMultipleFiles: (paths: string[]) => Promise<void>;
 }
 ```
 
@@ -319,6 +379,7 @@ interface DirectoryInstance {
 | `fileDirectoryWidth` | `number` | Width of the panel in pixels |
 | `openDirectoryPaths` | `string[]` | Ordered list of currently open directory paths |
 | `openDirectorySort` | `Record<string, FileDirectorySortOrder>` | Per-directory sort order (`'asc'` or `'desc'`), keyed by path |
+| `openDirectoryShowAllFiles` | `Record<string, boolean>` | Per-directory Show All Files setting, keyed by path |
 | `openDirectories` | `string[]` | Mirror of `openDirectoryPaths`; used by Settings and landing page display |
 | `recentDirectories` | `string[]` | Historical list of all directories ever opened |
 
@@ -328,13 +389,16 @@ All file system operations are handled in the Electron main process and called f
 
 | Channel | Direction | Purpose |
 |---|---|---|
-| `file:read-directory` | Renderer → Main | Read a directory tree recursively |
+| `file:read-directory` | Renderer → Main | Read a directory tree recursively; accepts a `showAllFiles` flag to bypass the file-type filter |
 | `file:create-file` | Renderer → Main | Create a new file on disk |
 | `file:create-folder` | Renderer → Main | Create a new folder on disk |
 | `file:delete` | Renderer → Main | Delete a file or folder (moves to OS trash) |
 | `file:rename` | Renderer → Main | Rename or move a file/folder |
 | `file:reveal-in-explorer` | Renderer → Main | Open the OS file explorer at the given path |
 | `file:read` | Renderer → Main | Read a file's contents (used when opening from the panel) |
+| `directory:watch` | Renderer → Main | Begin watching a directory path for file system changes |
+| `directory:unwatch` | Renderer → Main | Stop watching a directory path |
+| `directory:change` | Main → Renderer | Pushed event: notifies renderer that a watched directory has changed (triggers debounced tree refresh) |
 
 ---
 

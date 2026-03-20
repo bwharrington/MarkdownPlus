@@ -9,6 +9,7 @@ This document describes the Nexus AI feature in Nexus, covering configuration, t
 1. [Overview](#overview)
 2. [Configuration](#configuration)
    - [API Key Setup](#api-key-setup)
+   - [Web Search Setup](#web-search-setup)
    - [Model Selection](#model-selection)
    - [Model Filtering](#model-filtering)
    - [Secure Storage](#secure-storage)
@@ -20,10 +21,14 @@ This document describes the Nexus AI feature in Nexus, covering configuration, t
    - [Message Display](#message-display)
    - [File Attachments](#file-attachments)
    - [Loading Indicators](#loading-indicators)
-4. [Ask Mode](#ask-mode)
+4. [Web Search](#web-search)
+   - [How Web Search Works](#how-web-search-works)
+   - [Web Search in Ask Mode](#web-search-in-ask-mode)
+   - [Web Search in Edit and Create Modes](#web-search-in-edit-and-create-modes)
+5. [Ask Mode](#ask-mode)
    - [How Ask Mode Works](#how-ask-mode-works)
    - [Ask Mode Output](#ask-mode-output)
-5. [Edit Mode and Diff System](#edit-mode-and-diff-system)
+6. [Edit Mode and Diff System](#edit-mode-and-diff-system)
    - [Activating Edit Mode](#activating-edit-mode)
    - [How Edits Are Requested](#how-edits-are-requested)
    - [Diff Computation](#diff-computation)
@@ -31,17 +36,17 @@ This document describes the Nexus AI feature in Nexus, covering configuration, t
    - [Accepting and Rejecting Changes](#accepting-and-rejecting-changes)
    - [Keyboard Shortcuts](#keyboard-shortcuts)
    - [Source File Protection](#source-file-protection)
-6. [Create Mode](#create-mode)
+7. [Create Mode](#create-mode)
    - [Activating Create Mode](#activating-create-mode)
    - [How Create Mode Works](#how-create-mode-works)
    - [Create Mode Output](#create-mode-output)
    - [Loading States — Create Progress](#loading-states--create-progress)
-7. [Supported AI Providers](#supported-ai-providers)
+8. [Supported AI Providers](#supported-ai-providers)
    - [Claude (Anthropic)](#claude-anthropic)
    - [OpenAI](#openai)
    - [Google Gemini](#google-gemini)
    - [xAI (Grok)](#xai-grok)
-8. [Architecture](#architecture)
+9. [Architecture](#architecture)
    - [File Structure](#file-structure)
    - [IPC Communication](#ipc-communication)
    - [State Management](#state-management)
@@ -92,6 +97,21 @@ Provider statuses are automatically refreshed whenever you set or clear an API k
 - `XAI_API_KEY` for xAI
 
 Environment variable values take precedence over keys stored in secure storage.
+
+### Web Search Setup
+
+Web search is powered by the **Serper API** and is configured on the **Web Search** tab in Settings. A Serper key is separate from AI provider keys — it enables live web context in all three AI modes (Ask, Edit, Create).
+
+1. Obtain a key at [serper.dev](https://serper.dev)
+2. Open **Settings → Web Search**
+3. Enter the key and click **Set**
+4. The key is stored with the same encrypted secure-storage mechanism used for AI provider keys
+
+Once a Serper key is stored, a **globe icon** toggle button appears in the message input. Clicking it enables or disables web search for the current request. The toggle is hidden entirely when no Serper key is configured.
+
+Serper does not have a connection-test flow (unlike AI providers) — the key is stored as-is and validated implicitly on first use.
+
+---
 
 ### Model Selection
 
@@ -260,15 +280,19 @@ While any AI request is active, the Nexus panel displays the **Nexus Aura** — 
 
 **Ask Mode:**
 
-- A centered `CircularProgress` spinner appears in the messages area while waiting for a response
+- The **Ask Progress Stepper** (`AskProgress` component) is displayed in the messages area — a vertical timeline showing the active phase(s):
+  - Without web search: one step — **Getting Answer**
+  - With web search: three steps — **Optimizing Query → Searching the Web → Getting Answer**
+- Each active step shows rotating typewriter messages (e.g., "Thinking it through...", "Searching the web...", "Refining your question...")
+- Completed steps show their elapsed time (e.g., `420ms`, `1.2s`)
 
 **Edit Mode:**
 
-- A green `CircularProgress` spinner appears in the messages area with a typewriter-animated loading message
-- The send button itself also shows a spinner while the edit request is in progress
-- Messages rotate every 5 seconds from a pool of 15 playful messages (e.g., "Boldly formatting my thoughts...", "Markdown magic in progress...", "Syntax sorcery loading...")
-- Each character appears with a 30ms delay for a typewriter effect
-- Messages use a shuffle-bag pattern so no message repeats until all have been shown
+- The **Edit Progress Stepper** (`EditProgress` component) is displayed in the messages area — a vertical timeline showing the active phase(s):
+  - Without web search: one step — **Applying Edits**
+  - With web search: three steps — **Optimizing Query → Searching the Web → Applying Edits**
+- Each active step shows rotating typewriter messages (e.g., "Rewriting content...", "Fetching live context...")
+- Step indicators use green (success color) for active and completed states
 
 **Create Mode:**
 
@@ -278,6 +302,63 @@ While any AI request is active, the Nexus panel displays the **Nexus Aura** — 
 
 - When provider statuses are being fetched on startup, a centered spinner appears in place of the chat UI
 - When models are being loaded for a selected provider, a loading indicator is shown in the model dropdown
+
+---
+
+## Web Search
+
+When a Serper API key is configured, all three AI modes can optionally include live web context in their requests. The web search pipeline is managed by the `useWebSearch` hook and runs as a two-phase process before the main AI call.
+
+### How Web Search Works
+
+**Phase 1 — Query Optimization** (`optimizing`)
+
+Before executing a search, a lightweight AI call rewrites the user's natural-language question into an optimized search query. The optimizer is instructed to:
+
+- Add precise keywords, proper nouns, and technical terms
+- Include recency signals when implied (e.g., "2025", "latest", "current")
+- Use quotation marks for exact phrases when beneficial
+- Keep queries short and natural (under 12–15 words when possible)
+- Return a JSON object with a `primary` query and a `fallback` broader variant
+
+If the optimizer call fails or returns unparseable output, the original user question is used as the search query.
+
+**Phase 2 — Search Execution** (`searching`)
+
+The optimized query is sent to the Serper API, which returns up to 5 results. The top 3 results are formatted into a context block injected into the AI prompt:
+
+```
+WEB SEARCH RESULTS (use only for this question):
+
+[1] Result Title
+Snippet text here.
+Source: https://example.com
+
+[2] ...
+```
+
+The sources (title + URL) are also stored separately on the AI message for display below the response.
+
+**Result:** `{ webSearchBlock, sources: [{title, link}], optimizedQuery }`
+
+### Web Search in Ask Mode
+
+When web search is enabled for an Ask request, the search block is appended to the user prompt. If the optimized query differs meaningfully from the original question, a note is added to the prompt: `Search query used: "{optimizedQuery}"`.
+
+The Ask mode system prompt includes additional instructions for web search responses:
+
+- Treat the search results as the primary source for current, factual, or time-sensitive details
+- Prioritize the most relevant and recent results; cite specific sources when they directly support the answer
+- Synthesize multiple results rather than repeating any single one
+- If results are weak, irrelevant, or empty, ignore them completely and answer from general knowledge — never mention that a search was performed unless the user asks
+
+After the response, **web search indicator** is shown below assistant messages that used search:
+- A small **"Web search included"** badge (globe icon + label) appears beneath the response
+- A **Sources** section lists the linked page titles used to answer the question
+
+### Web Search in Edit and Create Modes
+
+Edit and Create modes follow the same two-phase pipeline via `useWebSearch`. The resulting web search block is injected into the document editing or content generation prompt as additional context. The progress steppers for both modes show the web search steps (Optimizing Query, Searching the Web) when enabled, before the main AI step. See [Edit Mode](#edit-mode-and-diff-system) and [Create Mode](#create-mode) for mode-specific behavior.
 
 ---
 
@@ -298,9 +379,14 @@ When the user submits a question in Ask mode:
    - If file context is provided, use it to inform your answer but do not summarize the files unless asked.
    - Use Markdown formatting when it improves readability (code blocks, lists, bold).
    - Do not add preamble, filler, or follow-up questions — just answer.
+   - The attached web search results were generated from an optimized query designed to match the user's exact intent — treat them as the primary source for any current, factual, or time-sensitive details.
+   - Prioritize the most relevant and recent results first; cite specific sources when they directly support your answer.
+   - If multiple results are provided, synthesize them rather than repeating any single one.
+   - If the results are weak, irrelevant, or empty, ignore them completely and answer from general knowledge — never mention that a search was performed unless the user specifically asks about sources.
    ```
-2. The combined system prompt + user question is sent as a **single user message** — no prior messages are included
-3. If files are attached, their content is included in the same message
+   The web-search-specific instructions are always present in the system prompt; when no web search was performed they have no effect.
+2. If web search is enabled, the two-phase search pipeline runs first (see [Web Search](#web-search)), then the formatted search results are appended to the user message
+3. The combined system prompt + user question (+ any search context + attached files) is sent as a **single user message** — no prior messages are included
 4. The response is displayed as an assistant bubble; the user question is displayed as a user bubble
 5. Attached files are cleared from the attachment list after sending
 
@@ -312,6 +398,9 @@ Each question is fully independent at the API level. The Q&A history shown in th
 
 - Question/answer pairs are displayed as chat bubbles and persist in the panel for the session
 - Each assistant response includes a **Copy** button for easy copying
+- When web search was used for a response:
+  - A **"Web search included"** badge (globe icon) appears below the response text
+  - A **Sources** section lists the titles and links of the pages used, clickable to open in the browser
 - Clearing the chat (delete icon in the header) removes all Ask mode history
 - Ask mode history is not persisted across sessions
 
@@ -323,9 +412,12 @@ Each question is fully independent at the API level. The Q&A history shown in th
 
 - Select **Edit** from the Mode dropdown in the Nexus panel
 - When active, the send button turns green and shows an edit icon instead of a send icon
-- The placeholder text changes to "Describe the changes you want... (e.g., 'Add a table of contents')"
+- The placeholder text changes to:
+  - `"Describe the changes you want... (e.g., 'Add a table of contents')"` — default
+  - `"Describe changes... (web search enabled)"` — when web search is toggled on
 - Edit mode is supported for **Claude**, **OpenAI**, and **Google Gemini** providers. When xAI is selected as the model, the Edit mode option is hidden from the mode dropdown
 - Edit mode is disabled while a diff tab is already open
+- If a Serper key is configured, a **globe icon** toggle is shown next to the input. When enabled, a web search runs before the edit request and its results are included as context in the edit prompt
 
 ### How Edits Are Requested
 
@@ -629,6 +721,8 @@ Create requests can be canceled at any time using the Cancel button. All in-flig
 | `src/renderer/components/FileAttachmentsList.tsx`       | File attachment chips management                                             |
 | `src/renderer/components/AttachFilePopover.tsx`         | Popover for attaching open files or browsing from disk                       |
 | `src/renderer/components/MessageInput.tsx`              | Message text input, mode/model selectors, send/cancel controls               |
+| `src/renderer/components/AskProgress.tsx`               | Ask Mode progress stepper (web search phases + answering)                    |
+| `src/renderer/components/EditProgress.tsx`              | Edit Mode progress stepper (web search phases + applying edits)              |
 | `src/renderer/components/CreateProgress.tsx`            | Create Mode progress stepper with phase visualization                        |
 | `src/renderer/components/TabBar.tsx`                    | File tabs with AI attachment context menu                                    |
 | `src/renderer/components/CodeBlock.tsx`                 | Syntax-highlighted code blocks using PrismLight (react-syntax-highlighter)   |
@@ -636,13 +730,15 @@ Create requests can be canceled at any time using the Cancel button. All in-flig
 | `src/renderer/components/DiffNavigationToolbar.tsx`     | Floating toolbar for navigating and resolving diff hunks                     |
 | `src/renderer/components/DiffHunkControl.tsx`           | Per-hunk inline accept/reject buttons                                        |
 | `src/renderer/hooks/useAIChat.ts`                       | Provider/model loading and selection management                              |
-| `src/renderer/hooks/useAIAsk.ts`                        | Ask mode stateless Q&A logic                                                 |
+| `src/renderer/hooks/useAIAsk.ts`                        | Ask mode stateless Q&A logic with web search integration                     |
 | `src/renderer/hooks/useAIDiffEdit.ts`                   | Edit mode logic, diff computation, opens diff tab                            |
 | `src/renderer/hooks/useAICreate.ts`                     | Create mode two-phase pipeline (generate + name)                             |
+| `src/renderer/hooks/useWebSearch.ts`                    | Two-phase web search pipeline (query optimization + Serper execution)        |
 | `src/renderer/hooks/useAIProviderCache.ts`              | App-level provider status and model cache (shared across components)         |
 | `src/renderer/hooks/useEditLoadingMessage.ts`           | Typewriter-animated loading messages for Edit mode                           |
 | `src/renderer/aiProviderModeRestrictions.ts`            | Defines which providers are restricted from which chat modes                 |
 | `src/renderer/contexts/AIProviderCacheContext.tsx`      | React context for sharing provider cache across the component tree           |
+| `src/renderer/utils/callProviderApi.ts`                 | Single routing function for all provider chat API calls                      |
 | `src/renderer/utils/diffUtils.ts`                       | Diff computation utilities (line ending normalization, hunk building)        |
 | `src/renderer/types/diffTypes.ts`                       | TypeScript interfaces for DiffHunk and DiffSession                           |
 | `src/renderer/contexts/EditorContext.tsx`               | State reducer for diff tab actions (open, update, close)                     |
@@ -677,10 +773,12 @@ All AI operations communicate between the renderer and main process via Electron
 | `ai:list-gemini-models`         | Renderer → Main | List available Gemini models                     |
 | `ai:list-models`                | Renderer → Main | List available xAI models                        |
 | `ai:get-provider-status`        | Renderer → Main | Check all provider connection statuses (4 total) |
-| `secure-storage:set-api-key`    | Renderer → Main | Validate and store an API key                    |
+| `web:search`                    | Renderer → Main | Execute a Serper web search query                |
+| `web:fetch-page`                | Renderer → Main | Fetch and extract plain text from a URL          |
+| `secure-storage:set-api-key`    | Renderer → Main | Validate and store an API key (includes `serper`)|
 | `secure-storage:has-api-key`    | Renderer → Main | Check if a provider has a stored key             |
 | `secure-storage:delete-api-key` | Renderer → Main | Remove a stored API key                          |
-| `secure-storage:get-key-status` | Renderer → Main | Get storage status of all providers              |
+| `secure-storage:get-key-status` | Renderer → Main | Get storage status of all providers + serper     |
 
 Request cancellation uses `AbortController` instances tracked by unique request IDs. Each active request is stored in a `Map` and can be aborted by calling the corresponding cancel channel.
 
@@ -705,8 +803,10 @@ Request cancellation uses `AbortController` instances tracked by unique request 
 
 **Ask State** (managed by `useAIAsk` hook):
 
-- `askMessages: AIMessage[]` - Q&A pairs for display (never sent to API)
+- `askMessages: AIMessage[]` - Q&A pairs for display (never sent to API); each message may include `webSearchUsed: boolean` and `sources: {title, link}[]`
 - `isAskLoading: boolean` - Whether an Ask request is in progress
+- `askPhase: AskPhase` - Current phase: `'answering'` or `null` (used to drive AskProgress stepper)
+- `webSearchPhase: WebSearchPhase` - Current web search sub-phase from `useWebSearch`: `'optimizing'`, `'searching'`, or `null`
 - `askError: string | null` - Current error message
 - Exposes: `submitAsk`, `cancelAsk`, `clearAsk`
 
