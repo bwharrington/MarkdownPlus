@@ -91,7 +91,19 @@ const MERGE_GAP_THRESHOLD = 2;
 export function computeDiffHunks(original: string, modified: string): DiffHunk[] {
     // Normalize line endings to LF before diffing to avoid CRLF vs LF false diffs
     const normalizedOriginal = original.replace(/\r\n/g, '\n');
-    const normalizedModified = modified.replace(/\r\n/g, '\n');
+    let normalizedModified = modified.replace(/\r\n/g, '\n');
+
+    // Normalize trailing newlines: ensure modified matches the original's trailing
+    // newline state. AI responses often drop or add a trailing newline, causing the
+    // diff library to flag the entire last paragraph as changed.
+    const originalEndsWithNewline = normalizedOriginal.endsWith('\n');
+    const modifiedEndsWithNewline = normalizedModified.endsWith('\n');
+    if (originalEndsWithNewline && !modifiedEndsWithNewline) {
+        normalizedModified += '\n';
+    } else if (!originalEndsWithNewline && modifiedEndsWithNewline) {
+        normalizedModified = normalizedModified.slice(0, -1);
+    }
+
     const changes = diffLines(normalizedOriginal, normalizedModified);
     const rawHunks: DiffHunk[] = [];
     let lineNumber = 0;
@@ -241,15 +253,27 @@ export function useAIDiffEdit() {
             throw new Error(response.error || 'Edit request failed');
         }
 
+        // Normalize modified content's trailing newline to match the original,
+        // preventing the diff library from flagging the last paragraph as changed
+        // when the AI drops or adds a trailing newline in its JSON response.
+        let modifiedContent = response.modifiedContent;
+        const originalEndsWithNewline = activeFile.content.endsWith('\n') || activeFile.content.endsWith('\r\n');
+        const modifiedEndsWithNewline = modifiedContent.endsWith('\n');
+        if (originalEndsWithNewline && !modifiedEndsWithNewline) {
+            modifiedContent += '\n';
+        } else if (!originalEndsWithNewline && modifiedEndsWithNewline) {
+            modifiedContent = modifiedContent.replace(/\n+$/, '');
+        }
+
         // Check if content actually changed (normalize for comparison)
         const normalizedOriginal = activeFile.content.replace(/\r\n/g, '\n');
-        const normalizedModified = response.modifiedContent.replace(/\r\n/g, '\n');
+        const normalizedModified = modifiedContent.replace(/\r\n/g, '\n');
         if (normalizedModified === normalizedOriginal) {
             throw new Error('No changes detected in AI response');
         }
 
         // Compute diffs between original and AI-modified content
-        const hunks = computeDiffHunks(activeFile.content, response.modifiedContent);
+        const hunks = computeDiffHunks(activeFile.content, modifiedContent);
 
         if (hunks.length === 0) {
             throw new Error('No changes detected in AI response');
@@ -261,7 +285,7 @@ export function useAIDiffEdit() {
             payload: {
                 sourceFileId: activeFile.id,
                 originalContent: activeFile.content,
-                modifiedContent: response.modifiedContent,
+                modifiedContent: modifiedContent,
                 hunks,
                 summary: response.summary,
                 webSearchSources: webSearchSources,
