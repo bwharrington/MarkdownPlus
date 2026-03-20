@@ -441,7 +441,7 @@ function renderElement(element: ParsedElement, index: number, documentPath?: str
             return (
                 <ul key={index}>
                     {element.items?.map((item, itemIndex) => (
-                        <li key={itemIndex} dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+                        <li key={item.content ?? itemIndex} dangerouslySetInnerHTML={{ __html: item.content || '' }} />
                     ))}
                 </ul>
             );
@@ -450,7 +450,7 @@ function renderElement(element: ParsedElement, index: number, documentPath?: str
             return (
                 <ol key={index}>
                     {element.items?.map((item, itemIndex) => (
-                        <li key={itemIndex} dangerouslySetInnerHTML={{ __html: item.content || '' }} />
+                        <li key={item.content ?? itemIndex} dangerouslySetInnerHTML={{ __html: item.content || '' }} />
                     ))}
                 </ol>
             );

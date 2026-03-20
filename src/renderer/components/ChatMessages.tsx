@@ -83,7 +83,7 @@ const ResponseCopyRow = styled(Box)(({ theme }) => ({
     paddingTop: 4,
 }));
 
-const ResponseCopyButton = styled(IconButton)(({ theme }) => ({
+const ResponseCopyButtonBase = styled(IconButton)(({ theme }) => ({
     padding: '2px 6px',
     borderRadius: 6,
     fontSize: '0.7rem',
@@ -118,7 +118,7 @@ const SourcesSection = styled(Box)(({ theme }) => ({
     paddingTop: 4,
 }));
 
-function ResponseCopyButton_({ content }: { content: string }) {
+const ResponseCopyButton = React.memo(function ResponseCopyButton({ content }: { content: string }) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(() => {
@@ -131,7 +131,7 @@ function ResponseCopyButton_({ content }: { content: string }) {
     return (
         <ResponseCopyRow>
             <Tooltip title={copied ? 'Copied!' : 'Copy response'} placement="left">
-                <ResponseCopyButton size="small" onClick={handleCopy} aria-label="Copy response">
+                <ResponseCopyButtonBase size="small" onClick={handleCopy} aria-label="Copy response">
                     {copied
                         ? <CheckIcon size={13} />
                         : <CopyIcon size={13} />
@@ -139,11 +139,11 @@ function ResponseCopyButton_({ content }: { content: string }) {
                     <Typography component="span" sx={{ fontSize: '0.68rem', lineHeight: 1 }}>
                         {copied ? 'Copied' : 'Copy'}
                     </Typography>
-                </ResponseCopyButton>
+                </ResponseCopyButtonBase>
             </Tooltip>
         </ResponseCopyRow>
     );
-}
+});
 
 const DIFF_REVIEW_MESSAGES = [
     "Scan the upgrades.",
@@ -277,8 +277,8 @@ export function ChatMessages({
                     )}
                 </GreetingContainer>
             ) : (
-                askMessages.map((msg, idx) => (
-                    <MessageBubble key={idx} role={msg.role}>
+                askMessages.map((msg) => (
+                    <MessageBubble key={`${msg.role}-${msg.timestamp.getTime()}`} role={msg.role}>
                         {msg.role === 'assistant' ? (
                             <>
                                 {msg.webSearchUsed && (
@@ -296,7 +296,7 @@ export function ChatMessages({
                                             Sources
                                         </Typography>
                                         {msg.sources.map((src, i) => (
-                                            <Typography key={i} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                            <Typography key={src.link} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                                                 {i + 1}.{' '}
                                                 <Box
                                                     component="a"
@@ -310,7 +310,7 @@ export function ChatMessages({
                                         ))}
                                     </SourcesSection>
                                 )}
-                                <ResponseCopyButton_ content={msg.content} />
+                                <ResponseCopyButton content={msg.content} />
                             </>
                         ) : (
                             <Typography variant="body2">{msg.content}</Typography>

@@ -156,8 +156,8 @@ export function EmptyState({ onOpenRecentDirectory }: EmptyStateProps) {
                             Recent Files
                         </Typography>
                         <List dense>
-                            {recentFiles.map((fileRef, index) => (
-                                <ListItem key={index} disablePadding>
+                            {recentFiles.map((fileRef) => (
+                                <ListItem key={fileRef.fileName} disablePadding>
                                     <ListItemButton onClick={() => openRecentFile(fileRef.fileName)}>
                                         <ListItemText
                                             primary={fileRef.fileName.split(/[\\/]/).pop()}

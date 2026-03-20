@@ -193,7 +193,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
                 <br />
                 <br />
                 <em>Original code:</em>
-                <pre style={{ marginTop: 8 }}>{chart}</pre>
+                <Box component="pre" sx={{ mt: 1 }}>{chart}</Box>
             </ErrorContainer>
         );
     }

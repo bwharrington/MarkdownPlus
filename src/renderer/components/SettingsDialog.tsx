@@ -29,6 +29,7 @@ import {
     Tabs,
     Tab,
     Tooltip,
+    SelectChangeEvent,
     styled,
 } from '@mui/material';
 import {
@@ -48,6 +49,10 @@ import { useAIProviderCacheContext } from '../contexts/AIProviderCacheContext';
 import { IConfig, IFileReference } from '../types/global';
 import { filterModelsForProvider } from '../../shared/modelFilters';
 import { getDisplayName } from '../../shared/modelDisplay';
+
+// Provider type covering all API key providers (AI + search)
+type SettingsProvider = 'xai' | 'claude' | 'openai' | 'gemini' | 'serper';
+type AISettingsProvider = 'xai' | 'claude' | 'openai' | 'gemini';
 
 // Styled Components
 const DialogContainer = styled(Box)(({ theme }) => ({
@@ -99,14 +104,14 @@ const SectionHeader = styled(Typography)(({ theme }) => ({
 // Sub-component: AI Provider Section
 interface AIProviderSectionProps {
     title: string;
-    provider: 'xai' | 'claude' | 'openai' | 'gemini';
+    provider: AISettingsProvider;
     config: IConfig | null;
-    onModelToggle: (provider: 'xai' | 'claude' | 'openai' | 'gemini', modelId: string, enabled: boolean) => void;
+    onModelToggle: (provider: AISettingsProvider, modelId: string, enabled: boolean) => void;
     expanded: boolean;
     onToggle: () => void;
 }
 
-function AIProviderSection({ title, provider, config, onModelToggle, expanded, onToggle }: AIProviderSectionProps) {
+const AIProviderSection = React.memo(function AIProviderSection({ title, provider, config, onModelToggle, expanded, onToggle }: AIProviderSectionProps) {
     const providerConfig = config?.aiModels?.[provider];
 
     if (!providerConfig || Object.keys(providerConfig).length === 0) {
@@ -157,11 +162,11 @@ function AIProviderSection({ title, provider, config, onModelToggle, expanded, o
             </AccordionDetails>
         </Accordion>
     );
-}
+});
 
 // Sub-component: API Key Input
 interface APIKeyInputProps {
-    provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper';
+    provider: SettingsProvider;
     label: string;
     hasKey: boolean;
     value: string;
@@ -169,13 +174,28 @@ interface APIKeyInputProps {
     isTesting?: boolean;
     helpTooltip?: string;
     helpUrl?: string;
-    onChange: (value: string) => void;
-    onSet: () => void;
-    onClear: () => void;
-    onTest?: () => void;
+    onInputChange: (provider: SettingsProvider, value: string) => void;
+    onSet: (provider: SettingsProvider) => void;
+    onClear: (provider: SettingsProvider) => void;
+    onTest?: (provider: SettingsProvider) => void;
 }
 
-function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting = false, helpTooltip, helpUrl, onChange, onSet, onClear, onTest }: APIKeyInputProps) {
+const APIKeyInput = React.memo(function APIKeyInput({
+    provider, label, hasKey, value, providerStatus, isTesting = false,
+    helpTooltip, helpUrl, onInputChange, onSet, onClear, onTest,
+}: APIKeyInputProps) {
+    const handleChange = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => onInputChange(provider, e.target.value),
+        [onInputChange, provider],
+    );
+    const handleSetClick = useCallback(() => onSet(provider), [onSet, provider]);
+    const handleClearClick = useCallback(() => onClear(provider), [onClear, provider]);
+    const handleTestClick = useCallback(() => onTest?.(provider), [onTest, provider]);
+    const handleUrlClick = useCallback((e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (helpUrl) void window.electronAPI.openExternal(helpUrl);
+    }, [helpUrl]);
+
     return (
         <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
@@ -190,8 +210,16 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                                 <Typography sx={{ fontSize: 11 }}>{helpTooltip}</Typography>
                                 {helpUrl && (
                                     <Typography
-                                        sx={{ fontSize: 11, color: 'primary.light', cursor: 'pointer', textDecoration: 'underline', mt: 0.5 }}
-                                        onClick={(e) => { e.stopPropagation(); void window.electronAPI.openExternal(helpUrl); }}
+                                        sx={{
+                                            fontSize: 11,
+                                            color: 'rgba(255,255,255,0.9)',
+                                            cursor: 'pointer',
+                                            textDecoration: 'underline',
+                                            textDecorationColor: 'rgba(255,255,255,0.4)',
+                                            mt: 0.5,
+                                            '&:hover': { color: '#ffffff', textDecorationColor: 'rgba(255,255,255,0.8)' },
+                                        }}
+                                        onClick={handleUrlClick}
                                     >
                                         {helpUrl}
                                     </Typography>
@@ -201,8 +229,9 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                     >
                         <IconButton
                             size="small"
+                            aria-label={`Get API key for ${label}`}
                             sx={{ p: 0.25, color: 'text.disabled' }}
-                            onClick={() => helpUrl && void window.electronAPI.openExternal(helpUrl)}
+                            onClick={handleUrlClick}
                         >
                             <HelpCircleIcon size={14} />
                         </IconButton>
@@ -225,7 +254,7 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                     fullWidth
                     placeholder={hasKey ? '••••••••••••••••' : 'Enter API key'}
                     value={value}
-                    onChange={(e) => onChange(e.target.value)}
+                    onChange={handleChange}
                     disabled={hasKey}
                     sx={{
                         '& .MuiInputBase-input': {
@@ -238,9 +267,9 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                         {onTest && (
                             <IconButton
                                 size="small"
-                                onClick={onTest}
+                                onClick={handleTestClick}
                                 disabled={isTesting}
-                                title="Test connection"
+                                aria-label="Test connection"
                                 sx={{
                                     color: 'text.secondary',
                                     animation: isTesting ? 'spin 1s linear infinite' : 'none',
@@ -258,7 +287,7 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                             size="small"
                             color="error"
                             startIcon={<DeleteIcon />}
-                            onClick={onClear}
+                            onClick={handleClearClick}
                             sx={{ minWidth: 90 }}
                         >
                             Clear
@@ -268,7 +297,7 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
                     <Button
                         variant="contained"
                         size="small"
-                        onClick={onSet}
+                        onClick={handleSetClick}
                         disabled={!value.trim()}
                         sx={{ minWidth: 90 }}
                     >
@@ -278,14 +307,14 @@ function APIKeyInput({ provider, label, hasKey, value, providerStatus, isTesting
             </Box>
         </Box>
     );
-}
+});
 
 // Sub-component: Files Table
 interface FilesTableProps {
     files: IFileReference[];
 }
 
-function FilesTable({ files }: FilesTableProps) {
+const FilesTable = React.memo(function FilesTable({ files }: FilesTableProps) {
     if (files.length === 0) {
         return (
             <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary', fontSize: 14 }}>
@@ -320,14 +349,14 @@ function FilesTable({ files }: FilesTableProps) {
             </Table>
         </TableContainer>
     );
-}
+});
 
 // Sub-component: Directories Table
 interface DirectoriesTableProps {
     directories: string[];
 }
 
-function DirectoriesTable({ directories }: DirectoriesTableProps) {
+const DirectoriesTable = React.memo(function DirectoriesTable({ directories }: DirectoriesTableProps) {
     if (directories.length === 0) {
         return (
             <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary', fontSize: 14 }}>
@@ -354,7 +383,7 @@ function DirectoriesTable({ directories }: DirectoriesTableProps) {
             </Table>
         </TableContainer>
     );
-}
+});
 
 // Main Component
 interface SettingsDialogProps {
@@ -393,13 +422,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     });
 
     // API Key management state
-    const [apiKeyStatus, setApiKeyStatus] = useState<{
-        xai: boolean;
-        claude: boolean;
-        openai: boolean;
-        gemini: boolean;
-        serper: boolean;
-    }>({
+    const [apiKeyStatus, setApiKeyStatus] = useState<Record<SettingsProvider, boolean>>({
         xai: false,
         claude: false,
         openai: false,
@@ -407,13 +430,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         serper: false,
     });
 
-    const [apiKeyInputs, setApiKeyInputs] = useState<{
-        xai: string;
-        claude: string;
-        openai: string;
-        gemini: string;
-        serper: string;
-    }>({
+    const [apiKeyInputs, setApiKeyInputs] = useState<Record<SettingsProvider, string>>({
         xai: '',
         claude: '',
         openai: '',
@@ -462,7 +479,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         updateConfig({ silentFileUpdates: enabled });
     }, [updateConfig]);
 
-    const handleModelToggle = useCallback((provider: 'xai' | 'claude' | 'openai' | 'gemini', modelId: string, enabled: boolean) => {
+    const handleModelToggle = useCallback((provider: AISettingsProvider, modelId: string, enabled: boolean) => {
         const newAiModels = {
             ...config?.aiModels,
             [provider]: {
@@ -475,7 +492,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         dispatch({ type: 'SET_CONFIG', payload: { ...config, aiModels: newAiModels } as IConfig });
     }, [config, updateConfig, dispatch]);
 
-    const handleSectionToggle = useCallback((provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
+    const handleSectionToggle = useCallback((provider: AISettingsProvider) => {
         setExpandedSections(prev => ({
             ...prev,
             [provider]: !prev[provider]
@@ -483,7 +500,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
     }, []);
 
     // API Key handlers
-    const handleSetApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
+    const handleSetApiKey = useCallback(async (provider: SettingsProvider) => {
         const key = apiKeyInputs[provider].trim();
         if (!key) {
             dispatch({
@@ -539,7 +556,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [apiKeyInputs, dispatch, refreshProviderStatuses, invalidateModelsForProvider, cacheFetchModels, config, updateConfig]);
 
-    const handleClearApiKey = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini' | 'serper') => {
+    const handleClearApiKey = useCallback(async (provider: SettingsProvider) => {
         const result = await window.electronAPI.deleteApiKey(provider);
         if (result.success) {
             setApiKeyStatus(prev => ({ ...prev, [provider]: false }));
@@ -575,7 +592,8 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [dispatch, refreshProviderStatuses, invalidateModelsForProvider, config, updateConfig]);
 
-    const handleTestProvider = useCallback(async (provider: 'xai' | 'claude' | 'openai' | 'gemini') => {
+    const handleTestProvider = useCallback(async (provider: SettingsProvider) => {
+        if (provider === 'serper') return;
         setTestingProvider(provider);
         try {
             const statuses = await cacheRefreshStatuses();
@@ -610,6 +628,25 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
         }
     }, [dispatch, cacheRefreshStatuses]);
 
+    // Stable event handlers for JSX — avoids inline lambdas in render
+    const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: number) => setActiveTab(newValue), []);
+    const handleApiKeyInputChange = useCallback((provider: SettingsProvider, value: string) => {
+        setApiKeyInputs(prev => ({ ...prev, [provider]: value }));
+    }, []);
+    const handleLineEndingSelect = useCallback((e: SelectChangeEvent) => {
+        handleLineEndingChange(e.target.value as 'CRLF' | 'LF');
+    }, [handleLineEndingChange]);
+    const handleSilentToggle = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        handleSilentFileUpdatesToggle(e.target.checked);
+    }, [handleSilentFileUpdatesToggle]);
+    const handleSerperLinkClick = useCallback(() => {
+        void window.electronAPI.openExternal('https://serper.dev');
+    }, []);
+    const handleXaiToggle = useCallback(() => handleSectionToggle('xai'), [handleSectionToggle]);
+    const handleClaudeToggle = useCallback(() => handleSectionToggle('claude'), [handleSectionToggle]);
+    const handleOpenAiToggle = useCallback(() => handleSectionToggle('openai'), [handleSectionToggle]);
+    const handleGeminiToggle = useCallback(() => handleSectionToggle('gemini'), [handleSectionToggle]);
+
     if (!open) return null;
 
     return (
@@ -640,7 +677,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                         Settings {isSaving && '(Saving...)'}
                     </Typography>
                 </Box>
-                <IconButton size="small" onClick={onClose}>
+                <IconButton size="small" onClick={onClose} aria-label="Close settings">
                     <CloseIcon fontSize="small" />
                 </IconButton>
             </DragHandle>
@@ -648,7 +685,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             <DialogContent>
                 <Tabs
                     value={activeTab}
-                    onChange={(_, newValue) => setActiveTab(newValue)}
+                    onChange={handleTabChange}
                     sx={{ minHeight: 36, mb: 2, borderBottom: 1, borderColor: 'divider' }}
                 >
                     <Tab label="Basic" sx={{ minHeight: 36, textTransform: 'none', fontSize: 13 }} />
@@ -665,7 +702,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             <Select
                                 value={config?.defaultLineEnding || 'CRLF'}
                                 label="Default Line Ending"
-                                onChange={(e) => handleLineEndingChange(e.target.value as 'CRLF' | 'LF')}
+                                onChange={handleLineEndingSelect}
                             >
                                 <MenuItem value="CRLF">CRLF (Windows)</MenuItem>
                                 <MenuItem value="LF">LF (Unix/Mac)</MenuItem>
@@ -678,7 +715,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                 control={
                                     <Switch
                                         checked={config?.silentFileUpdates !== false}
-                                        onChange={(e) => handleSilentFileUpdatesToggle(e.target.checked)}
+                                        onChange={handleSilentToggle}
                                         size="small"
                                     />
                                 }
@@ -708,10 +745,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             isTesting={testingProvider === 'xai'}
                             helpTooltip="Get an xAI API key at console.x.ai"
                             helpUrl="https://console.x.ai/"
-                            onChange={(value) => setApiKeyInputs(prev => ({ ...prev, xai: value }))}
-                            onSet={() => handleSetApiKey('xai')}
-                            onClear={() => handleClearApiKey('xai')}
-                            onTest={() => handleTestProvider('xai')}
+                            onInputChange={handleApiKeyInputChange}
+                            onSet={handleSetApiKey}
+                            onClear={handleClearApiKey}
+                            onTest={handleTestProvider}
                         />
 
                         <APIKeyInput
@@ -723,10 +760,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             isTesting={testingProvider === 'claude'}
                             helpTooltip="Get a Claude API key at console.anthropic.com"
                             helpUrl="https://console.anthropic.com/"
-                            onChange={(value) => setApiKeyInputs(prev => ({ ...prev, claude: value }))}
-                            onSet={() => handleSetApiKey('claude')}
-                            onClear={() => handleClearApiKey('claude')}
-                            onTest={() => handleTestProvider('claude')}
+                            onInputChange={handleApiKeyInputChange}
+                            onSet={handleSetApiKey}
+                            onClear={handleClearApiKey}
+                            onTest={handleTestProvider}
                         />
 
                         <APIKeyInput
@@ -738,10 +775,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             isTesting={testingProvider === 'openai'}
                             helpTooltip="Get an OpenAI API key at platform.openai.com/api-keys"
                             helpUrl="https://platform.openai.com/api-keys"
-                            onChange={(value) => setApiKeyInputs(prev => ({ ...prev, openai: value }))}
-                            onSet={() => handleSetApiKey('openai')}
-                            onClear={() => handleClearApiKey('openai')}
-                            onTest={() => handleTestProvider('openai')}
+                            onInputChange={handleApiKeyInputChange}
+                            onSet={handleSetApiKey}
+                            onClear={handleClearApiKey}
+                            onTest={handleTestProvider}
                         />
 
                         <APIKeyInput
@@ -753,10 +790,10 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             isTesting={testingProvider === 'gemini'}
                             helpTooltip="Get a Gemini API key at aistudio.google.com"
                             helpUrl="https://aistudio.google.com/app/apikey"
-                            onChange={(value) => setApiKeyInputs(prev => ({ ...prev, gemini: value }))}
-                            onSet={() => handleSetApiKey('gemini')}
-                            onClear={() => handleClearApiKey('gemini')}
-                            onTest={() => handleTestProvider('gemini')}
+                            onInputChange={handleApiKeyInputChange}
+                            onSet={handleSetApiKey}
+                            onClear={handleClearApiKey}
+                            onTest={handleTestProvider}
                         />
 
                         {(providerStatuses.xai.enabled || providerStatuses.claude.enabled || providerStatuses.openai.enabled || providerStatuses.gemini.enabled) && (
@@ -770,7 +807,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                         config={config}
                                         onModelToggle={handleModelToggle}
                                         expanded={expandedSections.xai}
-                                        onToggle={() => handleSectionToggle('xai')}
+                                        onToggle={handleXaiToggle}
                                     />
                                 )}
 
@@ -781,7 +818,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                         config={config}
                                         onModelToggle={handleModelToggle}
                                         expanded={expandedSections.claude}
-                                        onToggle={() => handleSectionToggle('claude')}
+                                        onToggle={handleClaudeToggle}
                                     />
                                 )}
 
@@ -792,7 +829,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                         config={config}
                                         onModelToggle={handleModelToggle}
                                         expanded={expandedSections.openai}
-                                        onToggle={() => handleSectionToggle('openai')}
+                                        onToggle={handleOpenAiToggle}
                                     />
                                 )}
 
@@ -803,7 +840,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                                         config={config}
                                         onModelToggle={handleModelToggle}
                                         expanded={expandedSections.gemini}
-                                        onToggle={() => handleSectionToggle('gemini')}
+                                        onToggle={handleGeminiToggle}
                                     />
                                 )}
                             </>
@@ -821,7 +858,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             <Typography
                                 component="span"
                                 sx={{ fontSize: 12, color: 'primary.main', cursor: 'pointer', textDecoration: 'underline' }}
-                                onClick={() => void window.electronAPI.openExternal('https://serper.dev')}
+                                onClick={handleSerperLinkClick}
                             >
                                 serper.dev
                             </Typography>.
@@ -834,9 +871,9 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                             value={apiKeyInputs.serper}
                             helpTooltip="Sign up and get a free API key at serper.dev"
                             helpUrl="https://serper.dev"
-                            onChange={(value) => setApiKeyInputs(prev => ({ ...prev, serper: value }))}
-                            onSet={() => handleSetApiKey('serper')}
-                            onClear={() => handleClearApiKey('serper')}
+                            onInputChange={handleApiKeyInputChange}
+                            onSet={handleSetApiKey}
+                            onClear={handleClearApiKey}
                         />
                     </>
                 )}

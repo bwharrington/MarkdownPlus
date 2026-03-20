@@ -104,25 +104,6 @@ export function MessageInput({
     const [attachAnchorEl, setAttachAnchorEl] = useState<HTMLElement | null>(null);
     const { spellCheckMenu, onSpellReplace, onSpellAddToDictionary, onSpellMenuClose } = useSpellCheck();
 
-    // Debug logging for input state
-    React.useEffect(() => {
-        console.log('[MessageInput] State:', {
-            hasActiveRequest,
-            hasDiffTab,
-            inputDisabled: hasActiveRequest || hasDiffTab,
-            inputValue: `"${inputValue}"`,
-            mode,
-        });
-    });
-
-    const handleFocus = useCallback(() => {
-        console.log('[MessageInput] TextField focused');
-    }, []);
-
-    const handleBlur = useCallback(() => {
-        console.log('[MessageInput] TextField blurred');
-    }, []);
-
     const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -200,13 +181,8 @@ export function MessageInput({
                                 : "Type a message... (Enter to send, Shift+Enter for newline)"
                 }
                 value={inputValue}
-                onChange={(e) => {
-                    console.log('[MessageInput] onChange:', JSON.stringify(e.target.value));
-                    onInputChange(e.target.value);
-                }}
+                onChange={(e) => onInputChange(e.target.value)}
                 onKeyDown={handleKeyDown}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
                 disabled={hasActiveRequest || hasDiffTab}
                 fullWidth
                 slotProps={{

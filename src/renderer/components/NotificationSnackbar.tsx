@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Snackbar, Alert, Button, IconButton, Box, Typography, styled, keyframes } from '@mui/material';
 import { CloseIcon } from './AppIcons';
 import { useEditorState, useEditorDispatch } from '../contexts';
@@ -80,14 +80,14 @@ export function NotificationSnackbar() {
         return () => clearTimeout(timer);
     }, [currentNotification?.id, dismissTimeout, dispatch]);
 
-    const handleClose = () => {
+    const handleClose = useCallback(() => {
         if (currentNotification) {
             dispatch({
                 type: 'DISMISS_NOTIFICATION',
                 payload: { id: currentNotification.id },
             });
         }
-    };
+    }, [currentNotification, dispatch]);
 
     const isGoDeeper = currentNotification?.variant === 'go-deeper';
 

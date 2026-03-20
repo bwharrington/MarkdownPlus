@@ -206,7 +206,7 @@ export function EditView() {
                         onDrop={hasDiffForThisFile ? undefined : handleDrop}
                         spellCheck={false}
                         onScroll={handleScroll}
-                        style={hasDiffForThisFile ? { cursor: 'default', opacity: 0.7 } : undefined}
+                        sx={hasDiffForThisFile ? { cursor: 'default', opacity: 0.7 } : undefined}
                     />
                 </LineNumberedArea>
                 <FindReplaceDialog

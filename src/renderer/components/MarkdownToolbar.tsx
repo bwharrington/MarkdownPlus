@@ -55,14 +55,14 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
         return (
             <ToolbarContainer>
                 <Tooltip title="Find (Ctrl+F)">
-                    <IconButton size="small" onClick={onFind}>
+                    <IconButton size="small" onClick={onFind} aria-label="Find">
                         <SearchIcon fontSize="small" />
                     </IconButton>
                 </Tooltip>
                 <Box sx={{ flexGrow: 1 }} />
                 <ToolbarDivider orientation="vertical" flexItem />
                 <Tooltip title="Export PDF">
-                    <IconButton size="small" onClick={onExportPdf}>
+                    <IconButton size="small" onClick={onExportPdf} aria-label="Export PDF">
                         <PictureAsPdfIcon fontSize="small" />
                     </IconButton>
                 </Tooltip>
@@ -75,7 +75,7 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
         <ToolbarContainer>
             <Tooltip title="Undo (Ctrl+Z)">
                 <span>
-                    <IconButton size="small" onClick={onUndo} disabled={!canUndo}>
+                    <IconButton size="small" onClick={onUndo} disabled={!canUndo} aria-label="Undo">
                         <UndoIcon fontSize="small" />
                     </IconButton>
                 </span>
@@ -83,7 +83,7 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
 
             <Tooltip title="Redo (Ctrl+Y)">
                 <span>
-                    <IconButton size="small" onClick={onRedo} disabled={!canRedo}>
+                    <IconButton size="small" onClick={onRedo} disabled={!canRedo} aria-label="Redo">
                         <RedoIcon fontSize="small" />
                     </IconButton>
                 </span>
@@ -92,19 +92,19 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Bold (Ctrl+B)">
-                <IconButton size="small" onClick={() => onInsert?.('**', '**', 'bold text')}>
+                <IconButton size="small" onClick={() => onInsert?.('**', '**', 'bold text')} aria-label="Bold">
                     <FormatBoldIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Italic (Ctrl+I)">
-                <IconButton size="small" onClick={() => onInsert?.('*', '*', 'italic text')}>
+                <IconButton size="small" onClick={() => onInsert?.('*', '*', 'italic text')} aria-label="Italic">
                     <FormatItalicIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Strikethrough">
-                <IconButton size="small" onClick={() => onInsert?.('~~', '~~', 'strikethrough text')}>
+                <IconButton size="small" onClick={() => onInsert?.('~~', '~~', 'strikethrough text')} aria-label="Strikethrough">
                     <FormatStrikethroughIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
@@ -112,19 +112,19 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Heading 1">
-                <IconButton size="small" onClick={() => onInsert?.('# ', '', 'Heading 1')}>
+                <IconButton size="small" onClick={() => onInsert?.('# ', '', 'Heading 1')} aria-label="Heading 1">
                     <TitleIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Heading 2">
-                <IconButton size="small" onClick={() => onInsert?.('## ', '', 'Heading 2')}>
+                <IconButton size="small" onClick={() => onInsert?.('## ', '', 'Heading 2')} aria-label="Heading 2">
                     <Box sx={{ fontSize: 10, fontWeight: 'bold' }}>H2</Box>
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Heading 3">
-                <IconButton size="small" onClick={() => onInsert?.('### ', '', 'Heading 3')}>
+                <IconButton size="small" onClick={() => onInsert?.('### ', '', 'Heading 3')} aria-label="Heading 3">
                     <Box sx={{ fontSize: 10, fontWeight: 'bold' }}>H3</Box>
                 </IconButton>
             </Tooltip>
@@ -132,13 +132,13 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Code">
-                <IconButton size="small" onClick={() => onInsert?.('`', '`', 'code')}>
+                <IconButton size="small" onClick={() => onInsert?.('`', '`', 'code')} aria-label="Inline code">
                     <CodeIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Code Block">
-                <IconButton size="small" onClick={() => onInsert?.('```\n', '\n```', 'code block')}>
+                <IconButton size="small" onClick={() => onInsert?.('```\n', '\n```', 'code block')} aria-label="Code block">
                     <Box sx={{ fontSize: 10, fontWeight: 'bold' }}>{'{ }'}</Box>
                 </IconButton>
             </Tooltip>
@@ -146,25 +146,25 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Quote">
-                <IconButton size="small" onClick={() => onInsert?.('> ', '', 'quote')}>
+                <IconButton size="small" onClick={() => onInsert?.('> ', '', 'quote')} aria-label="Block quote">
                     <FormatQuoteIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Bulleted List">
-                <IconButton size="small" onClick={() => onInsert?.('- ', '', 'list item')}>
+                <IconButton size="small" onClick={() => onInsert?.('- ', '', 'list item')} aria-label="Bulleted list">
                     <FormatListBulletedIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Numbered List">
-                <IconButton size="small" onClick={() => onInsert?.('1. ', '', 'list item')}>
+                <IconButton size="small" onClick={() => onInsert?.('1. ', '', 'list item')} aria-label="Numbered list">
                     <FormatListNumberedIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Task List">
-                <IconButton size="small" onClick={() => onInsert?.('- [ ] ', '', 'task')}>
+                <IconButton size="small" onClick={() => onInsert?.('- [ ] ', '', 'task')} aria-label="Task list">
                     <CheckBoxIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
@@ -172,13 +172,13 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Link">
-                <IconButton size="small" onClick={() => onInsert?.('[', '](url)', 'link text')}>
+                <IconButton size="small" onClick={() => onInsert?.('[', '](url)', 'link text')} aria-label="Insert link">
                     <LinkIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Image">
-                <IconButton size="small" onClick={() => onInsert?.('![', '](url)', 'alt text')}>
+                <IconButton size="small" onClick={() => onInsert?.('![', '](url)', 'alt text')} aria-label="Insert image">
                     <ImageIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
@@ -186,13 +186,13 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Table">
-                <IconButton size="small" onClick={() => onInsert?.('| Header 1 | Header 2 |\n| -------- | -------- |\n| ', ' | Cell 2 |', 'Cell 1')}>
+                <IconButton size="small" onClick={() => onInsert?.('| Header 1 | Header 2 |\n| -------- | -------- |\n| ', ' | Cell 2 |', 'Cell 1')} aria-label="Insert table">
                     <TableChartIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
 
             <Tooltip title="Horizontal Rule">
-                <IconButton size="small" onClick={() => onInsert?.('\n---\n', '', '')}>
+                <IconButton size="small" onClick={() => onInsert?.('\n---\n', '', '')} aria-label="Horizontal rule">
                     <HorizontalRuleIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
@@ -200,14 +200,14 @@ export function MarkdownToolbar({ mode, onInsert, onUndo, onRedo, onFind, onExpo
             <ToolbarDivider orientation="vertical" flexItem />
 
             <Tooltip title="Find (Ctrl+F)">
-                <IconButton size="small" onClick={onFind}>
+                <IconButton size="small" onClick={onFind} aria-label="Find">
                     <SearchIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
             <Box sx={{ flexGrow: 1 }} />
             <ToolbarDivider orientation="vertical" flexItem />
             <Tooltip title="Export PDF">
-                <IconButton size="small" onClick={onExportPdf}>
+                <IconButton size="small" onClick={onExportPdf} aria-label="Export PDF">
                     <PictureAsPdfIcon fontSize="small" />
                 </IconButton>
             </Tooltip>

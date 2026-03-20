@@ -160,12 +160,12 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                 <ToolbarDivider orientation="vertical" flexItem />
 
                 <Tooltip title="New (Ctrl+N)">
-                    <IconButton onClick={createNewFile} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={createNewFile} color="inherit" aria-label="New file" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <NoteAddIcon />
                     </IconButton>
                 </Tooltip>
                 <Tooltip title="Open File (Ctrl+O)">
-                    <IconButton onClick={openFile} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={openFile} color="inherit" aria-label="Open file" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <FolderOpenIcon />
                     </IconButton>
                 </Tooltip>
@@ -176,6 +176,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                     <IconButton
                         onClick={onToggleFileDirectory}
                         color="inherit"
+                        aria-label={fileDirOpen ? 'Hide file directory' : 'Show file directory'}
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
                         {fileDirOpen ? <PanelLeftCloseIcon /> : <PanelLeftOpenIcon />}
@@ -185,6 +186,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                     <IconButton
                         onClick={onOpenFolder}
                         color="inherit"
+                        aria-label="Open folder"
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
                         <FolderPlusIcon />
@@ -199,6 +201,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                             onClick={handleSave}
                             color="inherit"
                             disabled={!canSave}
+                            aria-label="Save"
                             sx={{ WebkitAppRegion: 'no-drag' }}
                         >
                             <SaveIcon />
@@ -207,10 +210,11 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                 </Tooltip>
                 <Tooltip title="Save All">
                     <span>
-                        <IconButton 
-                            onClick={saveAllFiles} 
+                        <IconButton
+                            onClick={saveAllFiles}
                             color="inherit"
                             disabled={!hasDirtyFiles}
+                            aria-label="Save all"
                             sx={{ WebkitAppRegion: 'no-drag' }}
                         >
                             <SaveAsIcon />
@@ -226,6 +230,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                             onClick={handleCloseAllClick}
                             color="inherit"
                             disabled={!hasOpenFiles}
+                            aria-label="Close all files"
                             sx={{ WebkitAppRegion: 'no-drag' }}
                         >
                             <TabUnselectedIcon />
@@ -239,6 +244,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                     <IconButton
                         onClick={handleOpenAIChat}
                         color="inherit"
+                        aria-label="Nexus AI"
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
                         <img
@@ -253,19 +259,19 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                 <DraggableSpacer />
 
                 <Tooltip title="Dev Tools">
-                    <IconButton onClick={handleToggleDevTools} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={handleToggleDevTools} color="inherit" aria-label="Toggle dev tools" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <BugReportIcon />
                     </IconButton>
                 </Tooltip>
 
                 <Tooltip title="View Log File">
-                    <IconButton onClick={handleOpenLog} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={handleOpenLog} color="inherit" aria-label="View log file" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <DescriptionIcon />
                     </IconButton>
                 </Tooltip>
 
                 <Tooltip title={mode === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
-                    <IconButton onClick={toggleTheme} color="inherit" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={toggleTheme} color="inherit" aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} sx={{ WebkitAppRegion: 'no-drag' }}>
                         {mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
                     </IconButton>
                 </Tooltip>
@@ -274,6 +280,7 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                     <IconButton
                         onClick={handleOpenSettings}
                         color="inherit"
+                        aria-label="Settings"
                         sx={{ WebkitAppRegion: 'no-drag' }}
                     >
                         <SettingsIcon />
@@ -283,19 +290,19 @@ export function Toolbar({ fileDirOpen, onToggleFileDirectory, onOpenFolder }: To
                 <ToolbarDivider orientation="vertical" flexItem />
 
                 <Tooltip title="Minimize">
-                    <IconButton onClick={handleMinimize} color="inherit" size="small" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={handleMinimize} color="inherit" size="small" aria-label="Minimize window" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <MinimizeIcon />
                     </IconButton>
                 </Tooltip>
 
                 <Tooltip title="Maximize">
-                    <IconButton onClick={handleMaximize} color="inherit" size="small" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={handleMaximize} color="inherit" size="small" aria-label="Maximize window" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <CropSquareIcon />
                     </IconButton>
                 </Tooltip>
 
                 <Tooltip title="Close">
-                    <IconButton onClick={handleClose} color="inherit" size="small" sx={{ WebkitAppRegion: 'no-drag' }}>
+                    <IconButton onClick={handleClose} color="inherit" size="small" aria-label="Close window" sx={{ WebkitAppRegion: 'no-drag' }}>
                         <CloseIcon />
                     </IconButton>
                 </Tooltip>
