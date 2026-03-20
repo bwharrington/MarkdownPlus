@@ -121,7 +121,7 @@ type EditorAction =
     | { type: 'UNDO'; payload: { id: string } }
     | { type: 'REDO'; payload: { id: string } }
     | { type: 'PUSH_UNDO'; payload: { id: string; content: string } }
-    | { type: 'OPEN_DIFF_TAB'; payload: { sourceFileId: string; originalContent: string; modifiedContent: string; hunks: DiffHunk[]; summary?: string } }
+    | { type: 'OPEN_DIFF_TAB'; payload: { sourceFileId: string; originalContent: string; modifiedContent: string; hunks: DiffHunk[]; summary?: string; webSearchSources?: Array<{ title: string; link: string }>; webSearchUsed?: boolean } }
     | { type: 'UPDATE_DIFF_SESSION'; payload: { diffTabId: string; hunks: DiffHunk[]; currentHunkIndex?: number } }
     | { type: 'CLOSE_DIFF_TAB'; payload: { diffTabId: string } }
     | { type: 'UPDATE_FILE_NAME'; payload: { id: string; name: string } }
@@ -507,6 +507,8 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
                     currentHunkIndex: action.payload.hunks.length > 0 ? 0 : -1,
                     isActive: true,
                     summary: action.payload.summary,
+                    webSearchSources: action.payload.webSearchSources,
+                    webSearchUsed: action.payload.webSearchUsed,
                 },
             };
 

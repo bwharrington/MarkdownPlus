@@ -20,6 +20,8 @@ export interface DiffSession {
     currentHunkIndex: number;      // Currently focused hunk (-1 if none)
     isActive: boolean;             // Whether diff mode is active
     summary?: string;              // AI-provided summary of changes
+    webSearchSources?: Array<{ title: string; link: string }>;  // Sources used in edit
+    webSearchUsed?: boolean;       // Whether web search informed this edit
 }
 
 export interface DiffEditRequest {

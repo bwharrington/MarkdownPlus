@@ -1,4 +1,4 @@
-# Edit Mode Web Search Enhancement Plan
+Approach # Edit Mode Web Search Enhancement Plan
 
 **Nexus AI — Implementation Plan for Improved Edit Mode with Web Search**
 

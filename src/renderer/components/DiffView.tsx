@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { Box, Typography, IconButton, styled, Tooltip, Chip } from '@mui/material';
-import { CheckIcon, UndoIcon } from './AppIcons';
+import { CheckIcon, UndoIcon, GlobeIcon } from './AppIcons';
 import { DiffNavigationToolbar } from './DiffNavigationToolbar';
 import { useEditorDispatch } from '../contexts/EditorContext';
 import type { IFile } from '../types';
@@ -374,9 +374,36 @@ export function DiffView({ file }: DiffViewProps) {
             {/* Summary banner */}
             {summary && (
                 <SummaryBanner>
-                    <Typography variant="body2" sx={{ fontWeight: 500, flex: 1 }}>
-                        {summary}
-                    </Typography>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                            {summary}
+                        </Typography>
+                        {diffSession.webSearchUsed && diffSession.webSearchSources && diffSession.webSearchSources.length > 0 && (
+                            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <GlobeIcon size={14} sx={{ opacity: 0.6 }} />
+                                <Typography variant="caption" color="text.secondary">
+                                    Sources:{' '}
+                                    {diffSession.webSearchSources.map((s, i) => (
+                                        <React.Fragment key={i}>
+                                            <a
+                                                href={s.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ color: 'inherit', textDecoration: 'underline' }}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    window.electronAPI.openExternal(s.link);
+                                                }}
+                                            >
+                                                {s.title}
+                                            </a>
+                                            {i < diffSession.webSearchSources!.length - 1 ? ', ' : ''}
+                                        </React.Fragment>
+                                    ))}
+                                </Typography>
+                            </Box>
+                        )}
+                    </Box>
                     <Chip
                         label={`${pendingCount} pending`}
                         size="small"
