@@ -18,6 +18,7 @@ This document describes the Nexus AI feature in Nexus, covering configuration, t
    - [Docked Mode](#docked-mode)
    - [Provider and Model Selection](#provider-and-model-selection)
    - [Sending Messages](#sending-messages)
+   - [Spell Check](#spell-check)
    - [Message Display](#message-display)
    - [File Attachments](#file-attachments)
    - [Loading Indicators](#loading-indicators)
@@ -186,7 +187,7 @@ Encrypted keys are stored in `{userData}/encrypted-keys.json` as base64-encoded 
 
 The chat panel is docked to the right side of the editor with a resizable divider:
 
-- Minimum dock width: 320px, default: 420px
+- Minimum dock width: 320px, default: 480px
 - Dock width is saved to `config.json` (`aiChatDockWidth`) and persists between sessions
 - The panel can be toggled open/closed via the toolbar AI button or `Ctrl+Shift+A`
 
@@ -215,6 +216,29 @@ The mode dropdown, model dropdown, and attachment icon are displayed in the inpu
 - The input supports up to 4 visible rows (multiline)
 - The send button is disabled when the input is empty, a request is loading, or a diff tab is currently open
 - Active requests can be canceled using the **Cancel** button
+
+### Spell Check
+
+The AI chat message input has native spell checking powered by Electron's built-in Chromium spell checker. No third-party library is required — the browser engine provides red squiggly underlines on misspelled words automatically.
+
+**How it works:**
+
+- Misspelled words are underlined with a red squiggle as you type
+- Right-clicking a misspelled word opens a themed context menu showing:
+  - The misspelled word (shown in italic at the top)
+  - Up to several correction suggestions — click any to replace the word instantly
+  - **"No suggestions"** (disabled) when the spell checker has no alternatives
+  - **"Add to Dictionary"** — permanently adds the word to your custom dictionary so it is no longer flagged
+- Right-clicking correctly spelled text shows no spell menu (right-click falls through normally)
+- The spell checker is configured for **en-US** by default
+- Custom dictionary words persist for the session via Electron's session API
+
+**Implementation details:**
+
+- `spellcheck: true` is set in the `BrowserWindow` `webPreferences`
+- The main process listens for the Chromium `context-menu` event; when a misspelled word is detected (`params.misspelledWord`), it forwards the word and suggestions to the renderer via `spellcheck:context-menu` IPC and suppresses the native OS context menu
+- The renderer's `useSpellCheck` hook manages menu state and exposes callbacks for replacing and dictionary-adding
+- The `SpellCheckContextMenu` component renders the suggestions as a themed MUI `Menu` positioned at the right-click coordinates
 
 ### Message Display
 
@@ -720,7 +744,8 @@ Create requests can be canceled at any time using the Cancel button. All in-flig
 | `src/renderer/components/ChatMessages.tsx`              | Chat message bubbles with Markdown rendering                                 |
 | `src/renderer/components/FileAttachmentsList.tsx`       | File attachment chips management                                             |
 | `src/renderer/components/AttachFilePopover.tsx`         | Popover for attaching open files or browsing from disk                       |
-| `src/renderer/components/MessageInput.tsx`              | Message text input, mode/model selectors, send/cancel controls               |
+| `src/renderer/components/MessageInput.tsx`              | Message text input, mode/model selectors, send/cancel controls, spell check  |
+| `src/renderer/components/SpellCheckContextMenu.tsx`     | Themed MUI context menu for spell-check suggestions and dictionary actions    |
 | `src/renderer/components/AskProgress.tsx`               | Ask Mode progress stepper (web search phases + answering)                    |
 | `src/renderer/components/EditProgress.tsx`              | Edit Mode progress stepper (web search phases + applying edits)              |
 | `src/renderer/components/CreateProgress.tsx`            | Create Mode progress stepper with phase visualization                        |
@@ -735,6 +760,7 @@ Create requests can be canceled at any time using the Cancel button. All in-flig
 | `src/renderer/hooks/useAICreate.ts`                     | Create mode two-phase pipeline (generate + name)                             |
 | `src/renderer/hooks/useWebSearch.ts`                    | Two-phase web search pipeline (query optimization + Serper execution)        |
 | `src/renderer/hooks/useAIProviderCache.ts`              | App-level provider status and model cache (shared across components)         |
+| `src/renderer/hooks/useSpellCheck.ts`                   | Reusable hook for spell-check menu state and correction/dictionary callbacks  |
 | `src/renderer/hooks/useEditLoadingMessage.ts`           | Typewriter-animated loading messages for Edit mode                           |
 | `src/renderer/aiProviderModeRestrictions.ts`            | Defines which providers are restricted from which chat modes                 |
 | `src/renderer/contexts/AIProviderCacheContext.tsx`      | React context for sharing provider cache across the component tree           |
@@ -778,7 +804,10 @@ All AI operations communicate between the renderer and main process via Electron
 | `secure-storage:set-api-key`    | Renderer → Main | Validate and store an API key (includes `serper`)|
 | `secure-storage:has-api-key`    | Renderer → Main | Check if a provider has a stored key             |
 | `secure-storage:delete-api-key` | Renderer → Main | Remove a stored API key                          |
-| `secure-storage:get-key-status` | Renderer → Main | Get storage status of all providers + serper     |
+| `secure-storage:get-key-status`  | Renderer → Main | Get storage status of all providers + serper     |
+| `spellcheck:context-menu`        | Main → Renderer | Forward misspelled word + suggestions to renderer|
+| `spellcheck:add-to-dictionary`   | Renderer → Main | Add a word to the custom spell-check dictionary  |
+| `spellcheck:replace-misspelling` | Renderer → Main | Replace the last right-clicked misspelled word   |
 
 Request cancellation uses `AbortController` instances tracked by unique request IDs. Each active request is stored in a `Map` and can be aborted by calling the corresponding cancel channel.
 

@@ -502,7 +502,8 @@ Access the Nexus Assistant by clicking the **AI** button in the toolbar (`Ctrl+S
 - **Three AI modes** - Ask (stateless Q&A), Edit (document modification with diff review), Create (generate new documents)
 - **Web search** - Optional Serper-powered live web search injects current context into any mode before the AI call
 - **File attachments** - Attach files for context in Ask and Create mode requests
-- **Docked panel** - Resizable panel docked to the right side of the editor
+- **Spell check** - Native Chromium spell checker provides red squiggly underlines in the message input; right-clicking a misspelled word shows correction suggestions and an "Add to Dictionary" option
+- **Docked panel** - Resizable panel docked to the right side of the editor (minimum 320px, default 480px)
 - **Persistent session** - Q&A history, mode, and model selection are maintained during your session
 - **Nexus Aura** - Animated conic gradient border effect visible on the panel while any AI request is active
 
@@ -838,7 +839,8 @@ src/
 │   │   ├── AIChatDialog.tsx    # AI chat dialog (orchestrator)
 │   │   ├── ChatMessages.tsx    # Chat message bubbles and rendering
 │   │   ├── FileAttachmentsList.tsx # File attachment chips
-│   │   ├── MessageInput.tsx    # Chat input with mode/model controls
+│   │   ├── MessageInput.tsx    # Chat input with mode/model controls + spell check
+│   │   ├── SpellCheckContextMenu.tsx  # Spell-check suggestion context menu
 │   │   ├── AskProgress.tsx     # Ask mode progress stepper
 │   │   ├── EditProgress.tsx    # Edit mode progress stepper
 │   │   ├── CreateProgress.tsx  # Create mode progress stepper
@@ -866,6 +868,7 @@ src/
 │   │   ├── useAIDiffEdit.ts    # Edit mode diff logic
 │   │   ├── useAICreate.ts      # Create mode two-phase pipeline
 │   │   ├── useWebSearch.ts     # Two-phase web search (optimize + Serper execute)
+│   │   ├── useSpellCheck.ts    # Spell-check menu state and correction callbacks
 │   │   ├── useEditLoadingMessage.ts  # Typewriter loading animations
 │   │   ├── useSettingsConfig.ts     # Settings configuration hook
 │   │   ├── useContentEditable.ts    # Content editable behavior

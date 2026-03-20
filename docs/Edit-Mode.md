@@ -322,7 +322,7 @@ Each phase displays rotating typewriter messages to indicate activity. Completed
 
 | Layer | File | Responsibility |
 |-------|------|---------------|
-| UI / Input | `MessageInput.tsx` | Mode dropdown, send button, web search toggle |
+| UI / Input | `MessageInput.tsx` | Mode dropdown, send button, web search toggle, spell check |
 | UI / Loading | `EditProgress.tsx` | Three-phase progress while request is in-flight |
 | UI / Diff view | `DiffView.tsx` | Renders hunks with color coding |
 | UI / Toolbar | `DiffNavigationToolbar.tsx` | Floating bulk-action and navigation controls |

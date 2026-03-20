@@ -351,7 +351,7 @@ On error:
 
 | Layer | File | Responsibility |
 |-------|------|---------------|
-| UI / Input | `MessageInput.tsx` | Mode dropdown, placeholder, send button, web search toggle |
+| UI / Input | `MessageInput.tsx` | Mode dropdown, placeholder, send button, web search toggle, spell check |
 | UI / Progress | `CreateProgress.tsx` | Multi-step progress indicator with timing |
 | UI / Chat | `ChatMessages.tsx` | Shows user query, progress, completion banner, error |
 | UI / Orchestration | `AIChatDialog.tsx` | Wires hook to UI, handles mode switching and send/cancel |
