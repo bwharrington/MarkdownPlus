@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, Typography, styled, InputBase } from '@mui/material';
-import { ChevronRightIcon, FolderClosedIcon, FolderOpenIcon, DescriptionIcon } from './AppIcons';
+import { ChevronRightIcon, FolderClosedIcon, FolderOpenIcon, DescriptionIcon, ScissorsIcon, ClipboardCopyIcon } from './AppIcons';
 import { FileTreeContextMenu } from './FileTreeContextMenu';
 import { MultiSelectContextMenu } from './MultiSelectContextMenu';
-import type { DirectoryNode, FileDirectorySortOrder } from '../types';
+import type { DirectoryNode, FileDirectorySortOrder, FileClipboard } from '../types';
 
 interface FileTreeNodeProps {
     node: DirectoryNode;
@@ -29,6 +29,10 @@ interface FileTreeNodeProps {
     onAttachAllSelected: () => void;
     onDeleteAllSelected: () => void;
     renamingPath: string | null;
+    fileClipboard: FileClipboard | null;
+    onCut: (path: string, name: string) => void;
+    onCopy: (path: string, name: string) => void;
+    onPaste: (destDirPath: string) => Promise<void>;
 }
 
 interface ContextMenuPosition {
@@ -135,6 +139,10 @@ export const FileTreeNode = React.memo(function FileTreeNode({
     onAttachAllSelected,
     onDeleteAllSelected,
     renamingPath,
+    fileClipboard,
+    onCut,
+    onCopy,
+    onPaste,
 }: FileTreeNodeProps) {
     const [contextMenu, setContextMenu] = useState<ContextMenuPosition | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
@@ -158,6 +166,27 @@ export const FileTreeNode = React.memo(function FileTreeNode({
             }, 0);
         }
     }, [isRenaming, node.name, node.isDirectory]);
+
+    const isCutSource = fileClipboard?.operation === 'cut' && fileClipboard.sourcePath === node.path;
+    const isCopySource = fileClipboard?.operation === 'copy' && fileClipboard.sourcePath === node.path;
+
+    const handleCut = useCallback(() => {
+        console.log('[FileTree] Cut:', { path: node.path, name: node.name });
+        onCut(node.path, node.name);
+    }, [node.path, node.name, onCut]);
+
+    const handleCopy = useCallback(() => {
+        console.log('[FileTree] Copy:', { path: node.path, name: node.name });
+        onCopy(node.path, node.name);
+    }, [node.path, node.name, onCopy]);
+
+    const handlePaste = useCallback(() => {
+        const destDir = node.isDirectory
+            ? node.path
+            : node.path.substring(0, Math.max(node.path.lastIndexOf('\\'), node.path.lastIndexOf('/')));
+        console.log('[FileTree] Paste:', { destDir, pastedOnFile: !node.isDirectory, clipboard: fileClipboard });
+        onPaste(destDir);
+    }, [node.isDirectory, node.path, onPaste, fileClipboard]);
 
     const handleClick = useCallback((e: React.MouseEvent) => {
         if (node.isDirectory) {
@@ -188,17 +217,17 @@ export const FileTreeNode = React.memo(function FileTreeNode({
     }, []);
 
     const handleDragStart = useCallback((e: React.DragEvent) => {
+        console.log('[FileTree] DragStart:', { path: node.path, isDirectory: node.isDirectory });
         e.dataTransfer.setData('text/plain', node.path);
         e.dataTransfer.effectAllowed = 'move';
-    }, [node.path]);
+    }, [node.path, node.isDirectory]);
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
-        if (!node.isDirectory) return;
         e.preventDefault();
         e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
         setIsDragOver(true);
-    }, [node.isDirectory]);
+    }, []);
 
     const handleDragLeave = useCallback(() => {
         setIsDragOver(false);
@@ -209,12 +238,22 @@ export const FileTreeNode = React.memo(function FileTreeNode({
         e.stopPropagation();
         setIsDragOver(false);
 
-        if (!node.isDirectory) return;
         const sourcePath = e.dataTransfer.getData('text/plain');
         if (!sourcePath || sourcePath === node.path) return;
+
+        // Resolve destination: if dropping on a file, use the file's parent directory
+        const destDir = node.isDirectory
+            ? node.path
+            : node.path.substring(0, Math.max(node.path.lastIndexOf('\\'), node.path.lastIndexOf('/')));
+
         // Don't drop into itself or a child of itself
-        if (node.path.startsWith(sourcePath + '\\') || node.path.startsWith(sourcePath + '/')) return;
-        onMoveItem(sourcePath, node.path);
+        if (destDir.startsWith(sourcePath + '\\') || destDir.startsWith(sourcePath + '/') || destDir === sourcePath) return;
+        // Don't move if already a direct child of this directory
+        const sourceParent = sourcePath.substring(0, Math.max(sourcePath.lastIndexOf('\\'), sourcePath.lastIndexOf('/')));
+        if (sourceParent === destDir) return;
+
+        console.log('[FileTree] Drop:', { sourcePath, destDir, droppedOnFile: !node.isDirectory });
+        onMoveItem(sourcePath, destDir);
     }, [node.isDirectory, node.path, onMoveItem]);
 
     const handleRenameSubmit = useCallback(() => {
@@ -275,7 +314,7 @@ export const FileTreeNode = React.memo(function FileTreeNode({
                 onClick={handleClick}
                 onDoubleClick={handleDoubleClick}
                 onContextMenu={handleContextMenu}
-                draggable={!node.isDirectory && !isRenaming}
+                draggable={!isRenaming}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -311,13 +350,23 @@ export const FileTreeNode = React.memo(function FileTreeNode({
                     <Typography
                         variant="body2"
                         noWrap
+                        component="span"
                         sx={{
                             flex: 1,
                             fontSize: '0.8125rem',
                             lineHeight: 1.5,
+                            display: 'flex',
+                            alignItems: 'center',
+                            ...(isCutSource && { opacity: 0.45, fontStyle: 'italic' }),
                         }}
                     >
                         {node.name}
+                        {isCutSource && (
+                            <ScissorsIcon fontSize="small" size={14} sx={{ ml: 0.5, opacity: 0.6, flexShrink: 0 }} />
+                        )}
+                        {isCopySource && (
+                            <ClipboardCopyIcon fontSize="small" size={14} sx={{ ml: 0.5, opacity: 0.6, flexShrink: 0 }} />
+                        )}
                     </Typography>
                 )}
             </NodeRow>
@@ -348,6 +397,10 @@ export const FileTreeNode = React.memo(function FileTreeNode({
                     onAttachAllSelected={onAttachAllSelected}
                     onDeleteAllSelected={onDeleteAllSelected}
                     renamingPath={renamingPath}
+                    fileClipboard={fileClipboard}
+                    onCut={onCut}
+                    onCopy={onCopy}
+                    onPaste={onPaste}
                 />
             ))}
 
@@ -376,6 +429,11 @@ export const FileTreeNode = React.memo(function FileTreeNode({
                     onCopyPath={handleCopyPath}
                     onCopyName={handleCopyName}
                     onToggleNexusAttachment={handleToggleNexusAttachment}
+                    onCut={handleCut}
+                    onCopy={handleCopy}
+                    onPaste={handlePaste}
+                    isPasteEnabled={fileClipboard !== null}
+                    isCutCopyEnabled={fileClipboard === null}
                 />
             )}
         </>

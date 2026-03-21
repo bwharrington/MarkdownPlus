@@ -1,7 +1,7 @@
 import { ipcMain, app } from 'electron';
 import * as https from 'https';
 import { log, logError } from './logger';
-import { callXAiApi, listModels, hasApiKey as hasXaiApiKey, DEFAULT_XAI_MODELS, Message } from './services/xaiApi';
+import { callXAiApi, callXAiApiWithJsonMode, listModels, hasApiKey as hasXaiApiKey, DEFAULT_XAI_MODELS, Message } from './services/xaiApi';
 import { callXAiMultiAgentApi } from './services/xaiMultiAgentApi';
 import type { MultiAgentTool, MultiAgentUsage } from './services/xaiMultiAgentApi';
 import type { ReasoningEffort } from '../shared/multiAgentUtils';
@@ -52,7 +52,7 @@ export interface AIProviderStatusesResponse {
 export interface AIEditRequestData {
     messages: Array<{ role: string; content: string }>;
     model: string;
-    provider: 'claude' | 'openai' | 'gemini';
+    provider: 'claude' | 'openai' | 'gemini' | 'xai';
     requestId?: string;
 }
 
@@ -352,6 +352,13 @@ export function registerAIIpcHandlers() {
                     ...data.messages,
                 ];
                 response = await callGeminiApiWithJsonMode(geminiMessages, data.model, controller?.signal);
+            } else if (data.provider === 'xai') {
+                // xAI with JSON mode (response_format: json_object via chat completions)
+                const xaiMessages = [
+                    { role: 'system', content: DIFF_EDIT_SYSTEM_PROMPT },
+                    ...data.messages,
+                ];
+                response = await callXAiApiWithJsonMode(xaiMessages, data.model, controller?.signal);
             } else {
                 return { success: false, error: `Unknown provider: ${data.provider}` };
             }

@@ -300,6 +300,7 @@ function buildCreatingPrompt(
     outline: string | null,
     researchNotes: string | null,
     fileContext: string,
+    chatContext?: string,
 ): string {
     const parts: string[] = [];
 
@@ -319,6 +320,12 @@ function buildCreatingPrompt(
         parts.push('');
         parts.push('**Research Notes (use these to inform your writing — cite specific facts and data):**');
         parts.push(researchNotes);
+    }
+
+    if (chatContext) {
+        parts.push('');
+        parts.push('**Previous Chat Context (use as reference if relevant):**');
+        parts.push(chatContext);
     }
 
     if (fileContext.trim()) {
@@ -390,6 +397,7 @@ export function useAICreate() {
         model: string,
         requestId: string,
         webSearchEnabled?: boolean,
+        chatContext?: string,
     ) => {
         if (!request.trim()) {
             throw new Error('Please describe what you want to create');
@@ -607,7 +615,7 @@ export function useAICreate() {
 
             const creatingPrompt = buildCreatingPrompt(
                 request, intent.documentType, intent.tone,
-                outline || null, researchNotes || null, fileContext,
+                outline || null, researchNotes || null, fileContext, chatContext,
             );
 
             const creatingMessages = [{

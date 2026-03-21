@@ -73,6 +73,8 @@ import {
     Sparkles,
     Globe,
     HelpCircle,
+    Scissors,
+    ClipboardPaste,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -203,6 +205,8 @@ export const PlusIcon = createIcon(Plus);
 export const MinusIcon = createIcon(Minus);
 export const CopyIcon = createIcon(Copy);
 export const ClipboardCopyIcon = createIcon(ClipboardCopy);
+export const ClipboardPasteIcon = createIcon(ClipboardPaste);
+export const ScissorsIcon = createIcon(Scissors);
 export const PlanIcon = createIcon(ClipboardList);
 export const FolderPlusIcon = createIcon(FolderPlus);
 export const FolderClosedIcon = createIcon(FolderClosed);

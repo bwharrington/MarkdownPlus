@@ -19,7 +19,8 @@ export type ProviderModeRestrictions = Partial<Record<AIProvider, AIChatMode[]>>
  * Map of provider → modes that provider does NOT support.
  */
 export const PROVIDER_MODE_RESTRICTIONS: ProviderModeRestrictions = {
-    xai: ['edit'],
+    // xAI supports edit mode via response_format: json_object on chat completions.
+    // Multi-agent models are still restricted via isModelRestrictedFromMode().
 };
 
 /**
@@ -42,11 +43,12 @@ export function getRestrictedModesForProvider(provider: AIProvider): AIChatMode[
 
 /**
  * Returns true if a specific model is restricted from a mode.
- * Multi-agent models only support ask mode.
+ * Multi-agent models do not support edit mode (no structured output/diff support).
+ * Create mode is supported — multi-agent can generate new content.
  */
 export function isModelRestrictedFromMode(modelId: string, mode: AIChatMode): boolean {
     if (isMultiAgentModel(modelId)) {
-        return mode === 'edit' || mode === 'create';
+        return mode === 'edit';
     }
     return false;
 }
@@ -55,8 +57,5 @@ export function isModelRestrictedFromMode(modelId: string, mode: AIChatMode): bo
  * Returns a human-readable reason why a provider is restricted from a mode.
  */
 export function getRestrictionReason(provider: AIProvider, mode: AIChatMode): string {
-    if (provider === 'xai' && mode === 'edit') {
-        return 'xAI does not support Edit mode (structured output not yet available).';
-    }
     return `${provider} does not support ${mode} mode.`;
 }

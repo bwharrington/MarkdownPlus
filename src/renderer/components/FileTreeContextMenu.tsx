@@ -8,6 +8,8 @@ import {
     FolderOpenIcon,
     CopyIcon,
     ClipboardCopyIcon,
+    ClipboardPasteIcon,
+    ScissorsIcon,
     PlusIcon,
     MinusIcon,
 } from './AppIcons';
@@ -32,6 +34,11 @@ interface FileTreeContextMenuProps {
     onCopyPath: () => void;
     onCopyName: () => void;
     onToggleNexusAttachment: () => void;
+    onCut: () => void;
+    onCopy: () => void;
+    onPaste: () => void;
+    isPasteEnabled: boolean;
+    isCutCopyEnabled: boolean;
 }
 
 export const FileTreeContextMenu = React.memo(function FileTreeContextMenu({
@@ -48,6 +55,11 @@ export const FileTreeContextMenu = React.memo(function FileTreeContextMenu({
     onCopyPath,
     onCopyName,
     onToggleNexusAttachment,
+    onCut,
+    onCopy,
+    onPaste,
+    isPasteEnabled,
+    isCutCopyEnabled,
 }: FileTreeContextMenuProps) {
     const open = position !== null;
 
@@ -76,6 +88,19 @@ export const FileTreeContextMenu = React.memo(function FileTreeContextMenu({
             <MenuItem onClick={() => { onDelete(); onClose(); }}>
                 <ListItemIcon><DeleteIcon fontSize="small" /></ListItemIcon>
                 <ListItemText>Delete</ListItemText>
+            </MenuItem>
+            <Divider />
+            <MenuItem disabled={!isCutCopyEnabled} onClick={() => { onCut(); onClose(); }}>
+                <ListItemIcon><ScissorsIcon fontSize="small" /></ListItemIcon>
+                <ListItemText>Cut</ListItemText>
+            </MenuItem>
+            <MenuItem disabled={!isCutCopyEnabled} onClick={() => { onCopy(); onClose(); }}>
+                <ListItemIcon><ClipboardCopyIcon fontSize="small" /></ListItemIcon>
+                <ListItemText>Copy</ListItemText>
+            </MenuItem>
+            <MenuItem disabled={!isPasteEnabled} onClick={() => { onPaste(); onClose(); }}>
+                <ListItemIcon><ClipboardPasteIcon fontSize="small" /></ListItemIcon>
+                <ListItemText>Paste</ListItemText>
             </MenuItem>
             <Divider />
             <MenuItem onClick={() => { onRevealInExplorer(); onClose(); }}>

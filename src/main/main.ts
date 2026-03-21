@@ -954,11 +954,59 @@ function registerIpcHandlers() {
             if (sourcePath === destPath) {
                 return { success: true, destPath: sourcePath };
             }
-            await fs.rename(sourcePath, destPath);
+            try {
+                await fs.rename(sourcePath, destPath);
+            } catch (renameError: any) {
+                if (renameError.code === 'EXDEV') {
+                    // Cross-device move: copy then delete
+                    await fs.cp(sourcePath, destPath, { recursive: true });
+                    await fs.rm(sourcePath, { recursive: true, force: true });
+                } else {
+                    throw renameError;
+                }
+            }
             log('IPC: file:move success', { destPath });
             return { success: true, destPath };
         } catch (error) {
             logError('IPC: file:move failed', error as Error);
+            return { success: false, error: String(error) };
+        }
+    });
+
+    // File: Copy file or folder
+    ipcMain.handle('file:copy', async (_event, sourcePath: string, destDir: string) => {
+        log('IPC: file:copy called', { sourcePath, destDir });
+        try {
+            const baseName = path.basename(sourcePath);
+            let destPath = path.join(destDir, baseName);
+
+            // Handle name collisions
+            const fileExists = async (p: string) => {
+                try { await fs.access(p); return true; } catch { return false; }
+            };
+            if (await fileExists(destPath)) {
+                const ext = path.extname(baseName);
+                const nameWithoutExt = path.basename(baseName, ext);
+                let candidate = path.join(destDir, `${nameWithoutExt} - Copy${ext}`);
+                let counter = 2;
+                while (await fileExists(candidate)) {
+                    candidate = path.join(destDir, `${nameWithoutExt} - Copy (${counter})${ext}`);
+                    counter++;
+                }
+                destPath = candidate;
+            }
+
+            const stat = await fs.stat(sourcePath);
+            if (stat.isDirectory()) {
+                await fs.cp(sourcePath, destPath, { recursive: true });
+            } else {
+                await fs.copyFile(sourcePath, destPath);
+            }
+
+            log('IPC: file:copy success', { destPath });
+            return { success: true, destPath };
+        } catch (error) {
+            logError('IPC: file:copy failed', error as Error);
             return { success: false, error: String(error) };
         }
     });

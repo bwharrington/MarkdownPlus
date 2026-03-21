@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { useEditorState, useEditorDispatch } from '../contexts';
 import { getFileType } from '../utils/fileHelpers';
-import type { DirectoryNode, FileDirectorySortOrder, IConfig } from '../types';
+import type { DirectoryNode, FileDirectorySortOrder, IConfig, FileClipboard } from '../types';
 import { sortChildren } from '../components/FileTreeNode';
 import { useDirectoryWatcher } from './useDirectoryWatcher';
 
@@ -34,6 +34,10 @@ export interface DirectoryInstance {
     cancelRename: () => void;
     openFileInEditor: (filePath: string) => Promise<void>;
     openMultipleFiles: (paths: string[]) => Promise<void>;
+    fileClipboard: FileClipboard | null;
+    cutItem: (path: string, name: string) => void;
+    copyItemToClipboard: (path: string, name: string) => void;
+    pasteItem: (destDirPath: string) => Promise<void>;
 }
 
 export interface UseFileDirectoriesReturn {
@@ -101,6 +105,18 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
     const orderedPathsRef = useRef(orderedPaths);
     orderedPathsRef.current = orderedPaths;
 
+    const [fileClipboard, setFileClipboard] = useState<FileClipboard | null>(null);
+    const fileClipboardRef = useRef(fileClipboard);
+    fileClipboardRef.current = fileClipboard;
+
+    const handleCutItem = useCallback((filePath: string, fileName: string) => {
+        setFileClipboard({ sourcePath: filePath, sourceName: fileName, operation: 'cut' });
+    }, []);
+
+    const handleCopyItemToClipboard = useCallback((filePath: string, fileName: string) => {
+        setFileClipboard({ sourcePath: filePath, sourceName: fileName, operation: 'copy' });
+    }, []);
+
     const persistConfig = useCallback((updates: Partial<IConfig>) => {
         const nextConfig = { ...configRef.current, ...updates };
         dispatch({ type: 'SET_CONFIG', payload: nextConfig });
@@ -164,6 +180,54 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
             updateInstance(dirPath, s => ({ ...s, isLoading: false }));
         }
     }, [updateInstance]);
+
+    const handlePasteItem = useCallback(async (destDirPath: string) => {
+        const clipboard = fileClipboardRef.current;
+        if (!clipboard) return;
+
+        console.log('[useFileDirectories] Paste:', { operation: clipboard.operation, sourcePath: clipboard.sourcePath, destDirPath });
+
+        try {
+            let result;
+            if (clipboard.operation === 'cut') {
+                result = await window.electronAPI.moveItem(clipboard.sourcePath, destDirPath);
+                if (result.success && result.destPath) {
+                    // Update all open file paths under the moved source
+                    for (const openFile of openFilesRef.current) {
+                        if (!openFile.path) continue;
+                        if (openFile.path === clipboard.sourcePath ||
+                            openFile.path.startsWith(clipboard.sourcePath + '\\') ||
+                            openFile.path.startsWith(clipboard.sourcePath + '/')) {
+                            const relativePath = openFile.path.substring(clipboard.sourcePath.length);
+                            const newFilePath = result.destPath + relativePath;
+                            const newName = newFilePath.split(/[\\/]/).pop() || openFile.name;
+                            dispatch({
+                                type: 'UPDATE_FILE_PATH',
+                                payload: { id: openFile.id, path: newFilePath, name: newName },
+                            });
+                        }
+                    }
+                }
+            } else {
+                result = await window.electronAPI.copyItem(clipboard.sourcePath, destDirPath);
+            }
+
+            if (result?.success) {
+                setFileClipboard(null);
+                // Refresh all directories that contain the source or destination
+                for (const dp of orderedPathsRef.current) {
+                    const containsSource = clipboard.sourcePath.startsWith(dp + '\\') || clipboard.sourcePath.startsWith(dp + '/');
+                    const containsDest = destDirPath.startsWith(dp + '\\') || destDirPath.startsWith(dp + '/') || destDirPath === dp;
+                    if (containsSource || containsDest) {
+                        await readTree(dp);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Failed to paste item:', err);
+            setFileClipboard(null);
+        }
+    }, [dispatch, readTree]);
 
     const addDirectory = useCallback((dirPath: string, sortOrder?: FileDirectorySortOrder, showAllFiles?: boolean) => {
         setInstances(prev => {
@@ -399,6 +463,11 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
             const closeDirectory = () => {
                 window.electronAPI.unwatchDirectory(dirPath);
                 removeDirectory(dirPath);
+                // Clear clipboard if source belongs to this directory
+                const cb = fileClipboardRef.current;
+                if (cb && (cb.sourcePath.startsWith(dirPath + '\\') || cb.sourcePath.startsWith(dirPath + '/'))) {
+                    setFileClipboard(null);
+                }
                 const newOrdered = orderedPathsRef.current.filter(p => p !== dirPath);
                 const openDirs = (configRef.current.openDirectories ?? []).filter(p => p !== dirPath);
                 const sortMap = { ...(configRef.current.openDirectorySort ?? {}) };
@@ -530,18 +599,36 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
             };
 
             const moveItem = async (sourcePath: string, destDirPath: string) => {
+                console.log('[useFileDirectories] moveItem:', { sourcePath, destDirPath, directory: dirPath });
                 try {
                     const result = await window.electronAPI.moveItem(sourcePath, destDirPath);
                     if (result.success && result.destPath) {
-                        const openFile = openFilesRef.current.find(f => f.path === sourcePath);
-                        if (openFile) {
-                            const newName = result.destPath.split(/[\\/]/).pop() || openFile.name;
-                            dispatch({
-                                type: 'UPDATE_FILE_PATH',
-                                payload: { id: openFile.id, path: result.destPath, name: newName },
-                            });
+                        // Update all open files whose paths fall under the moved source
+                        for (const openFile of openFilesRef.current) {
+                            if (!openFile.path) continue;
+                            if (openFile.path === sourcePath ||
+                                openFile.path.startsWith(sourcePath + '\\') ||
+                                openFile.path.startsWith(sourcePath + '/')) {
+                                const relativePath = openFile.path.substring(sourcePath.length);
+                                const newFilePath = result.destPath + relativePath;
+                                const newName = newFilePath.split(/[\\/]/).pop() || openFile.name;
+                                dispatch({
+                                    type: 'UPDATE_FILE_PATH',
+                                    payload: { id: openFile.id, path: newFilePath, name: newName },
+                                });
+                            }
                         }
+                        // Refresh this (destination) directory
                         await refreshTree();
+                        // If source belongs to a different open directory, refresh it too
+                        for (const otherDirPath of orderedPathsRef.current) {
+                            if (otherDirPath === dirPath) continue;
+                            const isSource = sourcePath.startsWith(otherDirPath + '\\') || sourcePath.startsWith(otherDirPath + '/');
+                            if (isSource) {
+                                await readTree(otherDirPath);
+                                break;
+                            }
+                        }
                     }
                 } catch (err) {
                     console.error('Failed to move item:', err);
@@ -692,9 +779,13 @@ export function useFileDirectories(): UseFileDirectoriesReturn {
                 cancelRename,
                 openFileInEditor,
                 openMultipleFiles,
+                fileClipboard,
+                cutItem: handleCutItem,
+                copyItemToClipboard: handleCopyItemToClipboard,
+                pasteItem: handlePasteItem,
             };
         }).filter((d): d is DirectoryInstance => d !== null);
-    }, [orderedPaths, instances, updateInstance, removeDirectory, persistConfig, openFileInEditor, dispatch]);
+    }, [orderedPaths, instances, updateInstance, removeDirectory, persistConfig, openFileInEditor, dispatch, fileClipboard, handleCutItem, handleCopyItemToClipboard, handlePasteItem]);
 
     // Keep a ref to the latest directories array so useDirectoryWatcher can
     // read current state without re-subscribing the IPC listener on each render.

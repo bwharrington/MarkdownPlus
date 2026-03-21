@@ -41,9 +41,14 @@ function formatEditRequest(
     fileName: string,
     webSearchBlock?: string,
     webSearchSources?: Array<{ title: string; link: string }>,
+    chatContext?: string,
 ): string {
     const webContext = webSearchBlock && webSearchSources?.length
         ? `\n\n${formatWebContextForEdit(webSearchBlock, webSearchSources)}\n`
+        : '';
+
+    const chatContextBlock = chatContext
+        ? `\n\n--- PREVIOUS CHAT CONTEXT (use only if relevant to the edit) ---\n${chatContext}\n--- END CHAT CONTEXT ---\n`
         : '';
 
     return `Edit the following markdown document.
@@ -52,7 +57,7 @@ File: ${fileName}
 
 Requested changes:
 ${prompt}
-${webContext}
+${webContext}${chatContextBlock}
 Current document:
 \`\`\`markdown
 ${fileContent}
@@ -214,10 +219,11 @@ export function useAIDiffEdit() {
 
     const requestEdit = useCallback(async (
         prompt: string,
-        provider: 'claude' | 'openai' | 'gemini',
+        provider: 'claude' | 'openai' | 'gemini' | 'xai',
         model: string,
         requestId?: string,
         webSearchEnabled?: boolean,
+        chatContext?: string,
     ): Promise<{ hunkCount: number; summary: string }> => {
         if (!activeFile) {
             throw new Error('No active file');
@@ -244,7 +250,7 @@ export function useAIDiffEdit() {
 
         const messages = [{
             role: 'user' as const,
-            content: formatEditRequest(prompt, activeFile.content, activeFile.name, webSearchBlock, webSearchSources),
+            content: formatEditRequest(prompt, activeFile.content, activeFile.name, webSearchBlock, webSearchSources, chatContext),
         }];
 
         const response = await window.electronAPI.aiEditRequest(messages, model, provider, requestId);

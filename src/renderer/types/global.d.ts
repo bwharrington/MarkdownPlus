@@ -66,6 +66,7 @@ export interface IConfig {
   openDirectories?: string[];
   recentDirectories?: string[];
   openDirectoryShowAllFiles?: Record<string, boolean>;
+  aiChatContextEnabled?: boolean;
 }
 
 export interface ConfirmCloseResult {
@@ -136,6 +137,14 @@ export interface PdfExportResult {
   error?: string;
 }
 
+export type ClipboardOperation = 'cut' | 'copy';
+
+export interface FileClipboard {
+  sourcePath: string;
+  sourceName: string;
+  operation: ClipboardOperation;
+}
+
 export interface WebSearchResult {
   title: string;
   link: string;
@@ -188,6 +197,7 @@ export interface ElectronAPI {
   createFileOnDisk: (dirPath: string) => Promise<{ success: boolean; filePath?: string; name?: string; error?: string }>;
   createFolder: (dirPath: string) => Promise<{ success: boolean; folderPath?: string; name?: string; error?: string }>;
   moveItem: (sourcePath: string, destDir: string) => Promise<{ success: boolean; destPath?: string; error?: string }>;
+  copyItem: (sourcePath: string, destDir: string) => Promise<{ success: boolean; destPath?: string; error?: string }>;
   deleteItem: (itemPath: string) => Promise<{ success: boolean; error?: string }>;
 
   // Config operations
@@ -260,7 +270,7 @@ export interface ElectronAPI {
   ) => Promise<AIMultiAgentResponse>;
   cancelAIChatRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
   cancelAIEditRequest: (requestId: string) => Promise<{ success: boolean; cancelled: boolean }>;
-  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai' | 'gemini', requestId?: string) => Promise<AIEditResponse>;
+  aiEditRequest: (messages: AIMessage[], model: string, provider: 'claude' | 'openai' | 'gemini' | 'xai', requestId?: string) => Promise<AIEditResponse>;
   listAIModels: () => Promise<AIModelsResponse>;
   listClaudeModels: () => Promise<AIModelsResponse>;
   listOpenAIModels: () => Promise<AIModelsResponse>;

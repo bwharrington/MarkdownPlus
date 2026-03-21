@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Box, TextField, Button, IconButton, CircularProgress, styled, Select, MenuItem, FormControl, ListSubheader, Divider, Tooltip, Chip } from '@mui/material';
-import { AttachFileIcon, SendIcon, EditIcon, CreateIcon, GlobeIcon, SearchIcon, CodeIcon } from './AppIcons';
+import { AttachFileIcon, SendIcon, EditIcon, CreateIcon, GlobeIcon, SearchIcon, CodeIcon, HistoryIcon } from './AppIcons';
 import { AttachFilePopover } from './AttachFilePopover';
 import { SpellCheckContextMenu } from './SpellCheckContextMenu';
 import type { AttachedFile } from './FileAttachmentsList';
@@ -81,6 +81,9 @@ interface MessageInputProps {
     onAttachFromDisk: () => void;
     onToggleFileAttachment: (file: IFile) => void;
     onWebSearchToggle?: () => void;
+    chatContextEnabled?: boolean;
+    hasChatContext?: boolean;
+    onChatContextToggle?: () => void;
     onInputChange: (value: string) => void;
     onSend: () => void;
     onCancel: () => void;
@@ -114,6 +117,9 @@ export function MessageInput({
     onAttachFromDisk,
     onToggleFileAttachment,
     onWebSearchToggle,
+    chatContextEnabled,
+    hasChatContext,
+    onChatContextToggle,
     onInputChange,
     onSend,
     onCancel,
@@ -229,7 +235,7 @@ export function MessageInput({
                             sx={COMPACT_SELECT_SX}
                         >
                             <MenuItem value="ask" sx={{ fontSize: '0.75rem' }}>Ask</MenuItem>
-                            <MenuItem value="edit" sx={{ fontSize: '0.75rem' }}>Edit</MenuItem>
+                            <MenuItem value="edit" disabled={isMultiAgent} sx={{ fontSize: '0.75rem' }}>Edit</MenuItem>
                             <MenuItem value="create" sx={{ fontSize: '0.75rem' }}>Create</MenuItem>
                         </Select>
                     </FormControl>
@@ -330,6 +336,18 @@ export function MessageInput({
                             </IconButton>
                         </Tooltip>
                     ) : null}
+                    {mode !== 'ask' && hasChatContext && (
+                        <Tooltip title={chatContextEnabled ? "Chat context included — click to exclude" : "Include Ask chat as context"}>
+                            <IconButton
+                                size="small"
+                                onClick={onChatContextToggle}
+                                disabled={hasActiveRequest}
+                                sx={{ color: chatContextEnabled ? 'primary.main' : 'text.secondary' }}
+                            >
+                                <HistoryIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                 </LeftControls>
                 <RightControls>
                     <Button

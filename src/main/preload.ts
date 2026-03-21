@@ -26,6 +26,7 @@ const electronAPI = {
   createFileOnDisk: (dirPath: string) => ipcRenderer.invoke('file:create-file', dirPath),
   createFolder: (dirPath: string) => ipcRenderer.invoke('file:create-folder', dirPath),
   moveItem: (sourcePath: string, destDir: string) => ipcRenderer.invoke('file:move', sourcePath, destDir),
+  copyItem: (sourcePath: string, destDir: string) => ipcRenderer.invoke('file:copy', sourcePath, destDir),
   deleteItem: (itemPath: string) => ipcRenderer.invoke('file:delete', itemPath),
 
   // Config operations
@@ -148,7 +149,7 @@ const electronAPI = {
     ipcRenderer.invoke('ai:cancel-request', requestId),
   cancelAIEditRequest: (requestId: string) =>
     ipcRenderer.invoke('ai:cancel-edit-request', requestId),
-  aiEditRequest: (messages: Array<{ role: string; content: string }>, model: string, provider: 'claude' | 'openai' | 'gemini', requestId?: string) =>
+  aiEditRequest: (messages: Array<{ role: string; content: string }>, model: string, provider: 'claude' | 'openai' | 'gemini' | 'xai', requestId?: string) =>
     ipcRenderer.invoke('ai:edit-request', { messages, model, provider, requestId }),
   listAIModels: () => ipcRenderer.invoke('ai:list-models'),
   listClaudeModels: () => ipcRenderer.invoke('ai:list-claude-models'),

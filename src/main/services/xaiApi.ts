@@ -144,6 +144,57 @@ export async function callXAiApi(
     }
 }
 
+/**
+ * Call xAI API with JSON mode enabled for structured output.
+ * Used for edit mode to get guaranteed JSON responses.
+ */
+export async function callXAiApiWithJsonMode(
+    messages: Array<{ role: string; content: string }>,
+    model: string,
+    signal?: AbortSignal,
+): Promise<string> {
+    const apiKey = getApiKeyForService('xai');
+    if (!apiKey) {
+        throw new Error('XAI_API_KEY not found. Please set it in Settings');
+    }
+
+    log('xAI API Request (JSON mode)', {
+        url: 'https://api.x.ai/v1/chat/completions',
+        model,
+        messageCount: messages.length,
+    });
+
+    try {
+        const response = await fetch('https://api.x.ai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                messages,
+                model,
+                response_format: { type: 'json_object' },
+            }),
+            signal,
+        });
+
+        log('xAI API Response Status (JSON mode)', { status: response.status, statusText: response.statusText });
+
+        if (!response.ok) {
+            const errorBody = await response.text();
+            logError('xAI API Error Response (JSON mode)', { status: response.status, body: errorBody });
+            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+        }
+
+        const data: XAiApiResponse = await response.json();
+        return data.choices[0]?.message?.content || '';
+    } catch (error) {
+        logError('Error calling xAI API (JSON mode)', error as Error);
+        throw new Error(`Failed to call xAI API: ${error instanceof Error ? error.message : String(error)}`);
+    }
+}
+
 export async function listModels(): Promise<Model[]> {
     // Only use secure storage (no .env fallback)
     const apiKey = getApiKeyForService('xai');

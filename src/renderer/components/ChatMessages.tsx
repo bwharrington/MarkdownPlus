@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { Box, Typography, styled, IconButton, Tooltip } from '@mui/material';
-import { CopyIcon, CheckIcon, GlobeIcon } from './AppIcons';
+import { CopyIcon, CheckIcon, GlobeIcon, NoteAddIcon } from './AppIcons';
 import ReactMarkdown, { Components } from 'react-markdown';
 import type { AIMessage } from '../hooks/useAIChat';
 import { CodeBlock } from './CodeBlock';
@@ -120,7 +120,12 @@ const SourcesSection = styled(Box)(({ theme }) => ({
     paddingTop: 4,
 }));
 
-const ResponseCopyButton = React.memo(function ResponseCopyButton({ content }: { content: string }) {
+interface ResponseActionsProps {
+    content: string;
+    onCreateFile?: (content: string) => void;
+}
+
+const ResponseActions = React.memo(function ResponseActions({ content, onCreateFile }: ResponseActionsProps) {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = useCallback(() => {
@@ -129,6 +134,10 @@ const ResponseCopyButton = React.memo(function ResponseCopyButton({ content }: {
             setTimeout(() => setCopied(false), 1500);
         });
     }, [content]);
+
+    const handleCreateFile = useCallback(() => {
+        onCreateFile?.(content);
+    }, [content, onCreateFile]);
 
     return (
         <ResponseCopyRow>
@@ -143,6 +152,16 @@ const ResponseCopyButton = React.memo(function ResponseCopyButton({ content }: {
                     </Typography>
                 </ResponseCopyButtonBase>
             </Tooltip>
+            {onCreateFile && (
+                <Tooltip title="Create new file from response" placement="left">
+                    <ResponseCopyButtonBase size="small" onClick={handleCreateFile} aria-label="Create new file">
+                        <NoteAddIcon size={13} />
+                        <Typography component="span" sx={{ fontSize: '0.68rem', lineHeight: 1 }}>
+                            New File
+                        </Typography>
+                    </ResponseCopyButtonBase>
+                </Tooltip>
+            )}
         </ResponseCopyRow>
     );
 });
@@ -215,6 +234,7 @@ interface ChatMessagesProps {
     multiAgentError?: string | null;
     multiAgentAgentCount?: 4 | 16;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
+    onCreateFileFromMessage?: (content: string) => void;
 }
 
 export function ChatMessages({
@@ -241,6 +261,7 @@ export function ChatMessages({
     multiAgentError,
     multiAgentAgentCount = 4,
     messagesEndRef,
+    onCreateFileFromMessage,
 }: ChatMessagesProps) {
     const [diffReviewMessage] = useState(() =>
         DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
@@ -332,7 +353,7 @@ export function ChatMessages({
                                         })}
                                     </SourcesSection>
                                 )}
-                                <ResponseCopyButton content={msg.content} />
+                                <ResponseActions content={msg.content} onCreateFile={onCreateFileFromMessage} />
                             </>
                         ) : (
                             <Typography variant="body2">{msg.content}</Typography>

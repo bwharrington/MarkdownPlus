@@ -153,6 +153,7 @@ export function AIChatDialog({
     const [isEditLoading, setIsEditLoading] = useState(false);
     const activeEditRequestIdRef = useRef<string | null>(null);
     const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+    const [chatContextEnabled, setChatContextEnabled] = useState(editorState.config.aiChatContextEnabled ?? false);
 
     // AI Diff Edit hook
     const { requestEdit, hasDiffTab, webSearchPhase: editWebSearchPhase, resetWebSearch: resetEditWebSearch } = useAIDiffEdit();
@@ -267,15 +268,16 @@ export function AIChatDialog({
     }, [open]);
 
 
-    // Scroll to bottom when new messages arrive
+    // Scroll to bottom when new messages arrive or when a request starts
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [askMessages, multiAgentMessages]);
+    }, [askMessages, multiAgentMessages, isAskLoading, isEditLoading, isCreateLoading, isMultiAgentLoading]);
 
     // Reset to ask mode when the selected model's provider doesn't support the current mode,
-    // or when a multi-agent model is selected (multi-agent only supports ask mode)
+    // or when a multi-agent model is selected and edit mode is active (multi-agent doesn't support edit).
     useEffect(() => {
-        if (mode !== 'ask' && (isProviderRestrictedFromMode(provider, mode) || isMultiAgent)) {
+        const multiAgentBlocksMode = isMultiAgent && mode === 'edit';
+        if (isProviderRestrictedFromMode(provider, mode) || multiAgentBlocksMode) {
             handleModeChange('ask');
         }
     }, [provider, mode, handleModeChange, isMultiAgent]);
@@ -283,6 +285,39 @@ export function AIChatDialog({
     const handleWebSearchToggle = useCallback(() => {
         setWebSearchEnabled(prev => !prev);
     }, []);
+
+    // Chat context toggle — include Ask chat history as context for Edit/Create
+    const handleChatContextToggle = useCallback(() => {
+        setChatContextEnabled(prev => {
+            const next = !prev;
+            persistConfig({ aiChatContextEnabled: next });
+            return next;
+        });
+    }, [persistConfig]);
+
+    // Build a formatted chat context block from ask + multi-agent messages
+    const buildChatContextBlock = useCallback((): string => {
+        const messages = [...askMessages, ...multiAgentMessages];
+        if (messages.length === 0) return '';
+        return messages.map(m => `[${m.role}]: ${m.content}`).join('\n\n');
+    }, [askMessages, multiAgentMessages]);
+
+    // Create a new file tab from an assistant chat response
+    const handleCreateFileFromMessage = useCallback((content: string) => {
+        const fileId = Math.random().toString(36).substring(2, 11);
+        dispatch({
+            type: 'OPEN_FILE',
+            payload: {
+                id: fileId,
+                path: null,
+                name: 'Untitled.md',
+                content,
+                lineEnding: editorState.config.defaultLineEnding,
+                viewMode: 'preview' as const,
+                fileType: 'markdown' as const,
+            },
+        });
+    }, [dispatch, editorState.config.defaultLineEnding]);
 
     // Open native file picker and add results as attachments
     const handleAttachFromDisk = useCallback(async () => {
@@ -321,7 +356,8 @@ export function AIChatDialog({
             const requestId = `ai-edit-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             activeEditRequestIdRef.current = requestId;
             try {
-                await requestEdit(inputValue, currentProvider as 'claude' | 'openai' | 'gemini', selectedModel, requestId, webSearchEnabled);
+                const editChatContext = chatContextEnabled ? buildChatContextBlock() : undefined;
+                await requestEdit(inputValue, currentProvider as 'claude' | 'openai' | 'gemini' | 'xai', selectedModel, requestId, webSearchEnabled, editChatContext);
                 if (activeEditRequestIdRef.current !== requestId) return;
                 setInputValue('');
             } catch (err) {
@@ -345,7 +381,8 @@ export function AIChatDialog({
                 setInputValue('');
                 setCreateQuery(request);
                 dismissCreateProgress();
-                await submitCreate(request, enabledFilesForCreate, currentProvider, selectedModel, requestId, webSearchEnabled);
+                const createChatContext = chatContextEnabled ? buildChatContextBlock() : undefined;
+                await submitCreate(request, enabledFilesForCreate, currentProvider, selectedModel, requestId, webSearchEnabled, createChatContext);
             } catch {
                 // Error is handled by the useAICreate hook (createError state)
             }
@@ -376,7 +413,7 @@ export function AIChatDialog({
                 await submitAsk(question, currentProvider, selectedModel, filesToAttach, webSearchEnabled);
             }
         }
-    }, [mode, selectedModel, getProviderForModel, inputValue, requestEdit, submitAsk, submitMultiAgent, submitCreate, setInputValue, attachedFiles, setAttachedFiles, dismissCreateProgress, webSearchEnabled, isMultiAgent, multiAgentTools, reasoningEffort]);
+    }, [mode, selectedModel, getProviderForModel, inputValue, requestEdit, submitAsk, submitMultiAgent, submitCreate, setInputValue, attachedFiles, setAttachedFiles, dismissCreateProgress, webSearchEnabled, isMultiAgent, multiAgentTools, reasoningEffort, chatContextEnabled, buildChatContextBlock]);
 
     const handleCancelRequest = useCallback(async () => {
         if (isMultiAgentLoading) {
@@ -494,6 +531,7 @@ export function AIChatDialog({
                         multiAgentError={multiAgentError}
                         multiAgentAgentCount={reasoningEffort === 'low' ? 4 : 16}
                         messagesEndRef={messagesEndRef}
+                        onCreateFileFromMessage={handleCreateFileFromMessage}
                     />
 
                     <FileAttachmentsList
@@ -528,6 +566,9 @@ export function AIChatDialog({
                         onAttachFromDisk={handleAttachFromDisk}
                         onToggleFileAttachment={onToggleFileAttachment}
                         onWebSearchToggle={handleWebSearchToggle}
+                        chatContextEnabled={chatContextEnabled}
+                        hasChatContext={askMessages.length + multiAgentMessages.length > 0}
+                        onChatContextToggle={handleChatContextToggle}
                         onInputChange={setInputValue}
                         onSend={handleSendMessage}
                         onCancel={handleCancelRequest}

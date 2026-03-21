@@ -19,12 +19,15 @@ interface FileDirectoryToolbarProps {
     sortOrder: FileDirectorySortOrder;
     isAllExpanded: boolean;
     showAllFiles: boolean;
+    isPasteEnabled: boolean;
     onNewFile: () => void;
     onNewFolder: () => void;
     onToggleSort: () => void;
     onToggleExpandCollapse: () => void;
     onToggleShowAllFiles: () => void;
     onCloseFolder: () => void;
+    onMoveItem: (sourcePath: string, destDirPath: string) => void;
+    onPaste: (destDirPath: string) => Promise<void>;
 }
 
 const ToolbarContainer = styled(Box)(({ theme }) => ({
@@ -58,14 +61,18 @@ export const FileDirectoryToolbar = React.memo(function FileDirectoryToolbar({
     sortOrder,
     isAllExpanded,
     showAllFiles,
+    isPasteEnabled,
     onNewFile,
     onNewFolder,
     onToggleSort,
     onToggleExpandCollapse,
     onToggleShowAllFiles,
     onCloseFolder,
+    onMoveItem,
+    onPaste,
 }: FileDirectoryToolbarProps) {
     const [confirmOpen, setConfirmOpen] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
 
     const handleCloseClick = useCallback(() => {
         setConfirmOpen(true);
@@ -80,11 +87,54 @@ export const FileDirectoryToolbar = React.memo(function FileDirectoryToolbar({
         setConfirmOpen(false);
     }, []);
 
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'move';
+        setIsDragOver(true);
+    }, []);
+
+    const handleDragLeave = useCallback(() => {
+        setIsDragOver(false);
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragOver(false);
+        const sourcePath = e.dataTransfer.getData('text/plain');
+        if (!sourcePath) return;
+        // Don't move if already a direct child of this root
+        const sourceParent = sourcePath.substring(0, Math.max(sourcePath.lastIndexOf('\\'), sourcePath.lastIndexOf('/')));
+        if (sourceParent === folderPath) return;
+        console.log('[Toolbar] Drop on root:', { sourcePath, destDir: folderPath });
+        onMoveItem(sourcePath, folderPath);
+    }, [folderPath, onMoveItem]);
+
+    const handleToolbarPaste = useCallback(() => {
+        console.log('[Toolbar] Paste on root:', { destDir: folderPath });
+        onPaste(folderPath);
+    }, [folderPath, onPaste]);
+
+    const handleContextMenu = useCallback((e: React.MouseEvent) => {
+        if (!isPasteEnabled) return;
+        e.preventDefault();
+        handleToolbarPaste();
+    }, [isPasteEnabled, handleToolbarPaste]);
+
     return (
         <>
             <ToolbarContainer>
                 <Tooltip title={folderPath} placement="bottom-start">
-                    <FolderLabel>{folderName}</FolderLabel>
+                    <FolderLabel
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        onContextMenu={handleContextMenu}
+                        sx={isDragOver ? { backgroundColor: 'action.hover', borderRadius: 1 } : undefined}
+                    >
+                        {folderName}
+                    </FolderLabel>
                 </Tooltip>
                 <Tooltip title="New File">
                     <ToolbarButton onClick={onNewFile} size="small">

@@ -62,6 +62,10 @@ export const FileDirectory = React.memo(function FileDirectory({
         cancelRename,
         openFileInEditor,
         openMultipleFiles,
+        fileClipboard,
+        cutItem,
+        copyItemToClipboard,
+        pasteItem,
     } = directory;
 
     const handleToggleSort = useCallback(() => {
@@ -90,6 +94,7 @@ export const FileDirectory = React.memo(function FileDirectory({
         if (!tree) return;
         const sourcePath = e.dataTransfer.getData('text/plain');
         if (!sourcePath) return;
+        console.log('[FileDirectory] Drop on tree root:', { sourcePath, destDir: tree.path });
         moveItem(sourcePath, tree.path);
     }, [tree, moveItem]);
 
@@ -127,12 +132,15 @@ export const FileDirectory = React.memo(function FileDirectory({
                 sortOrder={sortOrder}
                 isAllExpanded={isAllExpanded}
                 showAllFiles={showAllFiles}
+                isPasteEnabled={fileClipboard !== null}
                 onNewFile={handleNewFile}
                 onNewFolder={handleNewFolder}
                 onToggleSort={handleToggleSort}
                 onToggleExpandCollapse={handleToggleExpandCollapse}
                 onToggleShowAllFiles={toggleShowAllFiles}
                 onCloseFolder={closeDirectory}
+                onMoveItem={moveItem}
+                onPaste={pasteItem}
             />
             {isLoading ? (
                 <LoadingContainer>
@@ -170,6 +178,10 @@ export const FileDirectory = React.memo(function FileDirectory({
                                 onAttachAllSelected={handleAttachAllSelected}
                                 onDeleteAllSelected={handleDeleteAllSelected}
                                 renamingPath={renamingPath}
+                                fileClipboard={fileClipboard}
+                                onCut={cutItem}
+                                onCopy={copyItemToClipboard}
+                                onPaste={pasteItem}
                             />
                         ))
                     ) : (
