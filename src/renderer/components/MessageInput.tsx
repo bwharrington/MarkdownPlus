@@ -85,6 +85,7 @@ interface MessageInputProps {
     hasChatContext?: boolean;
     onChatContextToggle?: () => void;
     onInputChange: (value: string) => void;
+    onHistoryKeyDown?: (e: React.KeyboardEvent) => void;
     onSend: () => void;
     onCancel: () => void;
     onClose: () => void;
@@ -121,6 +122,7 @@ export function MessageInput({
     hasChatContext,
     onChatContextToggle,
     onInputChange,
+    onHistoryKeyDown,
     onSend,
     onCancel,
     onClose,
@@ -134,8 +136,10 @@ export function MessageInput({
             onSend();
         } else if (e.key === 'Escape') {
             onClose();
+        } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+            onHistoryKeyDown?.(e);
         }
-    }, [onSend, onClose]);
+    }, [onSend, onClose, onHistoryKeyDown]);
 
     const handleToggleMultiAgentTool = useCallback((tool: string) => {
         if (!onMultiAgentToolsChange) return;

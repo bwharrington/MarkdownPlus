@@ -92,7 +92,6 @@ export function EditView() {
     // Sync activeFile content to contenteditable when it changes programmatically
     React.useEffect(() => {
         if (isUserInputRef.current) {
-            isUserInputRef.current = false;
             return;
         }
         if (!activeFile || !contentEditableRef.current) return;

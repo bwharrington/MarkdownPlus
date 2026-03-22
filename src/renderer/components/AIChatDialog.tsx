@@ -3,6 +3,7 @@ import {
     Box,
     styled,
     IconButton,
+    Tooltip,
     Typography,
     Button,
     Dialog,
@@ -15,12 +16,13 @@ import {
 import {
     CloseIcon,
     DeleteOutlineIcon,
+    NoteAddIcon,
 } from './AppIcons';
 import { ChatMessages } from './ChatMessages';
 import { FileAttachmentsList } from './FileAttachmentsList';
 import type { AttachedFile } from './FileAttachmentsList';
 import { MessageInput } from './MessageInput';
-import { useAIChat, useAIAsk, useAIMultiAgent } from '../hooks';
+import { useAIChat, useAIAsk, useAIMultiAgent, usePromptHistory } from '../hooks';
 import type { AIProvider } from '../hooks';
 import { useAIDiffEdit } from '../hooks/useAIDiffEdit';
 import { useAICreate } from '../hooks/useAICreate';
@@ -212,6 +214,9 @@ export function AIChatDialog({
         aiModels: editorState.config.aiModels,
     });
 
+    // Prompt history (Up/Down arrow cycling)
+    const { addToHistory, navigateUp, navigateDown, resetNavigation } = usePromptHistory();
+
     // Derive provider from the currently selected model
     const provider: AIProvider = getProviderForModel(selectedModel) ?? 'claude';
 
@@ -319,6 +324,38 @@ export function AIChatDialog({
         });
     }, [dispatch, editorState.config.defaultLineEnding]);
 
+    // Export the full chat (all prompts + responses) to a new untitled file
+    const handleExportChatToFile = useCallback(() => {
+        const messages = isMultiAgent ? multiAgentMessages : askMessages;
+        if (messages.length === 0) return;
+
+        const lines: string[] = [];
+        for (const msg of messages) {
+            if (msg.role === 'user') {
+                lines.push(`**You:** ${msg.content}`);
+            } else {
+                lines.push(`**Nexus AI:**\n\n${msg.content}`);
+            }
+            lines.push('---');
+        }
+        // Remove trailing separator
+        if (lines[lines.length - 1] === '---') lines.pop();
+
+        const fileId = Math.random().toString(36).substring(2, 11);
+        dispatch({
+            type: 'OPEN_FILE',
+            payload: {
+                id: fileId,
+                path: null,
+                name: 'Untitled.md',
+                content: lines.join('\n\n'),
+                lineEnding: editorState.config.defaultLineEnding,
+                viewMode: 'preview' as const,
+                fileType: 'markdown' as const,
+            },
+        });
+    }, [isMultiAgent, multiAgentMessages, askMessages, dispatch, editorState.config.defaultLineEnding]);
+
     // Open native file picker and add results as attachments
     const handleAttachFromDisk = useCallback(async () => {
         const result = await window.electronAPI.openFileDialog({
@@ -343,7 +380,36 @@ export function AIChatDialog({
         }
     }, [onAddAttachedFiles]);
 
+    const handleInputChange = useCallback((value: string) => {
+        resetNavigation();
+        setInputValue(value);
+    }, [resetNavigation, setInputValue]);
+
+    const handleHistoryKeyDown = useCallback((e: React.KeyboardEvent) => {
+        const target = e.target as HTMLTextAreaElement;
+
+        if (e.key === 'ArrowUp') {
+            if (target.selectionStart === 0 && target.selectionEnd === 0) {
+                const prev = navigateUp(inputValue);
+                if (prev !== undefined) {
+                    e.preventDefault();
+                    setInputValue(prev);
+                }
+            }
+        } else if (e.key === 'ArrowDown') {
+            const len = target.value.length;
+            if (target.selectionStart === len && target.selectionEnd === len) {
+                const next = navigateDown();
+                if (next !== undefined) {
+                    e.preventDefault();
+                    setInputValue(next);
+                }
+            }
+        }
+    }, [inputValue, navigateUp, navigateDown, setInputValue]);
+
     const handleSendMessage = useCallback(async () => {
+        addToHistory(inputValue);
         setEditModeError(null);
         dismissCreateProgress();
         setCreateQuery(null);
@@ -413,7 +479,7 @@ export function AIChatDialog({
                 await submitAsk(question, currentProvider, selectedModel, filesToAttach, webSearchEnabled);
             }
         }
-    }, [mode, selectedModel, getProviderForModel, inputValue, requestEdit, submitAsk, submitMultiAgent, submitCreate, setInputValue, attachedFiles, setAttachedFiles, dismissCreateProgress, webSearchEnabled, isMultiAgent, multiAgentTools, reasoningEffort, chatContextEnabled, buildChatContextBlock]);
+    }, [mode, selectedModel, getProviderForModel, inputValue, requestEdit, submitAsk, submitMultiAgent, submitCreate, setInputValue, attachedFiles, setAttachedFiles, dismissCreateProgress, webSearchEnabled, isMultiAgent, multiAgentTools, reasoningEffort, chatContextEnabled, buildChatContextBlock, addToHistory]);
 
     const handleCancelRequest = useCallback(async () => {
         if (isMultiAgentLoading) {
@@ -483,6 +549,17 @@ export function AIChatDialog({
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>
+                    <Tooltip title="Export chat to new file">
+                        <span>
+                            <IconButton
+                                size="small"
+                                onClick={handleExportChatToFile}
+                                disabled={askMessages.length === 0 && multiAgentMessages.length === 0}
+                            >
+                                <NoteAddIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
                     <IconButton size="small" onClick={() => setClearConfirmOpen(true)} title="Clear chat">
                         <DeleteOutlineIcon fontSize="small" />
                     </IconButton>
@@ -569,7 +646,8 @@ export function AIChatDialog({
                         chatContextEnabled={chatContextEnabled}
                         hasChatContext={askMessages.length + multiAgentMessages.length > 0}
                         onChatContextToggle={handleChatContextToggle}
-                        onInputChange={setInputValue}
+                        onInputChange={handleInputChange}
+                        onHistoryKeyDown={handleHistoryKeyDown}
                         onSend={handleSendMessage}
                         onCancel={handleCancelRequest}
                         onClose={onClose}

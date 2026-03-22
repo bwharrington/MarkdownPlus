@@ -19,3 +19,4 @@ export { useFileDirectories } from './useFileDirectories';
 export type { DirectoryInstance, UseFileDirectoriesReturn } from './useFileDirectories';
 export { useSpellCheck } from './useSpellCheck';
 export type { SpellCheckMenuState } from './useSpellCheck';
+export { usePromptHistory } from './usePromptHistory';

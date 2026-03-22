@@ -55,6 +55,9 @@ export function useContentEditable(): ContentEditableReturn {
         if (fileId && contentEditableRef.current) {
             // Mark this as user input to prevent sync useEffect from running
             isUserInputRef.current = true;
+            requestAnimationFrame(() => {
+                isUserInputRef.current = false;
+            });
 
             const newContent = getPlainText(contentEditableRef.current);
 
