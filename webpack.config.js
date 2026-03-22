@@ -71,6 +71,10 @@ module.exports = [
         {
           test: /\.(png|svg|jpg|jpeg|gif)$/i,
           type: 'asset/resource'
+        },
+        {
+          test: /\.(woff|woff2|ttf|eot)$/,
+          type: 'asset/resource'
         }
       ]
     },

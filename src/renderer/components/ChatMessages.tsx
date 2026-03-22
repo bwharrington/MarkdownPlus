@@ -2,6 +2,10 @@ import React, { useState, useCallback } from 'react';
 import { Box, Typography, styled, IconButton, Tooltip } from '@mui/material';
 import { CopyIcon, CheckIcon, GlobeIcon, NoteAddIcon } from './AppIcons';
 import ReactMarkdown, { Components } from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { preprocessMathDelimiters } from '../utils/mathPreprocess';
 import type { AIMessage } from '../hooks/useAIChat';
 import { CodeBlock } from './CodeBlock';
 import { CreateProgress } from './CreateProgress';
@@ -16,6 +20,7 @@ import type { AIChatMode } from '../types/global';
 
 const MessagesContainer = styled(Box)(({ theme }) => ({
     flex: 1,
+    minHeight: 0,
     overflowY: 'auto',
     padding: 12,
     display: 'flex',
@@ -27,9 +32,10 @@ const MessagesContainer = styled(Box)(({ theme }) => ({
 }));
 
 const MessageBubble = styled(Box)<{ role: 'user' | 'assistant' }>(({ theme, role }) => ({
-    padding: '10px 14px',
+    padding: '10px 14px 14px 14px',
     borderRadius: 12,
     maxWidth: '85%',
+    minWidth: 0,
     alignSelf: role === 'user' ? 'flex-end' : 'flex-start',
     backgroundColor: role === 'user'
         ? theme.palette.primary.main
@@ -62,7 +68,32 @@ const MessageBubble = styled(Box)<{ role: 'user' | 'assistant' }>(({ theme, role
         marginTop: 4,
         marginBottom: 4,
     },
+    '& .katex-display': {
+        overflow: 'auto',
+        margin: '8px 0',
+        maxWidth: '100%',
+    },
+    '& .katex': {
+        overflow: 'hidden',
+        maxWidth: '100%',
+    },
+    '& .katex .katex-html': {
+        overflow: 'hidden',
+        maxWidth: '100%',
+    },
+    '& .katex svg': {
+        maxWidth: '100%',
+        height: 'auto',
+    },
+    '& .katex .vlist': {
+        overflow: 'hidden',
+    },
 }));
+
+const BubbleContent = styled(Box)({
+    overflow: 'hidden',
+    position: 'relative',
+});
 
 const GreetingContainer = styled(Box)({
     textAlign: 'center',
@@ -180,6 +211,9 @@ const DIFF_REVIEW_MESSAGES = [
 ];
 
 
+const chatRemarkPlugins = [remarkGfm, remarkMath];
+const chatRehypePlugins = [rehypeKatex];
+
 const chatMarkdownComponents: Components = {
     code({ node, className, children, ...props }) {
         const match = /language-(\w+)/.exec(className || '');
@@ -235,6 +269,9 @@ interface ChatMessagesProps {
     multiAgentAgentCount?: 4 | 16;
     messagesEndRef: React.RefObject<HTMLDivElement | null>;
     onCreateFileFromMessage?: (content: string) => void;
+    chatSearchQuery?: string;
+    chatSearchMatchIndex?: number;
+    chatSearchMatches?: { messageIndex: number; startOffset: number }[];
 }
 
 export function ChatMessages({
@@ -262,6 +299,9 @@ export function ChatMessages({
     multiAgentAgentCount = 4,
     messagesEndRef,
     onCreateFileFromMessage,
+    chatSearchQuery,
+    chatSearchMatchIndex,
+    chatSearchMatches,
 }: ChatMessagesProps) {
     const [diffReviewMessage] = useState(() =>
         DIFF_REVIEW_MESSAGES[Math.floor(Math.random() * DIFF_REVIEW_MESSAGES.length)]
@@ -308,8 +348,21 @@ export function ChatMessages({
                     )}
                 </GreetingContainer>
             ) : (
-                askMessages.map((msg) => (
-                    <MessageBubble key={`${msg.role}-${msg.timestamp.getTime()}`} role={msg.role}>
+                askMessages.map((msg, idx) => {
+                    const isCurrentSearchMatch = chatSearchMatches != null &&
+                        chatSearchMatchIndex != null &&
+                        chatSearchMatches[chatSearchMatchIndex]?.messageIndex === idx;
+                    return (
+                    <MessageBubble
+                        key={`${msg.role}-${msg.timestamp.getTime()}`}
+                        role={msg.role}
+                        data-msg-index={idx}
+                        sx={isCurrentSearchMatch ? {
+                            outline: '2px solid',
+                            outlineColor: 'primary.main',
+                            outlineOffset: '2px',
+                        } : undefined}
+                    >
                         {msg.role === 'assistant' ? (
                             <>
                                 {msg.webSearchUsed && (
@@ -320,7 +373,9 @@ export function ChatMessages({
                                         </WebSearchBadgeChip>
                                     </WebSearchBadgeRow>
                                 )}
-                                <ReactMarkdown components={chatMarkdownComponents}>{msg.content}</ReactMarkdown>
+                                <BubbleContent>
+                                    <ReactMarkdown remarkPlugins={chatRemarkPlugins} rehypePlugins={chatRehypePlugins} components={chatMarkdownComponents}>{preprocessMathDelimiters(msg.content)}</ReactMarkdown>
+                                </BubbleContent>
                                 {msg.webSearchUsed && msg.sources && msg.sources.length > 0 && (
                                     <SourcesSection>
                                         <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: 'block', mb: 0.5 }}>
@@ -359,7 +414,8 @@ export function ChatMessages({
                             <Typography variant="body2">{msg.content}</Typography>
                         )}
                     </MessageBubble>
-                ))
+                    );
+                })
             )}
             {isAskLoading && (askPhase || askWebSearchPhase) && (
                 <AskProgress

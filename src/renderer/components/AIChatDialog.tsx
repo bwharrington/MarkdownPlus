@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import {
     Box,
     styled,
@@ -17,6 +17,9 @@ import {
     CloseIcon,
     DeleteOutlineIcon,
     NoteAddIcon,
+    SearchIcon,
+    KeyboardArrowUpIcon,
+    KeyboardArrowDownIcon,
 } from './AppIcons';
 import { ChatMessages } from './ChatMessages';
 import { FileAttachmentsList } from './FileAttachmentsList';
@@ -117,6 +120,15 @@ const NoProvidersContainer = styled(Box)({
     textAlign: 'center',
 });
 
+const ChatSearchBar = styled(Box)(({ theme }) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '4px 12px',
+    borderBottom: `1px solid ${theme.palette.divider}`,
+    backgroundColor: theme.palette.background.paper,
+}));
+
 interface AIChatDialogProps {
     open: boolean;
     onClose: () => void;
@@ -139,6 +151,7 @@ export function AIChatDialog({
     const dialogRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const chatSearchInputRef = useRef<HTMLInputElement>(null);
     const editorState = useEditorState();
     const dispatch = useEditorDispatch();
 
@@ -199,6 +212,11 @@ export function AIChatDialog({
     // Multi-agent tool and reasoning effort state
     const [multiAgentTools, setMultiAgentTools] = useState<string[]>([...DEFAULT_MULTI_AGENT_TOOLS]);
     const [reasoningEffort, setReasoningEffort] = useState<'low' | 'high'>('low');
+
+    // Chat search state
+    const [chatSearchOpen, setChatSearchOpen] = useState(false);
+    const [chatSearchQuery, setChatSearchQuery] = useState('');
+    const [chatSearchIndex, setChatSearchIndex] = useState(0);
 
     const {
         isStatusesLoaded,
@@ -277,6 +295,66 @@ export function AIChatDialog({
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [askMessages, multiAgentMessages, isAskLoading, isEditLoading, isCreateLoading, isMultiAgentLoading]);
+
+    // Compute search matches across all messages
+    const chatSearchMatches = useMemo(() => {
+        if (!chatSearchQuery.trim()) return [];
+        const query = chatSearchQuery.toLowerCase();
+        const messages = isMultiAgent ? multiAgentMessages : askMessages;
+        const matches: { messageIndex: number; startOffset: number }[] = [];
+        messages.forEach((msg, msgIdx) => {
+            const lower = msg.content.toLowerCase();
+            let pos = 0;
+            while ((pos = lower.indexOf(query, pos)) !== -1) {
+                matches.push({ messageIndex: msgIdx, startOffset: pos });
+                pos += query.length;
+            }
+        });
+        return matches;
+    }, [chatSearchQuery, askMessages, multiAgentMessages, isMultiAgent]);
+
+    // Imperative scroll to a search match by index
+    const scrollToSearchMatch = useCallback((index: number, matches: { messageIndex: number }[]) => {
+        const match = matches[index];
+        if (!match) return;
+        requestAnimationFrame(() => {
+            const el = document.querySelector(`[data-msg-index="${match.messageIndex}"]`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    }, []);
+
+    // Navigate to next search match
+    const handleSearchNext = useCallback(() => {
+        if (chatSearchMatches.length === 0) return;
+        setChatSearchIndex(prev => {
+            const next = (prev + 1) % chatSearchMatches.length;
+            scrollToSearchMatch(next, chatSearchMatches);
+            return next;
+        });
+    }, [chatSearchMatches, scrollToSearchMatch]);
+
+    // Navigate to previous search match
+    const handleSearchPrev = useCallback(() => {
+        if (chatSearchMatches.length === 0) return;
+        setChatSearchIndex(prev => {
+            const next = (prev - 1 + chatSearchMatches.length) % chatSearchMatches.length;
+            scrollToSearchMatch(next, chatSearchMatches);
+            return next;
+        });
+    }, [chatSearchMatches, scrollToSearchMatch]);
+
+    // Reset index and scroll to first match when query changes
+    useEffect(() => {
+        setChatSearchIndex(0);
+        scrollToSearchMatch(0, chatSearchMatches);
+    }, [chatSearchMatches, scrollToSearchMatch]);
+
+    // Auto-focus search input when bar opens
+    useEffect(() => {
+        if (chatSearchOpen) {
+            requestAnimationFrame(() => chatSearchInputRef.current?.focus());
+        }
+    }, [chatSearchOpen]);
 
     // Reset to ask mode when the selected model's provider doesn't support the current mode,
     // or when a multi-agent model is selected and edit mode is active (multi-agent doesn't support edit).
@@ -549,6 +627,22 @@ export function AIChatDialog({
                     </Typography>
                 </HeaderControls>
                 <HeaderControls>
+                    <Tooltip title="Search chat">
+                        <span>
+                            <IconButton
+                                size="small"
+                                onClick={() => {
+                                    setChatSearchOpen(prev => {
+                                        if (prev) setChatSearchQuery('');
+                                        return !prev;
+                                    });
+                                }}
+                                disabled={askMessages.length === 0 && multiAgentMessages.length === 0}
+                            >
+                                <SearchIcon fontSize="small" />
+                            </IconButton>
+                        </span>
+                    </Tooltip>
                     <Tooltip title="Export chat to new file">
                         <span>
                             <IconButton
@@ -568,6 +662,58 @@ export function AIChatDialog({
                     </IconButton>
                 </HeaderControls>
             </PanelHeader>
+
+            {chatSearchOpen && (
+                <ChatSearchBar>
+                    <input
+                        ref={chatSearchInputRef}
+                        type="text"
+                        placeholder="Search messages..."
+                        value={chatSearchQuery}
+                        onChange={e => setChatSearchQuery(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                                handleSearchNext();
+                            }
+                            if (e.key === 'Escape') {
+                                setChatSearchOpen(false);
+                                setChatSearchQuery('');
+                            }
+                        }}
+                        style={{
+                            flex: 1,
+                            border: 'none',
+                            outline: 'none',
+                            background: 'transparent',
+                            color: 'inherit',
+                            fontSize: '0.875rem',
+                            padding: '4px 8px',
+                        }}
+                    />
+                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                        {chatSearchMatches.length > 0
+                            ? `${chatSearchIndex + 1} of ${chatSearchMatches.length}`
+                            : chatSearchQuery.trim() ? 'No matches' : ''}
+                    </Typography>
+                    <IconButton
+                        size="small"
+                        disabled={chatSearchMatches.length === 0}
+                        onClick={handleSearchPrev}
+                    >
+                        <KeyboardArrowUpIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton
+                        size="small"
+                        disabled={chatSearchMatches.length === 0}
+                        onClick={handleSearchNext}
+                    >
+                        <KeyboardArrowDownIcon fontSize="small" />
+                    </IconButton>
+                    <IconButton size="small" onClick={() => { setChatSearchOpen(false); setChatSearchQuery(''); }}>
+                        <CloseIcon fontSize="small" />
+                    </IconButton>
+                </ChatSearchBar>
+            )}
 
             {!isStatusesLoaded ? (
                 <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -609,6 +755,9 @@ export function AIChatDialog({
                         multiAgentAgentCount={reasoningEffort === 'low' ? 4 : 16}
                         messagesEndRef={messagesEndRef}
                         onCreateFileFromMessage={handleCreateFileFromMessage}
+                        chatSearchQuery={chatSearchQuery}
+                        chatSearchMatchIndex={chatSearchIndex}
+                        chatSearchMatches={chatSearchMatches}
                     />
 
                     <FileAttachmentsList

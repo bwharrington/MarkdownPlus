@@ -86,6 +86,13 @@ export const PreviewContainer = styled(Box)(({ theme }) => ({
         backgroundColor: theme.palette.mode === 'dark' ? 'rgba(255, 152, 0, 0.5)' : 'rgba(255, 152, 0, 0.6)',
         borderRadius: 2,
     },
+    '& .katex-display': {
+        overflowX: 'auto',
+        margin: '16px 0',
+    },
+    '& .katex': {
+        fontSize: '1.1em',
+    },
 }));
 
 /**

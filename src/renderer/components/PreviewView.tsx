@@ -1,7 +1,10 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { Box } from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { preprocessMathDelimiters } from '../utils/mathPreprocess';
 import { useActiveFile, useEditorDispatch } from '../contexts';
 import { useFindReplace } from '../hooks/useFindReplace';
 import { useMarkdownComponents } from '../utils/markdownComponents';
@@ -14,7 +17,8 @@ import { FindReplaceDialog } from './FindReplaceDialog';
 import { RstRenderer } from './RstRenderer';
 import { buildPdfHtmlDocument } from '../utils/pdfExport';
 
-const markdownPlugins = [remarkGfm];
+const markdownRemarkPlugins = [remarkGfm, remarkMath];
+const markdownRehypePlugins = [rehypeKatex];
 
 // Stable no-op for disabled Find/Replace fields in preview mode
 const noop = () => {};
@@ -29,6 +33,11 @@ export function PreviewView() {
     const contentEditableRef = useRef<HTMLDivElement>(null);
 
     const markdownComponents = useMarkdownComponents(previewRef);
+
+    const processedContent = useMemo(
+        () => preprocessMathDelimiters(activeFile?.content || '*No content*'),
+        [activeFile?.content]
+    );
 
     const {
         findDialogOpen,
@@ -219,10 +228,11 @@ export function PreviewView() {
                         onScroll={handleScroll}
                     >
                         <ReactMarkdown
-                            remarkPlugins={markdownPlugins}
+                            remarkPlugins={markdownRemarkPlugins}
+                            rehypePlugins={markdownRehypePlugins}
                             components={markdownComponents}
                         >
-                            {activeFile.content || '*No content*'}
+                            {processedContent}
                         </ReactMarkdown>
                     </PreviewContainer>
                 )}
