@@ -101,6 +101,19 @@ const SectionHeader = styled(Typography)(({ theme }) => ({
     },
 }));
 
+const SettingRow = styled(Box)({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    padding: '10px 0',
+});
+
+const SettingInfo = styled(Box)({
+    flex: 1,
+    minWidth: 0,
+});
+
 
 // Sub-component: AI Provider Section
 interface AIProviderSectionProps {
@@ -707,60 +720,58 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                 {/* Tab 0: Basic */}
                 {activeTab === 0 && (
                     <>
-                        <Box sx={{ py: 1 }}>
-                            <FormControl size="small" fullWidth>
-                                <InputLabel>Default Line Ending</InputLabel>
-                                <Select
-                                    value={config?.defaultLineEnding || 'CRLF'}
-                                    label="Default Line Ending"
-                                    onChange={handleLineEndingSelect}
-                                >
-                                    <MenuItem value="CRLF">CRLF (Windows)</MenuItem>
-                                    <MenuItem value="LF">LF (Unix/Mac)</MenuItem>
-                                </Select>
-                                <FormHelperText>Line ending format for new files</FormHelperText>
-                            </FormControl>
-                        </Box>
+                        <SettingRow>
+                            <SettingInfo>
+                                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: 13 }}>Default Line Ending</Typography>
+                                <Typography variant="caption" color="text.secondary">Line ending format for new files</Typography>
+                            </SettingInfo>
+                            <Select
+                                size="small"
+                                value={config?.defaultLineEnding || 'CRLF'}
+                                onChange={handleLineEndingSelect}
+                                sx={{ minWidth: 180 }}
+                            >
+                                <MenuItem value="CRLF">CRLF (Windows)</MenuItem>
+                                <MenuItem value="LF">LF (Unix/Mac)</MenuItem>
+                            </Select>
+                        </SettingRow>
 
                         <Divider />
 
-                        <Box sx={{ py: 1 }}>
-                            <FormControl size="small" fullWidth>
-                                <FormControlLabel
-                                    control={
-                                        <Switch
-                                            checked={config?.silentFileUpdates !== false}
-                                            onChange={handleSilentToggle}
-                                            size="small"
-                                        />
-                                    }
-                                    label="Silent File Updates"
-                                />
-                                <FormHelperText>
+                        <SettingRow>
+                            <SettingInfo>
+                                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: 13 }}>Silent File Updates</Typography>
+                                <Typography variant="caption" color="text.secondary">
                                     When enabled, externally modified files are reloaded automatically in place. When disabled, you will be prompted before refreshing.
-                                </FormHelperText>
-                            </FormControl>
-                        </Box>
+                                </Typography>
+                            </SettingInfo>
+                            <Switch
+                                checked={config?.silentFileUpdates !== false}
+                                onChange={handleSilentToggle}
+                                size="small"
+                            />
+                        </SettingRow>
 
                         <Divider />
 
-                        <Box sx={{ py: 1 }}>
-                            <FormControl size="small" fullWidth>
-                                <InputLabel>Log Level</InputLabel>
-                                <Select
-                                    value={config?.logLevel || 'info'}
-                                    label="Log Level"
-                                    onChange={handleLogLevelSelect}
-                                >
-                                    <MenuItem value="debug">Debug (Most Verbose)</MenuItem>
-                                    <MenuItem value="info">Info</MenuItem>
-                                    <MenuItem value="warn">Warn</MenuItem>
-                                    <MenuItem value="error">Error Only</MenuItem>
-                                    <MenuItem value="off">Off</MenuItem>
-                                </Select>
-                                <FormHelperText>Controls which messages are written to the log file</FormHelperText>
-                            </FormControl>
-                        </Box>
+                        <SettingRow>
+                            <SettingInfo>
+                                <Typography variant="body2" sx={{ fontWeight: 500, fontSize: 13 }}>Log Level</Typography>
+                                <Typography variant="caption" color="text.secondary">Controls which messages are written to the log file</Typography>
+                            </SettingInfo>
+                            <Select
+                                size="small"
+                                value={config?.logLevel || 'info'}
+                                onChange={handleLogLevelSelect}
+                                sx={{ minWidth: 180 }}
+                            >
+                                <MenuItem value="debug">Debug (Most Verbose)</MenuItem>
+                                <MenuItem value="info">Info</MenuItem>
+                                <MenuItem value="warn">Warn</MenuItem>
+                                <MenuItem value="error">Error Only</MenuItem>
+                                <MenuItem value="off">Off</MenuItem>
+                            </Select>
+                        </SettingRow>
                     </>
                 )}
 
