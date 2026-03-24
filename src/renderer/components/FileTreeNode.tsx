@@ -193,14 +193,13 @@ export const FileTreeNode = React.memo(function FileTreeNode({
             onToggle(node.path);
         } else {
             onFileSelect(node.path, e.ctrlKey || e.metaKey, e.shiftKey);
-        }
-    }, [node.isDirectory, node.path, onToggle, onFileSelect]);
-
-    const handleDoubleClick = useCallback(() => {
-        if (!node.isDirectory) {
             onFileClick(node.path);
         }
-    }, [node.isDirectory, node.path, onFileClick]);
+    }, [node.isDirectory, node.path, onToggle, onFileSelect, onFileClick]);
+
+    const handleDoubleClick = useCallback(() => {
+        // Single click already opens/focuses the file; double click is a no-op for files
+    }, []);
 
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
         e.preventDefault();

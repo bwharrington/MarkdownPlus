@@ -1055,5 +1055,3 @@ Nexus uses a custom frameless window:
 For issues, feature requests, or contributions, please visit the project repository.
 
 ---
-
-*Nexus - Write Markdown, Beautifully.*
