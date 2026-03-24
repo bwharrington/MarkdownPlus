@@ -105,15 +105,17 @@ export function EditView() {
         }
     }, [activeFile, activeFile?.content, activeFile?.viewMode]);
 
-    // Initialize contenteditable when switching to edit mode
+    // Initialize contenteditable when switching to edit mode or switching files
     React.useEffect(() => {
+        if (isUserInputRef.current) return;
         if (!activeFile || activeFile.viewMode !== 'edit' || !contentEditableRef.current) return;
         const currentText = getPlainText(contentEditableRef.current);
         if (currentText !== activeFile.content) {
             clearWordHighlights(contentEditableRef.current);
             contentEditableRef.current.textContent = activeFile.content;
         }
-    }, [activeFile, activeFile?.viewMode, activeFile?.id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only run on file/mode switch, not content changes
+    }, [activeFile?.id, activeFile?.viewMode]);
 
     // Restore scroll position
     React.useEffect(() => {
@@ -124,7 +126,8 @@ export function EditView() {
                 element.scrollTop = activeFile.scrollPosition;
             });
         }
-    }, [activeFile, activeFile?.id, activeFile?.viewMode]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- Only restore scroll on file/mode switch
+    }, [activeFile?.id, activeFile?.viewMode]);
 
     const lineNumbers = useMemo(() => {
         const count = activeFile ? (activeFile.content.split('\n').length || 1) : 1;

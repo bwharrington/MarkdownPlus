@@ -19,6 +19,9 @@ export interface MultiAgentStreamState {
     contentPreview: string;                   // first ~200 chars of streaming content
 }
 
+/** How often (ms) to flush accumulated stream state to React state for rendering */
+const STREAM_FLUSH_INTERVAL_MS = 150;
+
 const MULTI_AGENT_SYSTEM_PROMPT = `You are a research assistant with access to multiple AI agents that collaborate to answer questions. Answer thoroughly using all available tools. Use Markdown formatting. Be comprehensive but well-organized with clear headings and structure.`;
 
 export function useAIMultiAgent() {
@@ -31,6 +34,27 @@ export function useAIMultiAgent() {
     const [streamState, setStreamState] = useState<MultiAgentStreamState | null>(null);
     const activeRequestIdRef = useRef<string | null>(null);
 
+    // Accumulated stream state in a ref (updated on every IPC event, no render)
+    const streamAccumRef = useRef<MultiAgentStreamState | null>(null);
+    // Throttle timer for flushing accumulated state to React state
+    const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    /** Flush the accumulated ref state into React state (triggers render) */
+    const flushStreamState = useCallback(() => {
+        flushTimerRef.current = null;
+        setStreamState(streamAccumRef.current);
+    }, []);
+
+    // Clean up throttle timer on unmount
+    useEffect(() => {
+        return () => {
+            if (flushTimerRef.current) {
+                clearTimeout(flushTimerRef.current);
+                flushTimerRef.current = null;
+            }
+        };
+    }, []);
+
     // Handle incoming stream events from the main process
     const handleStreamEvent = useCallback((data: MultiAgentStreamDataGlobal) => {
         // Only process events for our active request
@@ -41,61 +65,77 @@ export function useAIMultiAgent() {
         // Log every event for discovery/debugging
         console.log('[MultiAgent Stream]', event.type, event);
 
-        setStreamState(prev => {
-            const state = prev ?? {
-                events: [],
-                eventCount: 0,
-                reasoningTokens: 0,
-                activeToolCalls: [],
-                agentActivities: [],
-                contentPreview: '',
-            };
+        // Build next state from the ref (no React render yet)
+        const prev = streamAccumRef.current;
+        const state = prev ?? {
+            events: [],
+            eventCount: 0,
+            reasoningTokens: 0,
+            activeToolCalls: [],
+            agentActivities: [],
+            contentPreview: '',
+        };
 
-            const updated: MultiAgentStreamState = {
-                ...state,
-                events: [...state.events.slice(-49), event],
-                eventCount: state.eventCount + 1,
-            };
+        const updated: MultiAgentStreamState = {
+            ...state,
+            events: [...state.events.slice(-49), event],
+            eventCount: state.eventCount + 1,
+        };
 
-            switch (event.type) {
-                case 'agent-activity': {
-                    const name = event.agentName ?? 'Agent';
-                    if (!state.agentActivities.includes(name)) {
-                        updated.agentActivities = [...state.agentActivities, name];
-                    }
-                    break;
+        switch (event.type) {
+            case 'agent-activity': {
+                const name = event.agentName ?? 'Agent';
+                if (!state.agentActivities.includes(name)) {
+                    updated.agentActivities = [...state.agentActivities, name];
                 }
-                case 'tool-call': {
-                    const toolName = event.toolName ?? 'unknown';
-                    if (!state.activeToolCalls.includes(toolName)) {
-                        updated.activeToolCalls = [...state.activeToolCalls, toolName];
-                    }
-                    break;
-                }
-                case 'reasoning': {
-                    if (event.reasoningTokens != null) {
-                        updated.reasoningTokens = event.reasoningTokens;
-                    } else {
-                        updated.reasoningTokens = state.reasoningTokens + 1;
-                    }
-                    break;
-                }
-                case 'content-delta': {
-                    const preview = state.contentPreview + (event.contentDelta ?? '');
-                    updated.contentPreview = preview.slice(0, 200);
-                    break;
-                }
-                case 'done': {
-                    if (event.reasoningTokens != null) {
-                        updated.reasoningTokens = event.reasoningTokens;
-                    }
-                    break;
-                }
+                break;
             }
+            case 'tool-call': {
+                const toolName = event.toolName ?? 'unknown';
+                if (!state.activeToolCalls.includes(toolName)) {
+                    updated.activeToolCalls = [...state.activeToolCalls, toolName];
+                }
+                break;
+            }
+            case 'reasoning': {
+                if (event.reasoningTokens != null) {
+                    updated.reasoningTokens = event.reasoningTokens;
+                } else {
+                    updated.reasoningTokens = state.reasoningTokens + 1;
+                }
+                break;
+            }
+            case 'content-delta': {
+                const preview = state.contentPreview + (event.contentDelta ?? '');
+                updated.contentPreview = preview.slice(0, 200);
+                break;
+            }
+            case 'done': {
+                if (event.reasoningTokens != null) {
+                    updated.reasoningTokens = event.reasoningTokens;
+                }
+                break;
+            }
+        }
 
-            return updated;
-        });
-    }, []);
+        streamAccumRef.current = updated;
+
+        // Flush strategy: immediate on first event and 'done', throttled otherwise
+        const isFirstEvent = prev === null;
+        const isDone = event.type === 'done';
+
+        if (isFirstEvent || isDone) {
+            // Flush immediately to show streaming view right away / final state
+            if (flushTimerRef.current) {
+                clearTimeout(flushTimerRef.current);
+                flushTimerRef.current = null;
+            }
+            setStreamState(updated);
+        } else if (!flushTimerRef.current) {
+            // Schedule a throttled flush
+            flushTimerRef.current = setTimeout(flushStreamState, STREAM_FLUSH_INTERVAL_MS);
+        }
+    }, [flushStreamState]);
 
     // Register IPC listener for stream events
     useEffect(() => {
@@ -121,6 +161,13 @@ export function useAIMultiAgent() {
         setIsMultiAgentLoading(true);
         setMultiAgentError(null);
         setMultiAgentPhase('agents-working');
+
+        // Reset stream state — both the ref and React state
+        if (flushTimerRef.current) {
+            clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        streamAccumRef.current = null;
         setStreamState(null);
 
         const requestId = `ai-multi-agent-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -192,6 +239,14 @@ export function useAIMultiAgent() {
         } finally {
             if (activeRequestIdRef.current === requestId) {
                 activeRequestIdRef.current = null;
+                // Flush any remaining accumulated stream state before hiding the stepper
+                if (flushTimerRef.current) {
+                    clearTimeout(flushTimerRef.current);
+                    flushTimerRef.current = null;
+                }
+                if (streamAccumRef.current) {
+                    setStreamState(streamAccumRef.current);
+                }
                 setIsMultiAgentLoading(false);
                 setMultiAgentPhase(null);
             }
@@ -203,6 +258,11 @@ export function useAIMultiAgent() {
         if (!requestId) return;
 
         activeRequestIdRef.current = null;
+        if (flushTimerRef.current) {
+            clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        streamAccumRef.current = null;
         setIsMultiAgentLoading(false);
         setMultiAgentPhase(null);
         setMultiAgentError('Request canceled');
@@ -215,6 +275,11 @@ export function useAIMultiAgent() {
     }, []);
 
     const clearMultiAgent = useCallback(() => {
+        if (flushTimerRef.current) {
+            clearTimeout(flushTimerRef.current);
+            flushTimerRef.current = null;
+        }
+        streamAccumRef.current = null;
         setMultiAgentMessages([]);
         setMultiAgentError(null);
         setMultiAgentPhase(null);

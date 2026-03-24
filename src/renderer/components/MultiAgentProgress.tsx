@@ -154,12 +154,12 @@ export const MultiAgentProgress = React.memo(function MultiAgentProgress({
     streamState,
 }: MultiAgentProgressProps) {
     const isWorking = phase === 'agents-working';
+    const hasStreamData = streamState != null && streamState.eventCount > 0;
     const messagePool = useMemo(() => WORKING_MESSAGES, []);
-    const { displayText } = useEditLoadingMessage(isWorking, messagePool);
+    // Stop the typewriter timer once real stream data arrives to avoid unnecessary re-renders
+    const { displayText } = useEditLoadingMessage(isWorking && !hasStreamData, messagePool);
 
     if (!isWorking) return null;
-
-    const hasStreamData = streamState != null && streamState.eventCount > 0;
 
     // --- Streaming mode: show real agent activity ---
     if (hasStreamData) {
