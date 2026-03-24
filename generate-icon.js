@@ -12,6 +12,15 @@ const PADDED_ICON_PNG = `${OUTPUT_DIR}/icon-padded.png`;
 const ICO_OUTPUT = `${OUTPUT_DIR}/icon.ico`;
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
 
+// Skip generation if icons already exist (e.g. building on macOS/ARM after
+// generating on Windows). Pass --force to regenerate regardless.
+const force = process.argv.includes('--force');
+const iconsExist = [BRAND_PNG, APP_ICON_PNG, PADDED_ICON_PNG, ICO_OUTPUT].every(f => fs.existsSync(f));
+if (!force && iconsExist) {
+  console.log('Icons already exist — skipping generation. Pass --force to regenerate.');
+  process.exit(0);
+}
+
 async function assertImageSize(filePath, expectedWidth, expectedHeight) {
   const metadata = await sharp(filePath).metadata();
   if (metadata.width !== expectedWidth || metadata.height !== expectedHeight) {
