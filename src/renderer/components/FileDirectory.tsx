@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Box, Typography, styled, CircularProgress } from '@mui/material';
 import { FileDirectoryToolbar } from './FileDirectoryToolbar';
 import { FileTreeNode, sortChildren } from './FileTreeNode';
@@ -121,6 +121,12 @@ export const FileDirectory = React.memo(function FileDirectory({
         }
     }, [selectedPaths, deleteMultipleItems]);
 
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    const handleToggleCollapsed = useCallback(() => {
+        setIsCollapsed(prev => !prev);
+    }, []);
+
     const folderName = tree?.name ?? directory.rootPath.split(/[\\/]/).pop() ?? directory.rootPath;
     const folderPath = tree?.path ?? directory.rootPath;
 
@@ -133,20 +139,22 @@ export const FileDirectory = React.memo(function FileDirectory({
                 isAllExpanded={isAllExpanded}
                 showAllFiles={showAllFiles}
                 isPasteEnabled={fileClipboard !== null}
+                isCollapsed={isCollapsed}
                 onNewFile={handleNewFile}
                 onNewFolder={handleNewFolder}
                 onToggleSort={handleToggleSort}
                 onToggleExpandCollapse={handleToggleExpandCollapse}
                 onToggleShowAllFiles={toggleShowAllFiles}
+                onToggleCollapsed={handleToggleCollapsed}
                 onCloseFolder={closeDirectory}
                 onMoveItem={moveItem}
                 onPaste={pasteItem}
             />
-            {isLoading ? (
+            {!isCollapsed && isLoading ? (
                 <LoadingContainer>
                     <CircularProgress size={24} />
                 </LoadingContainer>
-            ) : tree ? (
+            ) : !isCollapsed && tree ? (
                 <TreeScrollArea
                     onDrop={handleDropOnRoot}
                     onDragOver={handleDragOverRoot}

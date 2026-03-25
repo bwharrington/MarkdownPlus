@@ -76,6 +76,8 @@ import {
     Scissors,
     ClipboardPaste,
     GitCompareArrows,
+    PanelTopClose,
+    PanelTopOpen,
 } from 'lucide-react';
 
 type MuiFontSize = 'inherit' | 'small' | 'medium' | 'large';
@@ -224,3 +226,5 @@ export const CreateIcon = createIcon(Sparkles);
 export const GlobeIcon = createIcon(Globe);
 export const HelpCircleIcon = createIcon(HelpCircle);
 export const GitCompareIcon = createIcon(GitCompareArrows);
+export const SectionCollapseIcon = createIcon(PanelTopClose);
+export const SectionExpandIcon = createIcon(PanelTopOpen);

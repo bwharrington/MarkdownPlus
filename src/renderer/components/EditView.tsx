@@ -190,7 +190,7 @@ export function EditView() {
                 onExportPdf={handleExportPdf}
             />
             <EditorWrapper>
-                <LineNumberedArea>
+                <LineNumberedArea sx={{ position: 'relative' }}>
                     <LineGutter ref={lineGutterRef}>
                         {lineNumbers}
                     </LineGutter>

@@ -10,6 +10,8 @@ import {
     CloseIcon,
     VisibilityIcon,
     VisibilityOffIcon,
+    SectionCollapseIcon,
+    SectionExpandIcon,
 } from './AppIcons';
 import type { FileDirectorySortOrder } from '../types';
 
@@ -20,11 +22,13 @@ interface FileDirectoryToolbarProps {
     isAllExpanded: boolean;
     showAllFiles: boolean;
     isPasteEnabled: boolean;
+    isCollapsed: boolean;
     onNewFile: () => void;
     onNewFolder: () => void;
     onToggleSort: () => void;
     onToggleExpandCollapse: () => void;
     onToggleShowAllFiles: () => void;
+    onToggleCollapsed: () => void;
     onCloseFolder: () => void;
     onMoveItem: (sourcePath: string, destDirPath: string) => void;
     onPaste: (destDirPath: string) => Promise<void>;
@@ -62,11 +66,13 @@ export const FileDirectoryToolbar = React.memo(function FileDirectoryToolbar({
     isAllExpanded,
     showAllFiles,
     isPasteEnabled,
+    isCollapsed,
     onNewFile,
     onNewFolder,
     onToggleSort,
     onToggleExpandCollapse,
     onToggleShowAllFiles,
+    onToggleCollapsed,
     onCloseFolder,
     onMoveItem,
     onPaste,
@@ -165,6 +171,13 @@ export const FileDirectoryToolbar = React.memo(function FileDirectoryToolbar({
                         {showAllFiles
                             ? <VisibilityIcon fontSize="small" />
                             : <VisibilityOffIcon fontSize="small" />}
+                    </ToolbarButton>
+                </Tooltip>
+                <Tooltip title={isCollapsed ? 'Expand Section' : 'Collapse Section'}>
+                    <ToolbarButton onClick={onToggleCollapsed} size="small">
+                        {isCollapsed
+                            ? <SectionExpandIcon fontSize="small" />
+                            : <SectionCollapseIcon fontSize="small" />}
                     </ToolbarButton>
                 </Tooltip>
                 <Tooltip title="Close Folder">
