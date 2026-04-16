@@ -53,6 +53,8 @@ const FolderLabel = styled(Typography)(({ theme }) => ({
     whiteSpace: 'nowrap',
     paddingLeft: 6,
     minWidth: 0,
+    direction: 'rtl',
+    textAlign: 'left',
 }));
 
 const ToolbarButton = styled(IconButton)({
@@ -139,7 +141,7 @@ export const FileDirectoryToolbar = React.memo(function FileDirectoryToolbar({
                         onContextMenu={handleContextMenu}
                         sx={isDragOver ? { backgroundColor: 'action.hover', borderRadius: 1 } : undefined}
                     >
-                        {folderName}
+                        {folderPath}
                     </FolderLabel>
                 </Tooltip>
                 <Tooltip title="New File">
