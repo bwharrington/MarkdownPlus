@@ -524,6 +524,7 @@ function registerIpcHandlers() {
         }
 
         let exportWindow: BrowserWindow | null = null;
+        const tempHtmlPath = path.join(app.getPath('temp'), `nexus-pdf-${Date.now()}.html`);
         try {
             exportWindow = new BrowserWindow({
                 show: false,
@@ -533,8 +534,11 @@ function registerIpcHandlers() {
                 },
             });
 
-            const dataUrl = `data:text/html;charset=UTF-8,${encodeURIComponent(html)}`;
-            await exportWindow.loadURL(dataUrl);
+            // Write HTML to a temp file and load via file:// so that relative
+            // file:// image references (resolved from the document path) are
+            // allowed to load. A data: URL origin blocks file:// sub-resources.
+            await fs.writeFile(tempHtmlPath, html, 'utf-8');
+            await exportWindow.loadFile(tempHtmlPath);
 
             // Allow async rendering (notably Mermaid SVG generation) to settle before printing.
             await new Promise((resolve) => setTimeout(resolve, 250));
@@ -553,6 +557,7 @@ function registerIpcHandlers() {
             if (exportWindow && !exportWindow.isDestroyed()) {
                 exportWindow.destroy();
             }
+            fs.unlink(tempHtmlPath).catch(() => {});
         }
     });
 
