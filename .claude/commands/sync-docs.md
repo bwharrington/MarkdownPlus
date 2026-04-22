@@ -1,11 +1,8 @@
 ---
-name: sync-docs
-description: Review recent code changes and update any docs/ documentation that is stale or incomplete. Use when the user asks to "update docs", "sync documentation", "update relevant docs", or "reflect recent changes in docs".
+description: Review recent code changes and update any stale or incomplete docs/
 argument-hint: [commit-range|branch]
-allowed-tools: [Read, Glob, Grep, Bash, Edit]
+allowed-tools: Read, Glob, Grep, Bash, Edit
 ---
-
-# sync-docs
 
 Review documentation in `docs/` and update anything that is stale, incomplete, or doesn't reflect the current code behavior.
 

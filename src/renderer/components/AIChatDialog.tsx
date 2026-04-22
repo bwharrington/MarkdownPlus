@@ -737,7 +737,7 @@ export function AIChatDialog({
                         isAskLoading={isMultiAgent ? false : isAskLoading}
                         askPhase={isMultiAgent ? null : askPhase}
                         askWebSearchPhase={isMultiAgent ? null : askWebSearchPhase}
-                        webSearchEnabled={isMultiAgent ? false : webSearchEnabled}
+                        webSearchEnabled={webSearchEnabled}
                         isEditLoading={isEditLoading}
                         editWebSearchPhase={editWebSearchPhase}
                         isCreateLoading={isCreateLoading}
