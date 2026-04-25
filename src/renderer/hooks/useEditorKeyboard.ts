@@ -53,6 +53,36 @@ export function useEditorKeyboard(
             return;
         }
 
+        // Handle Shift+Enter: insert a plain \n text node instead of letting the
+        // browser insert a <br>. A <br> is invisible to element.textContent, which
+        // causes content desync and a scroll jump when the DOM is later rebuilt.
+        if (e.key === 'Enter' && e.shiftKey && !e.ctrlKey && !e.altKey && fileId && contentEditableRef.current) {
+            e.preventDefault();
+
+            const element = contentEditableRef.current;
+            const savedScrollTop = element.scrollTop;
+
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                range.deleteContents();
+                range.insertNode(document.createTextNode('\n'));
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+
+            const newValue = getPlainText(element);
+            dispatch({
+                type: 'UPDATE_CONTENT',
+                payload: { id: fileId, content: newValue },
+            });
+
+            // Restore scroll — selection.addRange triggers scroll-into-view
+            element.scrollTop = savedScrollTop;
+            return;
+        }
+
         // Handle Enter key for list continuation
         if (e.key === 'Enter' && !e.ctrlKey && !e.shiftKey && !e.altKey && fileId && contentEditableRef.current) {
             const element = contentEditableRef.current;

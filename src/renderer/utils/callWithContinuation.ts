@@ -4,7 +4,7 @@ import { closeUnclosedFences } from './sanitizeMarkdown';
 
 type ChatApiFn = (
     provider: AIProvider,
-    messages: { role: 'user' | 'assistant'; content: string }[],
+    messages: { role: 'user' | 'assistant'; content: string; attachments?: unknown[] }[],
     model: string,
     requestId: string,
     maxTokens?: number,
@@ -27,7 +27,7 @@ export interface ContinuationResult {
 export async function callWithContinuation(
     callChatApi: ChatApiFn,
     provider: AIProvider,
-    messages: { role: 'user' | 'assistant'; content: string }[],
+    messages: { role: 'user' | 'assistant'; content: string; attachments?: unknown[] }[],
     model: string,
     requestId: string,
     logPrefix: string,
@@ -51,7 +51,7 @@ export async function callWithContinuation(
         continuations++;
         console.log(`${logPrefix} Response truncated, auto-continuing (${continuations}/${MAX_CONTINUATIONS - 1})`);
 
-        const continuationMessages: { role: 'user' | 'assistant'; content: string }[] = [
+        const continuationMessages: { role: 'user' | 'assistant'; content: string; attachments?: unknown[] }[] = [
             ...messages,
             { role: 'assistant' as const, content: segments.join('') },
             { role: 'user' as const, content: CONTINUATION_PROMPT },

@@ -1,0 +1,1109 @@
+
+=== Nexus Session Start ===
+[2026-04-24T14:32:40.725Z] [INFO] Logger initialized
+{
+  "appPath": "C:\\Users\\bwharrington\\AppData\\Local\\Programs\\nexus",
+  "logsDir": "C:\\Users\\bwharrington\\AppData\\Local\\Programs\\nexus\\logs",
+  "logFilePath": "C:\\Users\\bwharrington\\AppData\\Local\\Programs\\nexus\\logs\\nexus-2026-04-24.log",
+  "isPackaged": true,
+  "logLevel": "debug"
+}
+
+[2026-04-24T14:32:40.729Z] [INFO] === App Starting ===
+
+[2026-04-24T14:32:40.729Z] [INFO] Electron app ready
+
+[2026-04-24T14:32:40.729Z] [INFO] Config file location
+{
+  "path": "C:\\Users\\bwharrington\\AppData\\Roaming\\nexus\\config.json"
+}
+
+[2026-04-24T14:32:40.743Z] [INFO] Secure Storage: Loaded encrypted keys from disk
+{
+  "count": 3
+}
+
+[2026-04-24T14:32:40.743Z] [DEBUG] Command line arguments received
+{
+  "args": [],
+  "length": 0
+}
+
+[2026-04-24T14:32:40.743Z] [DEBUG] Pending files to open after filtering
+{
+  "pendingFilesToOpen": [],
+  "count": 0
+}
+
+[2026-04-24T14:32:40.743Z] [DEBUG] Registering IPC handlers
+
+[2026-04-24T14:32:40.745Z] [DEBUG] Registering AI IPC handlers
+
+[2026-04-24T14:32:40.745Z] [DEBUG] AI IPC handlers registered
+
+[2026-04-24T14:32:40.745Z] [INFO] Registering Secure Storage IPC handlers
+
+[2026-04-24T14:32:40.745Z] [DEBUG] Syncing AI models config
+
+[2026-04-24T14:32:40.746Z] [INFO] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-04-24T14:32:40.803Z] [INFO] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-04-24T14:32:41.089Z] [INFO] xAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:32:41.093Z] [INFO] xAI List Models Raw Response
+{
+  "totalCount": 14,
+  "models": [
+    "grok-3",
+    "grok-3-mini",
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4.20-0309-reasoning",
+    "grok-4.20-multi-agent-0309",
+    "grok-code-fast-1",
+    "grok-imagine-image",
+    "grok-imagine-image-pro",
+    "grok-imagine-video"
+  ]
+}
+
+[2026-04-24T14:32:41.094Z] [INFO] xAI List Models Filtered Result
+{
+  "filteredCount": 8,
+  "models": [
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4.20-0309-reasoning",
+    "grok-4.20-multi-agent-0309"
+  ]
+}
+
+[2026-04-24T14:32:42.230Z] [INFO] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:32:42.233Z] [INFO] Claude List Models Raw Response
+{
+  "totalCount": 9,
+  "models": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6",
+    "claude-opus-4-5-20251101",
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-4-5-20250929",
+    "claude-opus-4-1-20250805",
+    "claude-opus-4-20250514",
+    "claude-sonnet-4-20250514"
+  ]
+}
+
+[2026-04-24T14:32:42.233Z] [INFO] Claude List Models Filtered Result
+{
+  "filteredCount": 4,
+  "models": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6",
+    "claude-haiku-4-5-20251001"
+  ]
+}
+
+[2026-04-24T14:32:42.233Z] [DEBUG] Creating main window
+
+[2026-04-24T14:32:42.351Z] [DEBUG] Main window created
+
+[2026-04-24T14:32:43.330Z] [DEBUG] IPC: renderer-ready called
+{
+  "pendingFiles": []
+}
+
+[2026-04-24T14:32:43.330Z] [DEBUG] No files to send from renderer-ready
+
+[2026-04-24T14:32:43.331Z] [DEBUG] AI IPC: get-provider-status
+
+[2026-04-24T14:32:43.331Z] [INFO] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-04-24T14:32:43.372Z] [DEBUG] IPC: get-initial-files called
+{
+  "pendingFiles": []
+}
+
+[2026-04-24T14:32:43.372Z] [DEBUG] IPC: Returning files and clearing pending
+{
+  "files": []
+}
+
+[2026-04-24T14:32:43.415Z] [DEBUG] IPC: file:read-directory called
+{
+  "dirPath": "C:\\Users\\bwharrington\\Desktop\\AI Docs",
+  "showAllFiles": false
+}
+
+[2026-04-24T14:32:43.416Z] [DEBUG] IPC: file:read-directory called
+{
+  "dirPath": "C:\\DevGit\\pve-web-gh\\Products\\WebTier\\docs",
+  "showAllFiles": false
+}
+
+[2026-04-24T14:32:43.416Z] [DEBUG] IPC: file:read-directory called
+{
+  "dirPath": "C:\\DevGit\\dovetail\\projects\\AnviAdmin\\docs",
+  "showAllFiles": false
+}
+
+[2026-04-24T14:32:43.417Z] [DEBUG] IPC: file:read-directory called
+{
+  "dirPath": "C:\\DevGit\\anvi-admin-api\\docs",
+  "showAllFiles": false
+}
+
+[2026-04-24T14:32:43.419Z] [INFO] xAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:32:43.421Z] [INFO] xAI List Models Raw Response
+{
+  "totalCount": 14,
+  "models": [
+    "grok-3",
+    "grok-3-mini",
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4.20-0309-reasoning",
+    "grok-4.20-multi-agent-0309",
+    "grok-code-fast-1",
+    "grok-imagine-image",
+    "grok-imagine-image-pro",
+    "grok-imagine-video"
+  ]
+}
+
+[2026-04-24T14:32:43.421Z] [INFO] xAI List Models Filtered Result
+{
+  "filteredCount": 8,
+  "models": [
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4.20-0309-reasoning",
+    "grok-4.20-multi-agent-0309"
+  ]
+}
+
+[2026-04-24T14:32:43.421Z] [INFO] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-04-24T14:32:43.452Z] [DEBUG] Started watching directory
+{
+  "dirPath": "C:\\DevGit\\dovetail\\projects\\AnviAdmin\\docs"
+}
+
+[2026-04-24T14:32:43.453Z] [DEBUG] Started watching directory
+{
+  "dirPath": "C:\\DevGit\\pve-web-gh\\Products\\WebTier\\docs"
+}
+
+[2026-04-24T14:32:43.453Z] [DEBUG] IPC: file:read called
+{
+  "filePath": "C:\\Users\\bwharrington\\Desktop\\AI Docs\\AI-Presentation.md"
+}
+
+[2026-04-24T14:32:43.454Z] [DEBUG] Started watching directory
+{
+  "dirPath": "C:\\DevGit\\anvi-admin-api\\docs"
+}
+
+[2026-04-24T14:32:43.455Z] [DEBUG] Started watching directory
+{
+  "dirPath": "C:\\Users\\bwharrington\\Desktop\\AI Docs"
+}
+
+[2026-04-24T14:32:43.469Z] [DEBUG] IPC: file:read success
+{
+  "filePath": "C:\\Users\\bwharrington\\Desktop\\AI Docs\\AI-Presentation.md",
+  "contentLength": 5724,
+  "lineEnding": "CRLF"
+}
+
+[2026-04-24T14:32:43.506Z] [DEBUG] IPC: file:read called
+{
+  "filePath": "C:\\Projects\\Nexus\\logs\\nexus-2026-04-22.log"
+}
+
+[2026-04-24T14:32:43.508Z] [DEBUG] IPC: file:read success
+{
+  "filePath": "C:\\Projects\\Nexus\\logs\\nexus-2026-04-22.log",
+  "contentLength": 16554,
+  "lineEnding": "LF"
+}
+
+[2026-04-24T14:32:43.560Z] [DEBUG] Started watching file
+{
+  "filePath": "C:\\Users\\bwharrington\\Desktop\\AI Docs\\AI-Presentation.md"
+}
+
+[2026-04-24T14:32:43.784Z] [DEBUG] [RENDERER] [App] Config loaded {"openFilesCount":2}
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [App] Restoring recent file: C:\Users\bwharrington\Desktop\AI Docs\AI-Presentation.md with mode: edit
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [App] Recent file restored: C:\Users\bwharrington\Desktop\AI Docs\AI-Presentation.md
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [App] Restoring recent file: C:\Projects\Nexus\logs\nexus-2026-04-22.log with mode: preview
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [EditorContext] OPEN_FILE action received {"id":"file-1777041163506-ueuxmm8ri","path":"C:\\Users\\bwharrington\\Desktop\\AI Docs\\AI-Presentation.md","name":"AI-Presentation.md","currentOpenFilesCount":0}
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [EditorContext] Adding new file to state {"fileId":"file-1777041163506-ueuxmm8ri","newOpenFilesCount":1}
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [App] Recent file restored: C:\Projects\Nexus\logs\nexus-2026-04-22.log
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [EditorContext] OPEN_FILE action received {"id":"file-1777041163605-y45kc45f0","path":"C:\\Projects\\Nexus\\logs\\nexus-2026-04-22.log","name":"nexus-2026-04-22.log","currentOpenFilesCount":1}
+
+[2026-04-24T14:32:43.785Z] [DEBUG] [RENDERER] [EditorContext] Adding new file to state {"fileId":"file-1777041163605-y45kc45f0","newOpenFilesCount":2}
+
+[2026-04-24T14:32:44.229Z] [INFO] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:32:44.231Z] [INFO] Claude List Models Raw Response
+{
+  "totalCount": 9,
+  "models": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6",
+    "claude-opus-4-5-20251101",
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-4-5-20250929",
+    "claude-opus-4-1-20250805",
+    "claude-opus-4-20250514",
+    "claude-sonnet-4-20250514"
+  ]
+}
+
+[2026-04-24T14:32:44.231Z] [INFO] Claude List Models Filtered Result
+{
+  "filteredCount": 4,
+  "models": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6",
+    "claude-haiku-4-5-20251001"
+  ]
+}
+
+[2026-04-24T14:32:44.231Z] [DEBUG] AI IPC: provider status result
+{
+  "xai": {
+    "enabled": true,
+    "status": "success"
+  },
+  "claude": {
+    "enabled": true,
+    "status": "success"
+  },
+  "openai": {
+    "enabled": false,
+    "status": "unchecked"
+  },
+  "gemini": {
+    "enabled": false,
+    "status": "unchecked"
+  }
+}
+
+[2026-04-24T14:32:44.233Z] [DEBUG] AI IPC: list-claude-models
+
+[2026-04-24T14:32:44.233Z] [INFO] Claude List Models Request
+{
+  "url": "https://api.anthropic.com/v1/models"
+}
+
+[2026-04-24T14:32:44.233Z] [DEBUG] AI IPC: list-models
+
+[2026-04-24T14:32:44.233Z] [INFO] xAI List Models Request
+{
+  "url": "https://api.x.ai/v1/models"
+}
+
+[2026-04-24T14:32:44.308Z] [INFO] xAI List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:32:44.309Z] [INFO] xAI List Models Raw Response
+{
+  "totalCount": 14,
+  "models": [
+    "grok-3",
+    "grok-3-mini",
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4.20-0309-reasoning",
+    "grok-4.20-multi-agent-0309",
+    "grok-code-fast-1",
+    "grok-imagine-image",
+    "grok-imagine-image-pro",
+    "grok-imagine-video"
+  ]
+}
+
+[2026-04-24T14:32:44.309Z] [INFO] xAI List Models Filtered Result
+{
+  "filteredCount": 8,
+  "models": [
+    "grok-4-0709",
+    "grok-4-1-fast-non-reasoning",
+    "grok-4-1-fast-reasoning",
+    "grok-4-fast-non-reasoning",
+    "grok-4-fast-reasoning",
+    "grok-4.20-0309-non-reasoning",
+    "grok-4.20-0309-reasoning",
+    "grok-4.20-multi-agent-0309"
+  ]
+}
+
+[2026-04-24T14:32:44.360Z] [INFO] Claude List Models Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:32:44.362Z] [INFO] Claude List Models Raw Response
+{
+  "totalCount": 9,
+  "models": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6",
+    "claude-opus-4-5-20251101",
+    "claude-haiku-4-5-20251001",
+    "claude-sonnet-4-5-20250929",
+    "claude-opus-4-1-20250805",
+    "claude-opus-4-20250514",
+    "claude-sonnet-4-20250514"
+  ]
+}
+
+[2026-04-24T14:32:44.362Z] [INFO] Claude List Models Filtered Result
+{
+  "filteredCount": 4,
+  "models": [
+    "claude-opus-4-7",
+    "claude-sonnet-4-6",
+    "claude-opus-4-6",
+    "claude-haiku-4-5-20251001"
+  ]
+}
+
+[2026-04-24T14:45:02.963Z] [DEBUG] [RENDERER] [App] AI chat panel opened
+
+[2026-04-24T14:45:02.964Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:12.429Z] [DEBUG] Config saved to disk
+
+[2026-04-24T14:45:12.547Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:12.547Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:12.548Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:12.548Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:12.709Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:27.871Z] [DEBUG] Config saved to disk
+
+[2026-04-24T14:45:28.034Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:29.972Z] [DEBUG] Config saved to disk
+
+[2026-04-24T14:45:30.139Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:45.282Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:45:47.282Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I"}
+
+[2026-04-24T14:45:48.245Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I'"}
+
+[2026-04-24T14:45:48.246Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I'v"}
+
+[2026-04-24T14:45:48.482Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've"}
+
+[2026-04-24T14:45:48.639Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've "}
+
+[2026-04-24T14:45:48.810Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've a"}
+
+[2026-04-24T14:45:49.028Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've at"}
+
+[2026-04-24T14:45:49.141Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've att"}
+
+[2026-04-24T14:45:49.327Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've atta"}
+
+[2026-04-24T14:45:49.327Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attac"}
+
+[2026-04-24T14:45:49.591Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attach"}
+
+[2026-04-24T14:45:49.592Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attache"}
+
+[2026-04-24T14:45:49.840Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached"}
+
+[2026-04-24T14:45:50.010Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached "}
+
+[2026-04-24T14:45:50.151Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a"}
+
+[2026-04-24T14:45:50.275Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a "}
+
+[2026-04-24T14:45:50.488Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a d"}
+
+[2026-04-24T14:45:50.619Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a do"}
+
+[2026-04-24T14:45:50.784Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a doc"}
+
+[2026-04-24T14:45:50.784Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a docu"}
+
+[2026-04-24T14:45:51.085Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a docum"}
+
+[2026-04-24T14:45:51.225Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a docume"}
+
+[2026-04-24T14:45:51.350Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a documen"}
+
+[2026-04-24T14:45:51.506Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document"}
+
+[2026-04-24T14:45:51.739Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document "}
+
+[2026-04-24T14:45:52.128Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document r"}
+
+[2026-04-24T14:45:52.299Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document re"}
+
+[2026-04-24T14:45:52.454Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document rev"}
+
+[2026-04-24T14:45:52.580Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document reve"}
+
+[2026-04-24T14:45:52.756Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revea"}
+
+[2026-04-24T14:45:52.757Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document reveal"}
+
+[2026-04-24T14:45:53.095Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document reveali"}
+
+[2026-04-24T14:45:53.095Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revealin"}
+
+[2026-04-24T14:45:53.095Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revealing"}
+
+[2026-04-24T14:45:53.266Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revealing "}
+
+[2026-04-24T14:45:53.439Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revealing a"}
+
+[2026-04-24T14:45:53.673Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revealing an"}
+
+[2026-04-24T14:45:53.965Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document revealing a"}
+
+[2026-04-24T14:45:57.024Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document  revealing a"}
+
+[2026-04-24T14:45:57.335Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I revealing a"}
+
+[2026-04-24T14:45:57.459Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I  revealing a"}
+
+[2026-04-24T14:45:57.597Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I m revealing a"}
+
+[2026-04-24T14:45:57.722Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I ma revealing a"}
+
+[2026-04-24T14:45:57.723Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I mad revealing a"}
+
+[2026-04-24T14:45:58.018Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made revealing a"}
+
+[2026-04-24T14:45:58.191Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made  revealing a"}
+
+[2026-04-24T14:45:58.191Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made i revealing a"}
+
+[2026-04-24T14:45:58.324Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in revealing a"}
+
+[2026-04-24T14:45:58.324Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in  revealing a"}
+
+[2026-04-24T14:45:58.563Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in p revealing a"}
+
+[2026-04-24T14:45:58.845Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in pa revealing a"}
+
+[2026-04-24T14:45:58.959Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in pai revealing a"}
+
+[2026-04-24T14:45:58.959Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in pain revealing a"}
+
+[2026-04-24T14:45:59.154Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint revealing a"}
+
+[2026-04-24T14:46:00.099Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintrevealing a"}
+
+[2026-04-24T14:46:00.594Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintevealing a"}
+
+[2026-04-24T14:46:00.595Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintvealing a"}
+
+[2026-04-24T14:46:00.595Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintealing a"}
+
+[2026-04-24T14:46:00.710Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintaling a"}
+
+[2026-04-24T14:46:00.710Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintling a"}
+
+[2026-04-24T14:46:00.710Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in painting a"}
+
+[2026-04-24T14:46:00.711Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintng a"}
+
+[2026-04-24T14:46:00.943Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paintg a"}
+
+[2026-04-24T14:46:01.208Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint a"}
+
+[2026-04-24T14:46:01.593Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint  a"}
+
+[2026-04-24T14:46:01.847Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint s a"}
+
+[2026-04-24T14:46:01.847Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint sh a"}
+
+[2026-04-24T14:46:02.082Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint sho a"}
+
+[2026-04-24T14:46:02.083Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint show a"}
+
+[2026-04-24T14:46:02.364Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showi a"}
+
+[2026-04-24T14:46:02.364Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showin a"}
+
+[2026-04-24T14:46:02.488Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing a"}
+
+[2026-04-24T14:46:02.627Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing  a"}
+
+[2026-04-24T14:46:02.627Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing t a"}
+
+[2026-04-24T14:46:02.831Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing th a"}
+
+[2026-04-24T14:46:02.832Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the a"}
+
+[2026-04-24T14:46:03.108Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the  a"}
+
+[2026-04-24T14:46:03.310Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the s a"}
+
+[2026-04-24T14:46:03.466Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the so a"}
+
+[2026-04-24T14:46:03.467Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the sof a"}
+
+[2026-04-24T14:46:03.728Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the soft a"}
+
+[2026-04-24T14:46:03.925Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the softw a"}
+
+[2026-04-24T14:46:03.925Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the softwa a"}
+
+[2026-04-24T14:46:04.159Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the softwar a"}
+
+[2026-04-24T14:46:04.314Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software a"}
+
+[2026-04-24T14:46:04.470Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software  a"}
+
+[2026-04-24T14:46:04.595Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software a a"}
+
+[2026-04-24T14:46:04.734Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software ar a"}
+
+[2026-04-24T14:46:05.033Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software arc a"}
+
+[2026-04-24T14:46:05.156Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software arch a"}
+
+[2026-04-24T14:46:05.314Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software archi a"}
+
+[2026-04-24T14:46:05.314Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software archit a"}
+
+[2026-04-24T14:46:05.497Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software archite a"}
+
+[2026-04-24T14:46:05.666Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architec a"}
+
+[2026-04-24T14:46:05.870Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architect a"}
+
+[2026-04-24T14:46:05.983Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architectu a"}
+
+[2026-04-24T14:46:05.983Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architectur a"}
+
+[2026-04-24T14:46:06.273Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture a"}
+
+[2026-04-24T14:46:06.460Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture  a"}
+
+[2026-04-24T14:46:06.631Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture f a"}
+
+[2026-04-24T14:46:07.003Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture fo a"}
+
+[2026-04-24T14:46:07.004Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for a"}
+
+[2026-04-24T14:46:07.248Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for  a"}
+
+[2026-04-24T14:46:07.371Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for s a"}
+
+[2026-04-24T14:46:07.371Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for so a"}
+
+[2026-04-24T14:46:07.513Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for som a"}
+
+[2026-04-24T14:46:07.513Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for some a"}
+
+[2026-04-24T14:46:07.745Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for somet a"}
+
+[2026-04-24T14:46:07.746Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for someth a"}
+
+[2026-04-24T14:46:07.934Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for somethi a"}
+
+[2026-04-24T14:46:07.934Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for somethin a"}
+
+[2026-04-24T14:46:08.056Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something a"}
+
+[2026-04-24T14:46:08.196Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something  a"}
+
+[2026-04-24T14:46:08.398Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I a"}
+
+[2026-04-24T14:46:08.398Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I  a"}
+
+[2026-04-24T14:46:08.690Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I a a"}
+
+[2026-04-24T14:46:08.690Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am a"}
+
+[2026-04-24T14:46:08.926Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am  a"}
+
+[2026-04-24T14:46:09.079Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am w a"}
+
+[2026-04-24T14:46:09.191Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am wo a"}
+
+[2026-04-24T14:46:09.297Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am wok a"}
+
+[2026-04-24T14:46:09.297Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am wokr a"}
+
+[2026-04-24T14:46:09.930Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am wok a"}
+
+[2026-04-24T14:46:10.070Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am wo a"}
+
+[2026-04-24T14:46:10.231Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am wor a"}
+
+[2026-04-24T14:46:10.231Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am work a"}
+
+[2026-04-24T14:46:10.504Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am worki a"}
+
+[2026-04-24T14:46:10.504Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am workin a"}
+
+[2026-04-24T14:46:10.627Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working a"}
+
+[2026-04-24T14:46:10.764Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working  a"}
+
+[2026-04-24T14:46:10.764Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working o a"}
+
+[2026-04-24T14:46:10.888Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on a"}
+
+[2026-04-24T14:46:11.617Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working ona"}
+
+[2026-04-24T14:46:11.803Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on"}
+
+[2026-04-24T14:46:12.448Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on."}
+
+[2026-04-24T14:46:12.588Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. "}
+
+[2026-04-24T14:46:12.808Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. C"}
+
+[2026-04-24T14:46:12.809Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Ca"}
+
+[2026-04-24T14:46:13.045Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can"}
+
+[2026-04-24T14:46:13.046Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can "}
+
+[2026-04-24T14:46:13.298Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can y"}
+
+[2026-04-24T14:46:13.298Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can yo"}
+
+[2026-04-24T14:46:13.453Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you"}
+
+[2026-04-24T14:46:14.085Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you "}
+
+[2026-04-24T14:46:14.238Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you m"}
+
+[2026-04-24T14:46:14.407Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you ma"}
+
+[2026-04-24T14:46:14.515Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you mak"}
+
+[2026-04-24T14:46:14.624Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make"}
+
+[2026-04-24T14:46:14.783Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make "}
+
+[2026-04-24T14:46:14.783Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make t"}
+
+[2026-04-24T14:46:14.917Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make th"}
+
+[2026-04-24T14:46:15.085Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make thi"}
+
+[2026-04-24T14:46:15.086Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this"}
+
+[2026-04-24T14:46:15.330Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this "}
+
+[2026-04-24T14:46:15.331Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this i"}
+
+[2026-04-24T14:46:15.453Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this in"}
+
+[2026-04-24T14:46:15.453Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this int"}
+
+[2026-04-24T14:46:15.710Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into"}
+
+[2026-04-24T14:46:15.711Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into "}
+
+[2026-04-24T14:46:15.926Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a"}
+
+[2026-04-24T14:46:16.062Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a "}
+
+[2026-04-24T14:46:16.063Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a m"}
+
+[2026-04-24T14:46:16.264Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a me"}
+
+[2026-04-24T14:46:16.418Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mer"}
+
+[2026-04-24T14:46:16.544Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a merm"}
+
+[2026-04-24T14:46:16.669Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a merma"}
+
+[2026-04-24T14:46:16.813Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermai"}
+
+[2026-04-24T14:46:16.928Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid"}
+
+[2026-04-24T14:46:17.127Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid "}
+
+[2026-04-24T14:46:17.300Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid d"}
+
+[2026-04-24T14:46:17.426Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid di"}
+
+[2026-04-24T14:46:17.426Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid dia"}
+
+[2026-04-24T14:46:17.672Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diag"}
+
+[2026-04-24T14:46:17.810Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagr"}
+
+[2026-04-24T14:46:17.965Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagra"}
+
+[2026-04-24T14:46:18.120Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram"}
+
+[2026-04-24T14:46:18.120Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram "}
+
+[2026-04-24T14:46:18.345Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram f"}
+
+[2026-04-24T14:46:18.483Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram fo"}
+
+[2026-04-24T14:46:18.484Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for"}
+
+[2026-04-24T14:46:18.751Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for "}
+
+[2026-04-24T14:46:19.326Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for m"}
+
+[2026-04-24T14:46:19.463Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for me"}
+
+[2026-04-24T14:46:19.864Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for me?"}
+
+[2026-04-24T14:46:21.042Z] [INFO] AI IPC: claude-chat-request
+{
+  "model": "claude-opus-4-6",
+  "messageCount": 1
+}
+
+[2026-04-24T14:46:21.043Z] [INFO] Claude API Request
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 4096
+}
+
+[2026-04-24T14:46:21.186Z] [DEBUG] [RENDERER] [Create] Starting {"request":"I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for me?","provider":"claude","model":"claude-opus-4-6","requestId":"ai-create-1777041981040-ka98ir9r19e","isDeepCreate":true}
+
+[2026-04-24T14:46:21.186Z] [DEBUG] [RENDERER] [Create] Phase 0: Intent Analysis
+
+[2026-04-24T14:46:21.186Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":true,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":true,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:46:25.118Z] [INFO] Claude API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:46:25.121Z] [DEBUG] AI IPC: web:search
+{
+  "query": "I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for me?",
+  "numResults": 3
+}
+
+[2026-04-24T14:46:25.121Z] [INFO] [WebSearch] Searching Serper
+{
+  "query": "I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for me?",
+  "numResults": 3
+}
+
+[2026-04-24T14:46:25.224Z] [DEBUG] [RENDERER] [Create] Intent analysis complete {"elapsed":4079,"documentType":"technical_doc","tone":"technical","queryCount":0}
+
+[2026-04-24T14:46:25.224Z] [DEBUG] [RENDERER] [Create] Phase 1a: Searching {"queries":["I've attached a document I made in paint showing the software architecture for something I am working on. Can you make this into a mermaid diagram for me?"]}
+
+[2026-04-24T14:46:25.224Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":true,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":true,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:46:26.427Z] [INFO] [WebSearch] Serper returned results
+{
+  "count": 3
+}
+
+[2026-04-24T14:46:26.428Z] [DEBUG] AI IPC: web:fetch-page
+{
+  "url": "https://mermaid.ai/web/"
+}
+
+[2026-04-24T14:46:26.429Z] [INFO] [WebSearch] Fetching page
+{
+  "url": "https://mermaid.ai/web/"
+}
+
+[2026-04-24T14:46:26.431Z] [DEBUG] AI IPC: web:fetch-page
+{
+  "url": "https://www.mermaidonline.live/architecture"
+}
+
+[2026-04-24T14:46:26.431Z] [INFO] [WebSearch] Fetching page
+{
+  "url": "https://www.mermaidonline.live/architecture"
+}
+
+[2026-04-24T14:46:26.530Z] [DEBUG] [RENDERER] [Create] Phase 1a: Got results {"raw":3,"diversified":3}
+
+[2026-04-24T14:46:26.530Z] [DEBUG] [RENDERER] [Create] Phase 1b: Fetching pages
+
+[2026-04-24T14:46:28.892Z] [INFO] [WebSearch] Page extracted
+{
+  "url": "https://www.mermaidonline.live/architecture",
+  "title": "Mermaid Architecture Diagram Online Editor - Free Architecture Diagram Maker Tool",
+  "byteSize": 4220
+}
+
+[2026-04-24T14:46:28.894Z] [INFO] AI IPC: claude-chat-request
+{
+  "model": "claude-opus-4-6",
+  "messageCount": 1
+}
+
+[2026-04-24T14:46:28.895Z] [INFO] Claude API Request
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 4096
+}
+
+[2026-04-24T14:46:28.997Z] [DEBUG] [RENDERER] [Create] Phase 1b: Fetched pages {"count":0}
+
+[2026-04-24T14:46:28.997Z] [DEBUG] [RENDERER] [Create] Phase 1c: Synthesizing research
+
+[2026-04-24T14:46:50.066Z] [INFO] Claude API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:46:50.070Z] [INFO] AI IPC: claude-chat-request
+{
+  "model": "claude-opus-4-6",
+  "messageCount": 1
+}
+
+[2026-04-24T14:46:50.070Z] [INFO] Claude API Request
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 4096
+}
+
+[2026-04-24T14:46:50.170Z] [DEBUG] [RENDERER] [Create] Research complete {"elapsed":29028,"notesLength":3062}
+
+[2026-04-24T14:46:50.171Z] [DEBUG] [RENDERER] [Create] Phase 2: Generating outline
+
+[2026-04-24T14:46:50.171Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":true,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":true,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:47:14.220Z] [INFO] Claude API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:47:14.223Z] [INFO] AI IPC: claude-chat-request
+{
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 16384
+}
+
+[2026-04-24T14:47:14.223Z] [INFO] Claude API Request
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 16384
+}
+
+[2026-04-24T14:47:14.338Z] [DEBUG] [RENDERER] [Create] Outline complete {"elapsed":53181,"outlineLength":4177}
+
+[2026-04-24T14:47:14.339Z] [DEBUG] [RENDERER] [Create] Phase 3: Writing
+
+[2026-04-24T14:47:14.339Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":true,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":true,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:10.904Z] [INFO] Claude API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:48:10.933Z] [INFO] AI IPC: claude-chat-request
+{
+  "model": "claude-opus-4-6",
+  "messageCount": 1
+}
+
+[2026-04-24T14:48:10.933Z] [INFO] Claude API Request
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 4096
+}
+
+[2026-04-24T14:48:11.040Z] [DEBUG] [RENDERER] [Create] Content generation complete {"elapsed":109892,"contentLength":11763,"continuations":0}
+
+[2026-04-24T14:48:11.040Z] [DEBUG] [RENDERER] [Create] Phase 4: Reviewing
+
+[2026-04-24T14:48:11.040Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":true,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":true,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:13.224Z] [INFO] Claude API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:48:13.226Z] [INFO] AI IPC: claude-chat-request
+{
+  "model": "claude-opus-4-6",
+  "messageCount": 1
+}
+
+[2026-04-24T14:48:13.226Z] [INFO] Claude API Request
+{
+  "url": "https://api.anthropic.com/v1/messages",
+  "model": "claude-opus-4-6",
+  "messageCount": 1,
+  "maxTokens": 4096
+}
+
+[2026-04-24T14:48:13.339Z] [DEBUG] [RENDERER] [Create] Review: document is complete
+
+[2026-04-24T14:48:13.339Z] [DEBUG] [RENDERER] [Create] Review complete {"elapsed":112185}
+
+[2026-04-24T14:48:13.339Z] [DEBUG] [RENDERER] [Create] Phase 5: Naming
+
+[2026-04-24T14:48:13.339Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":true,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":true,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:14.768Z] [INFO] Claude API Response Status
+{
+  "status": 200,
+  "statusText": "OK"
+}
+
+[2026-04-24T14:48:14.993Z] [DEBUG] [RENDERER] [Create] Naming complete {"elapsed":113730,"fileName":"Software Architecture Diagram.md"}
+
+[2026-04-24T14:48:14.993Z] [DEBUG] [RENDERER] [Create] Complete {"totalElapsed":113730,"fileName":"Software Architecture Diagram.md","pipeline":"deep (0→1→2→3→4→5)"}
+
+[2026-04-24T14:48:14.993Z] [DEBUG] [RENDERER] [EditorContext] OPEN_FILE action received {"id":"6dpt82142","path":null,"name":"Software Architecture Diagram.md","currentOpenFilesCount":2}
+
+[2026-04-24T14:48:14.993Z] [DEBUG] [RENDERER] [EditorContext] Adding new file to state {"fileId":"6dpt82142","newOpenFilesCount":3}
+
+[2026-04-24T14:48:14.993Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:14.994Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:21.222Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:21.223Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:23.072Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:23.072Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:24.236Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:24.236Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:24.930Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:24.930Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:25.697Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:25.697Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:26.360Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:26.360Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:56.340Z] [DEBUG] IPC: file:read called
+{
+  "filePath": "C:\\Users\\bwharrington\\AppData\\Local\\Programs\\nexus\\logs\\nexus-2026-04-24.log"
+}
+
+[2026-04-24T14:48:56.341Z] [DEBUG] IPC: file:read success
+{
+  "filePath": "C:\\Users\\bwharrington\\AppData\\Local\\Programs\\nexus\\logs\\nexus-2026-04-24.log",
+  "contentLength": 77339,
+  "lineEnding": "LF"
+}
+
+[2026-04-24T14:48:56.930Z] [DEBUG] [RENDERER] [EditorContext] OPEN_FILE action received {"id":"file-1777042136343-7czl2s5w1","path":"C:\\Users\\bwharrington\\AppData\\Local\\Programs\\nexus\\logs\\nexus-2026-04-24.log","name":"nexus-2026-04-24.log","currentOpenFilesCount":3}
+
+[2026-04-24T14:48:56.930Z] [DEBUG] [RENDERER] [EditorContext] Adding new file to state {"fileId":"file-1777042136343-7czl2s5w1","newOpenFilesCount":4}
+
+[2026-04-24T14:48:56.930Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:56.930Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:58.421Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:48:58.422Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:49:00.988Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+
+[2026-04-24T14:49:00.988Z] [DEBUG] [RENDERER] [AIChatDialog] render: {"hasActiveRequest":false,"isAskLoading":false,"isEditLoading":false,"isCreateLoading":false,"hasDiffTab":false,"mode":"create","inputValue":""}
+

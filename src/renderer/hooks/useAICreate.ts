@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { useEditorDispatch, useEditorState } from '../contexts/EditorContext';
-import type { AIProvider } from './useAIChat';
+import type { AIProvider, AttachmentData } from './useAIChat';
 import { callProviderApi } from '../utils/callProviderApi';
 import { callWithContinuation } from '../utils/callWithContinuation';
 import type { AttachedFile } from '../components/FileAttachmentsList';
@@ -52,7 +52,7 @@ Request: "{REQUEST}"
 
 Return ONLY a JSON object with no other text:
 {
-  "documentType": "one of: blog_post, technical_doc, readme, report, spec, tutorial, guide, letter, essay, creative, list, comparison, other",
+  "documentType": "one of: blog_post, technical_doc, readme, report, spec, tutorial, guide, letter, essay, creative, list, comparison, conversion, other",
   "topics": ["array of 2-5 specific topics/entities to research"],
   "searchQueries": ["array of 2-4 optimized web search queries if research would help, empty array if not needed"],
   "suggestedSections": ["array of 3-8 section headings that would make sense for this document"],
@@ -168,6 +168,7 @@ const TYPE_SPECIFIC_INSTRUCTIONS: Record<string, string> = {
     creative: 'Focus on voice, imagery, and narrative. Let the tone match the genre. Prioritize engagement and emotional resonance.',
     list: 'Use clear, consistent formatting. Order items logically. Include brief descriptions for each item.',
     comparison: 'Use consistent evaluation criteria across all items. Include a summary comparison table. Provide a balanced assessment with clear pros and cons for each option.',
+    conversion: 'Output only the requested artifact — no introductory text, no document structure, no explanations of what the format is or how to use it. If converting or extracting content (e.g., diagram markup, config files, code, tables), produce only the clean artifact itself.',
     other: 'Be thorough, well-structured, and creative. Match the tone and style implied by the request.',
 };
 
@@ -194,20 +195,38 @@ function sanitizeFilename(raw: string): string {
     return name;
 }
 
-function buildFileContextFromOpenFiles(
+async function readAttachedFiles(
     attachedFiles: AttachedFile[],
     openFiles: IFile[],
-): string {
-    if (attachedFiles.length === 0) return '';
+): Promise<{ fileContext: string; imageAttachments: AttachmentData[] | undefined }> {
+    if (attachedFiles.length === 0) return { fileContext: '', imageAttachments: undefined };
 
-    const parts: string[] = [];
-    for (const af of attachedFiles) {
-        const openFile = openFiles.find(f => f.path === af.path);
-        if (openFile && openFile.content.trim()) {
-            parts.push(`[File: ${af.name}]\n${openFile.content}`);
+    const textParts: string[] = [];
+    const imageData: AttachmentData[] = [];
+
+    await Promise.all(attachedFiles.map(async (af) => {
+        const fileData = await window.electronAPI.readFileForAttachment(af.path);
+        if (fileData.type === 'image' && fileData.data) {
+            imageData.push({
+                name: af.name,
+                type: 'image',
+                mimeType: fileData.mimeType,
+                data: fileData.data,
+            });
+        } else if (fileData.type === 'text' && fileData.data) {
+            // Prefer in-memory content if the file is open in the editor (captures unsaved edits)
+            const openFile = openFiles.find(f => f.path === af.path);
+            const content = openFile?.content ?? fileData.data;
+            if (content.trim()) {
+                textParts.push(`[File: ${af.name}]\n${content}`);
+            }
         }
-    }
-    return parts.join('\n\n---\n\n');
+    }));
+
+    return {
+        fileContext: textParts.join('\n\n---\n\n'),
+        imageAttachments: imageData.length > 0 ? imageData : undefined,
+    };
 }
 
 function parseIntentAnalysis(raw: string): IntentAnalysis {
@@ -304,7 +323,11 @@ function buildCreatingPrompt(
 ): string {
     const parts: string[] = [];
 
-    parts.push('You are an expert content creator. Generate a complete, publication-ready Markdown document.');
+    if (documentType === 'conversion') {
+        parts.push('You are a precise technical assistant. Generate exactly the requested artifact and nothing else.');
+    } else {
+        parts.push('You are an expert content creator. Generate a complete, publication-ready Markdown document.');
+    }
     parts.push('');
     parts.push(`**Document Type:** ${documentType}`);
     parts.push(`**Tone:** ${tone}`);
@@ -347,8 +370,10 @@ function buildCreatingPrompt(
     parts.push(`- Match the ${tone} tone throughout`);
     parts.push('- Use proper Markdown formatting: headings, lists, code blocks, tables, bold/italic as appropriate');
     parts.push(`- ${getTypeInstructions(documentType)}`);
-    parts.push('- Produce a complete, standalone document — not a skeleton or summary');
+    parts.push('- Produce output that is complete and correct for its purpose — not a skeleton or summary; do not add document structure (headings, sections, prose) that was not requested');
     parts.push('- Do not include meta-commentary about the request — just produce the content directly');
+    parts.push('- Do not explain what tools, formats, or technologies appear in the output — if the user asked for Mermaid diagrams, code, templates, or any specific format, output only that content; do not describe what the format is or how to use it unless the user explicitly asked for an explanation');
+    parts.push('- Do not suggest extensions, improvements, next steps, or follow-up actions unless the user explicitly asked for recommendations');
 
     if (researchNotes) {
         parts.push('- When incorporating facts or data from research, include natural attributions like "According to [Source]..." or "A 2025 study found that..."');
@@ -414,7 +439,19 @@ export function useAICreate() {
         const isDeepCreate = !!webSearchEnabled;
         console.log('[Create] Starting', { request, provider, model, requestId, isDeepCreate });
 
-        const fileContext = buildFileContextFromOpenFiles(attachedFiles, openFilesRef.current);
+        let fileContext = '';
+        let imageAttachments: AttachmentData[] | undefined;
+        try {
+            const result = await readAttachedFiles(attachedFiles, openFilesRef.current);
+            fileContext = result.fileContext;
+            imageAttachments = result.imageAttachments;
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to read attached files';
+            console.error('[Create] Failed to read attached files:', err);
+            setCreateError(message);
+            setIsCreateLoading(false);
+            return;
+        }
 
         try {
             // ── Phase 0: Intent Analysis ──────────────────────────────────────
@@ -621,6 +658,7 @@ export function useAICreate() {
             const creatingMessages = [{
                 role: 'user' as const,
                 content: creatingPrompt,
+                attachments: imageAttachments,
             }];
 
             console.log('[Create] Phase 3: Writing');
